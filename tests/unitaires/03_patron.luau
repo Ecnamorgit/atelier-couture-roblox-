@@ -121,3 +121,47 @@ local pManche = Patron.point("manche_longue", "droite", 1.6, 0, M)
 U.verifier(pManche.Y > 3.5 and pManche.Y < 4.5, "le haut de la manche est à hauteur d'épaule")
 local pManche2 = Patron.point("manche_longue", "gauche", 1.6, 0, M)
 U.verifier(U.proche(pManche2.X, -pManche.X) and U.proche(pManche2.Y, pManche.Y), "la manche gauche est le miroir de la droite")
+
+-- Relecture finale : sens de l'imprimé. Vu de l'extérieur, une pièce posée (unique, gauche) montre le tissu
+-- dans le même sens que sur la table ; la copie droite (tissu en miroir) a une géométrie en miroir.
+-- Donc signe(orientation 3D) × (−1 pour droite) est le même pour toutes les pièces.
+local function orientation(id, copie)
+	local def = Catalogue.piece(id)
+	local b = Polygone.boite(def.contour)
+	local x, y = (b.minX + b.maxX) / 2, b.minY + (b.maxY - b.minY) * 0.6
+	local h = 0.01
+	local px1 = Patron.point(id, copie, x + h, y, M)
+	local px0 = Patron.point(id, copie, x - h, y, M)
+	local py1 = Patron.point(id, copie, x, y + h, M)
+	local py0 = Patron.point(id, copie, x, y - h, M)
+	local _, dehors = Patron.point(id, copie, x, y, M)
+	local s = (px1 - px0):Cross(py1 - py0):Dot(dehors)
+	return (s > 0 and 1 or -1) * (copie == "droite" and -1 or 1)
+end
+local reference = orientation("corsage_droit_devant", "unique")
+for id in pairs(Catalogue.Pieces) do
+	for _, copie in ipairs(Patron.copies(id)) do
+		U.verifier(orientation(id, copie) == reference, id .. " (" .. copie .. ") : imprimé dans le bon sens")
+	end
+end
+
+-- Relecture finale : vraie normale de la surface (pour poser les accessoires)
+for id, def in pairs(Catalogue.Pieces) do
+	local b = Polygone.boite(def.contour)
+	for _, copie in ipairs(Patron.copies(id)) do
+		for k = 1, 3 do
+			local x = b.minX + (b.maxX - b.minX) * (0.25 * k)
+			local y = b.minY + (b.maxY - b.minY) * (0.25 * k)
+			if Polygone.contient(def.contour, x, y) then
+				local n = Patron.normale(id, copie, x, y, M)
+				local h = 0.01
+				local tx = Patron.point(id, copie, x + h, y, M) - Patron.point(id, copie, x - h, y, M)
+				local ty = Patron.point(id, copie, x, y + h, M) - Patron.point(id, copie, x, y - h, M)
+				local _, dehors = Patron.point(id, copie, x, y, M)
+				U.verifier(U.proche(n.Magnitude, 1, 1e-6), id .. " : normale unitaire")
+				U.verifier(math.abs(n:Dot(tx.Unit)) < 0.02 and math.abs(n:Dot(ty.Unit)) < 0.02, id .. " : normale perpendiculaire à la surface")
+				U.verifier(n:Dot(dehors) > 0, id .. " : normale tournée vers l'extérieur")
+			end
+		end
+	end
+end

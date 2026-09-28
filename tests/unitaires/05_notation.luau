@@ -117,3 +117,29 @@ U.verifier(not pcall(Notation.styles, { croquis = croquis, tissus = {}, accessoi
 U.verifier(Notation.longueurGarniture("jupe_droite_devant", { { u = 0.5, v = 0.5 } }) == 0, "garniture d'un point : longueur 0")
 local g0 = Notation.styles({ croquis = croquis, tissus = {}, accessoires = { { id = "ruban_rose", longueur = 0 } } })
 U.verifier(U.proche(g0.mignon, 0), "garniture de longueur nulle : aucun point")
+
+-- Relecture finale : angle énorme mais fini (le modulo perd sa précision au-delà de ~1e17)
+for _, angle in ipairs({ 1e18, 8.766e306, -1e20 }) do
+	local df = Notation.droitFil(angle, false)
+	U.verifier(df >= 0 and df <= 1, ("droit-fil borné à [0, 1] pour un angle de %g"):format(angle))
+	U.verifier(df == 0, ("angle démesuré (%g) : droit-fil 0"):format(angle))
+end
+U.verifier(Notation.qualite({ { aire = 10, droitFil = 5, couture = 3 } }) == 1, "qualité bornée à 1")
+local recetteExploit = { croquis = croquis, pieces = { { id = "jupe_droite_devant", tissu = "coton_blanc", x = 0, y = 0, angle = 8.766e306, couture = 1 } } }
+U.verifier(Notation.bilan(recetteExploit).qualite <= 1, "le bilan ne dépasse jamais une qualité de 1")
+
+-- Relecture finale : la teinte dominante se calcule par couleur, pas par tissu
+local roseEtBleu = {
+	croquis = croquis,
+	pieces = {
+		{ id = "jupe_droite_devant", tissu = "satin_rose", x = 0, y = 0, angle = 0, couture = 1 },
+		{ id = "jupe_droite_dos", tissu = "coton_rose_pois", x = 0, y = 0, angle = 0, couture = 1 },
+		{ id = "corsage_droit_devant", tissu = "lin_bleu", x = 0, y = 0, angle = 0, couture = 1 },
+		{ id = "corsage_droit_dos", tissu = "lin_bleu", x = 0, y = 0, angle = 0, couture = 1 },
+	},
+}
+U.verifier(Notation.bilan(roseEtBleu).teinte == "rose", "deux tissus roses (60 dm²) l'emportent sur un bleu (40 dm²)")
+
+-- Relecture finale : garniture aux coordonnées non finies → longueur 0, jamais NaN
+local l = Notation.longueurGarniture("jupe_droite_devant", { { u = 0 / 0, v = 0 }, { u = 1, v = math.huge } })
+U.verifier(l == l and l == 0, "garniture aux coordonnées non finies : longueur 0")

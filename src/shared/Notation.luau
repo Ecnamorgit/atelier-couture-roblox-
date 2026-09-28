@@ -18,10 +18,11 @@ end
 local FIL_NORMAL = { { 0, 1 }, { 45, 0.6 }, { 90, 0.75 }, { 135, 0.6 }, { 180, 1 } }
 local FIL_BIAIS = { { 0, 0.7 }, { 45, 1 }, { 90, 0.7 }, { 135, 1 }, { 180, 0.7 } }
 local AIMANTATION = 6 -- degrés
+local ANGLE_MAX = 3600 -- au-delà, le modulo perd sa précision (même borne que Coupon)
 
 -- theta : angle (degrés) entre la flèche de droit-fil de la pièce et la chaîne du tissu
 function Notation.droitFil(theta, biais)
-	if not fini(theta) then
+	if not fini(theta) or math.abs(theta) > ANGLE_MAX then
 		return 0 -- valeur invalide : jamais 100 %
 	end
 	local t = theta % 180
@@ -81,7 +82,7 @@ function Notation.qualite(pieces)
 		total += p.aire * p.droitFil * p.couture
 		aires += p.aire
 	end
-	return aires > 0 and total / aires or 0
+	return aires > 0 and math.clamp(total / aires, 0, 1) or 0
 end
 
 ---------------------------------------------------------------------------
@@ -94,7 +95,10 @@ function Notation.longueurGarniture(idPiece, trajet)
 	local total = 0
 	for i = 2, #trajet do
 		local du, dv = (trajet[i].u - trajet[i - 1].u) * l, (trajet[i].v - trajet[i - 1].v) * h
-		total += math.sqrt(du * du + dv * dv)
+		local d = math.sqrt(du * du + dv * dv)
+		if fini(d) then -- un point non fini ne compte pas (jamais de NaN dans les prix ou les styles)
+			total += d
+		end
 	end
 	return total
 end
@@ -194,7 +198,7 @@ end
 -- recette = { croquis, pieces = { { id, tissu, x, y, angle, couture } }, accessoires = { … } }
 -- Retourne { styles, qualite, teinte, accessoires = { [id] = nombre }, nbPieces }
 function Notation.bilan(recette)
-	local tissus, piecesNotees = {}, {}
+	local tissus, piecesNotees, parTeinte = {}, {}, {}
 	local teinte, aireMax = nil, -1
 	for _, p in ipairs(recette.pieces) do
 		assert(Catalogue.tissu(p.tissu), "tissu inconnu : " .. tostring(p.tissu))
@@ -203,9 +207,15 @@ function Notation.bilan(recette)
 		local df = Notation.droitFil(Notation.angleFil(p.angle, p.id), Catalogue.piece(p.id).biais)
 		table.insert(piecesNotees, { aire = aire, droitFil = df, couture = p.couture or 0 })
 	end
+	-- Teinte dominante : surfaces additionnées par couleur (deux tissus roses comptent ensemble)
+	for idTissu, aire in pairs(tissus) do
+		local t = Catalogue.tissu(idTissu).teinte
+		parTeinte[t] = (parTeinte[t] or 0) + aire
+	end
 	for _, p in ipairs(recette.pieces) do
-		if tissus[p.tissu] > aireMax then
-			teinte, aireMax = Catalogue.tissu(p.tissu).teinte, tissus[p.tissu]
+		local t = Catalogue.tissu(p.tissu).teinte
+		if parTeinte[t] > aireMax then
+			teinte, aireMax = t, parTeinte[t]
 		end
 	end
 	local accessoires, comptes = {}, {}

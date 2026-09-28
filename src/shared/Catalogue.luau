@@ -80,7 +80,8 @@ Catalogue.Pieces = {
 		enroulement = { type = "manche", bouffant = 0 } },
 	col_claudine = { nom = "Col Claudine", contour = COL_CLAUDINE, coutures = { 1 }, pliee = true,
 		enroulement = { type = "col", forme = "claudine" } },
-	col_montant = { nom = "Col montant", contour = rectangle(2, 0.6), coutures = { 1 }, pliee = true,
+	-- Col montant : le bord bas (arête 3) est cousu à l'encolure, le haut est libre
+	col_montant = { nom = "Col montant", contour = rectangle(2, 0.6), coutures = { 3 }, pliee = true,
 		enroulement = { type = "col", forme = "montant" } },
 	jupe_droite_devant = { nom = "Jupe devant", contour = rectangle(5, 6), coutures = { 1, 2, 4 },
 		enroulement = { type = "jupe", cote = "devant", evasement = 0.03, fronces = 0 } },

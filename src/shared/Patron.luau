@@ -135,7 +135,8 @@ local function col(e, u, v, hauteur, _m)
 	if e.forme == "claudine" then
 		rayon, y = RAYON_COU + v * hauteur * 0.9, HAUTEUR_COU - v * hauteur * 0.35
 	else
-		rayon, y = RAYON_COU + 0.05, HAUTEUR_COU + v * hauteur
+		-- v = 1 (bord bas, cousu) à l'encolure : le haut du patron reste en haut, l'imprimé n'est pas inversé
+		rayon, y = RAYON_COU + 0.05, HAUTEUR_COU + (1 - v) * hauteur
 	end
 	local dehors = Vector3.new(math.cos(phi), 0, math.sin(phi))
 	return Vector3.new(rayon * math.cos(phi), y, rayon * math.sin(phi)), dehors
@@ -144,6 +145,7 @@ end
 local ENROULEMENTS = { jupe = jupe, corsage = corsage, manche = manche, col = col }
 
 -- Point du patron (x, y en dm) → position 3D (Vector3, dm) et direction extérieure (Vector3 unitaire).
+-- « dehors » est la direction radiale approximative (pas la normale : voir Patron.normale).
 -- copie : "unique", "gauche" ou "droite". mesures : { poitrine, taille, hanches }.
 function Patron.point(id, copie, x, y, mesures)
 	local def = Patron.def(id)
@@ -154,6 +156,24 @@ function Patron.point(id, copie, x, y, mesures)
 		dehors = Vector3.new(-dehors.X, dehors.Y, dehors.Z)
 	end
 	return position, dehors
+end
+
+-- Normale exacte de la surface au point (x, y) du patron, tournée vers l'extérieur
+-- (sert à poser les accessoires à plat sur le tissu)
+function Patron.normale(id, copie, x, y, mesures)
+	local h = 0.01
+	local tx = Patron.point(id, copie, x + h, y, mesures) - Patron.point(id, copie, x - h, y, mesures)
+	local ty = Patron.point(id, copie, x, y + h, mesures) - Patron.point(id, copie, x, y - h, mesures)
+	local _, dehors = Patron.point(id, copie, x, y, mesures)
+	local n = tx:Cross(ty)
+	if n.Magnitude < 1e-12 then
+		return dehors
+	end
+	n = n.Unit
+	if n:Dot(dehors) < 0 then
+		n = -n
+	end
+	return n
 end
 
 return Patron

@@ -42,3 +42,15 @@ U.verifier(e:poser("jupe_droite_devant", { x = 11.5, y = 3, angle = 0 }), "pièc
 -- Rouleau vide : toute pièce est refusée
 local vide = Coupon.nouveau(0)
 U.verifier(not vide:verifier("col_montant", { x = 1, y = 0.3, angle = 0 }), "rouleau de longueur nulle : pièce refusée")
+
+-- Relecture finale : angle démesuré refusé
+U.verifier(not Coupon.nouveau(20):verifier("jupe_droite_devant", { x = 7, y = 10, angle = 8.766e306 }), "angle démesuré refusé")
+U.verifier(Coupon.nouveau(20):verifier("jupe_droite_devant", { x = 7, y = 10, angle = -270 }), "angle négatif raisonnable accepté")
+
+-- Relecture finale : une pièce pliée se pose d'un côté ou de l'autre du pli
+local droite = Coupon.nouveau(10)
+U.verifier(droite:poser("manche_longue", { x = 10, y = 3, angle = 0 }), "manche posée à droite du pli")
+local okG, errG = droite:verifier("jupe_droite_devant", { x = 4.5, y = 3, angle = 0 })
+U.verifier(not okG and errG:find("chevauche") ~= nil, "son symétrique occupe la gauche du pli")
+local okP, errP = Coupon.nouveau(10):verifier("manche_longue", { x = 7, y = 3, angle = 0 })
+U.verifier(not okP and errP:find("pli") ~= nil, "une pièce pliée à cheval sur le pli est refusée")

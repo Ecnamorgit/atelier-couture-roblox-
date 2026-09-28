@@ -65,6 +65,19 @@
 | `CreateDataModelContentAsync` échoue | Régénération par chaque client | Sans objet. Le contenu statique créé par un client est supposé local à ce client (non vérifié : aucun test à plusieurs joueurs dans ce spike), donc chaque client régénère quand même les vitrines à partir des recettes (spec §5), en convertissant chaque pièce. |
 | Les moitiés ne se rejoignent pas | Compenser au plan 2 | Sans objet : placer au centre des sommets suffit. |
 
+## Objectifs de performance de la spec (§9) : non atteints
+
+| Objectif | Cible | Mesuré ou estimé | Verdict |
+|---|---|---|---|
+| Génération d'une robe complète, PC | < 200 ms | 532 ms (6 pièces converties) | **Non atteint** |
+| Génération d'une robe complète, téléphone | < 600 ms | ≈ 1,6 s (estimation 532 × 3) | **Non atteint** (à mesurer) |
+
+L'essentiel du temps n'est pas du Luau : la découpe coûte 4 à 5 ms par pièce après optimisation. Il vient des appels
+asynchrones de Roblox (`CreateMeshPartAsync`, `CreateDataModelContentAsync`). La génération étalée avec animation ne
+fait pas atteindre l'objectif, elle rend l'attente acceptable. **Décision à prendre par le commanditaire avant le plan 2** :
+accepter environ 0,5 s sur PC et environ 1,5 s sur téléphone, masqués par l'animation de couture, ou chercher une autre
+voie (maillages de pièces préconstruits, soit l'approche B de la conception).
+
 ## Conséquences pour le plan 2
 
 1. **Chaîne par pièce** : `EditableImage` (découpe) et `EditableMesh` (enroulement), puis `CreateDataModelContentAsync`

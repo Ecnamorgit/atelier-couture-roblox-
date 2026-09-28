@@ -10,6 +10,7 @@ Coupon.__index = Coupon
 
 local PAS = 0.1
 local EPSILON = 1e-6
+local ANGLE_MAX = 3600 -- au-delà, le modulo perd sa précision : un client pourrait fausser le droit-fil
 local COLONNES = math.floor(Catalogue.LARGEUR_ROULEAU / PAS + 0.5)
 
 local function fini(n)
@@ -54,14 +55,18 @@ function Coupon:verifier(idPiece, placement)
 	if self.poses[idPiece] then
 		return false, "Cette pièce est déjà coupée."
 	end
-	if type(placement) ~= "table" or not fini(placement.x) or not fini(placement.y) or not fini(placement.angle) then
+	if type(placement) ~= "table" or not fini(placement.x) or not fini(placement.y) or not fini(placement.angle)
+		or math.abs(placement.angle) > ANGLE_MAX then
 		return false, "Position invalide."
 	end
 	local contours = Coupon.contoursPoses(idPiece, placement)
-	local limiteX = def.pliee and Catalogue.PLI or Catalogue.LARGEUR_ROULEAU
 	local b = Polygone.boite(contours[1])
-	if b.minX < -EPSILON or b.maxX > limiteX + EPSILON or b.minY < -EPSILON or b.maxY > self.longueur + EPSILON then
-		return false, def.pliee and "Une pièce pliée doit tenir d'un côté du pli." or "La pièce dépasse du tissu."
+	if b.minX < -EPSILON or b.maxX > Catalogue.LARGEUR_ROULEAU + EPSILON or b.minY < -EPSILON or b.maxY > self.longueur + EPSILON then
+		return false, "La pièce dépasse du tissu."
+	end
+	-- Pièce pliée : entièrement d'un côté du pli (à gauche ou à droite), son symétrique occupe l'autre côté
+	if def.pliee and b.minX < Catalogue.PLI - EPSILON and b.maxX > Catalogue.PLI + EPSILON then
+		return false, "Une pièce pliée doit tenir d'un côté du pli."
 	end
 	local cases = {}
 	for _, contour in ipairs(contours) do
