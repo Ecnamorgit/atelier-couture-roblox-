@@ -60,5 +60,6 @@ out.append(OUTILS_UNITAIRES)
 for f in sorted(glob.glob(ICI + "/unitaires/*.luau")):
     out.append("do\n" + ENTETE + lire(f) + "\nend")
 out.append("print((\"Unitaires : %d vérifications\"):format(U.compte))")
+out.append("M.avertissements = {} -- le scénario ne voit pas les avertissements des tests unitaires")
 out.append("do\n" + ENTETE + lire(sim + "scenario.luau") + "\nend")
 open(sim + "run.luau", "w", encoding="utf-8").write("\n".join(out))
