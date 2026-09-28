@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Lance la simulation complète du jeu hors de Roblox Studio (Linux, macOS, ou Windows via Git Bash).
-# Télécharge au premier lancement : Luau 0.650 et les définitions de l'API Roblox (luau-lsp 1.53.0).
+# Télécharge au premier lancement : Luau 0.650 et les définitions de l'API Roblox
+# (luau-lsp 1.70.1, niveau de sécurité des scripts de jeu).
 set -euo pipefail
 ICI="$(cd "$(dirname "$0")" && pwd)"
 CACHE="$ICI/.cache"
@@ -16,9 +17,11 @@ if [ ! -f "$LUAU" ]; then
   curl -sSL -o "$CACHE/luau.zip" "https://github.com/luau-lang/luau/releases/download/0.650/$PAQUET"
   unzip -o -q "$CACHE/luau.zip" -d "$CACHE"
 fi
-if [ ! -f "$CACHE/globalTypes.d.luau" ]; then
-  curl -sSL -o "$CACHE/globalTypes.d.luau" https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/1.53.0/scripts/globalTypes.d.luau
+DEFINITIONS="$CACHE/globalTypes-1.70.1.None.d.luau"
+if [ ! -f "$DEFINITIONS" ]; then
+  curl -sSL -o "$DEFINITIONS" https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/1.70.1/scripts/globalTypes.None.d.luau
 fi
+cp "$DEFINITIONS" "$CACHE/globalTypes.d.luau"
 cp "$ICI/mock.luau" "$ICI/scenario.luau" "$CACHE/sim/"
 "$PYTHON" "$ICI/gen_api.py" "$CACHE" "$ICI/../src"
 "$PYTHON" "$ICI/build.py" "$CACHE" "$ICI/../src"
