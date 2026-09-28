@@ -95,3 +95,20 @@ for _, a in ipairs(Catalogue.Accessoires) do
 	U.verifier(a.prix > 0, a.id .. " : prix positif")
 	stylesValides(a.style, a.id)
 end
+
+-- Plan 2 : rendu 3D
+U.verifier(Catalogue.STUDS_PAR_DM > 0, "échelle du rendu positive")
+for nom, m in pairs(Catalogue.MATIERES) do
+	U.verifier(m.materiau == "Fabric" or m.materiau == "SmoothPlastic", nom .. " : matériau Roblox connu")
+	U.verifier(m.reflet >= 0 and m.reflet <= 1, nom .. " : reflet entre 0 et 1")
+end
+local FORMES = { boule = true, bloc = true, cylindre = true, noeud = true, fleur = true, croix = true }
+for _, a in ipairs(Catalogue.Accessoires) do
+	local ap = a.apparence
+	U.verifier(type(ap) == "table" and #ap.couleur == 3, a.id .. " : apparence avec couleur")
+	if a.genre == "objet" then
+		U.verifier(FORMES[ap.forme] == true and ap.taille > 0 and ap.taille <= 1, a.id .. " : forme connue, taille ≤ 1 dm")
+	else
+		U.verifier(ap.largeur > 0 and ap.largeur <= 0.5 and ap.transparence >= 0 and ap.transparence < 1, a.id .. " : largeur et transparence valides")
+	end
+end

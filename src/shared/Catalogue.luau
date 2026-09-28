@@ -13,6 +13,7 @@ Catalogue.VALEUR_COUTURE = 0.15 -- décalage du trajet de couture vers l'intéri
 Catalogue.PAS_MESURE_COUTURE = 0.1 -- une mesure d'écart tous les 0,1 dm de trajet
 Catalogue.K = { pieces = 1, tissu = 2, accessoires = 0.5 } -- poids des jauges de style
 Catalogue.PLAFOND_ASSISTANCE = 0.85
+Catalogue.STUDS_PAR_DM = 0.3 -- échelle du rendu 3D : 1 dm de patron = 0,3 stud
 
 Catalogue.STYLES = { "elegant", "mignon", "romantique", "gothique", "chic", "decontracte" }
 Catalogue.NOMS_STYLES = {
@@ -188,42 +189,56 @@ Catalogue.Tissus = {
 		{ type = "pois", couleurs = { { 120, 70, 160 }, { 230, 210, 250 } }, periode = 0.5, rayon = 0.1 }, { mignon = 10, gothique = 8 }),
 }
 
--- Rendu 3D par matière (utilisé au sous-projet de rendu)
+-- Rendu 3D par matière : matériau Roblox et reflet (SurfaceAppearance est interdite en jeu, voir le spike)
 Catalogue.MATIERES = {
-	coton = { rugosite = 0.9, reflet = 0 },
-	lin = { rugosite = 1, reflet = 0 },
-	laine = { rugosite = 1, reflet = 0 },
-	soie = { rugosite = 0.35, reflet = 0.1 },
-	velours = { rugosite = 0.8, reflet = 0 },
-	satin = { rugosite = 0.25, reflet = 0.15 },
+	coton = { rugosite = 0.9, reflet = 0, materiau = "Fabric" },
+	lin = { rugosite = 1, reflet = 0, materiau = "Fabric" },
+	laine = { rugosite = 1, reflet = 0, materiau = "Fabric" },
+	soie = { rugosite = 0.35, reflet = 0.1, materiau = "SmoothPlastic" },
+	velours = { rugosite = 0.8, reflet = 0, materiau = "Fabric" },
+	satin = { rugosite = 0.25, reflet = 0.15, materiau = "SmoothPlastic" },
 }
 
 ---------------------------------------------------------------------------
 -- Accessoires : objets (prix à l'unité) et garnitures (prix au dm, points par tranche de 5 dm)
 ---------------------------------------------------------------------------
-local function objet(id, nom, prix, style)
-	return { id = id, nom = nom, genre = "objet", prix = prix, style = style }
+-- apparence : forme 3D ("boule", "bloc", "cylindre", "noeud", "fleur", "croix"), taille (dm), couleur, reflet
+local function objet(id, nom, prix, style, apparence)
+	return { id = id, nom = nom, genre = "objet", prix = prix, style = style, apparence = apparence }
 end
-local function garniture(id, nom, prix, style)
-	return { id = id, nom = nom, genre = "garniture", prix = prix, style = style }
+-- apparence d'une garniture : largeur du ruban (dm), couleur, transparence
+local function garniture(id, nom, prix, style, apparence)
+	return { id = id, nom = nom, genre = "garniture", prix = prix, style = style, apparence = apparence }
 end
 
 Catalogue.Accessoires = {
-	objet("bouton_nacre", "Bouton nacré", 1, { chic = 2, elegant = 1 }),
-	objet("bouton_dore", "Bouton doré", 2, { elegant = 2, chic = 1 }),
-	objet("noeud_satin", "Nœud de satin", 3, { mignon = 4, romantique = 2 }),
-	objet("noeud_velours", "Nœud de velours", 4, { gothique = 3, elegant = 2 }),
-	objet("fleur_rose", "Fleur rose", 3, { romantique = 4, mignon = 2 }),
-	objet("fleur_blanche", "Fleur blanche", 3, { romantique = 3, elegant = 2 }),
-	objet("broche_camee", "Broche camée", 8, { elegant = 5, gothique = 2 }),
-	objet("perle", "Perle", 1, { elegant = 2, romantique = 1 }),
-	objet("etoile_brodee", "Étoile brodée", 2, { mignon = 3 }),
-	objet("croix_argent", "Croix d'argent", 5, { gothique = 5 }),
-	garniture("dentelle_blanche", "Dentelle blanche", 2, { romantique = 3, elegant = 2 }),
-	garniture("dentelle_noire", "Dentelle noire", 2, { gothique = 4, elegant = 1 }),
-	garniture("ruban_rose", "Ruban rose", 1, { mignon = 3 }),
-	garniture("galon_dore", "Galon doré", 3, { elegant = 3, chic = 2 }),
-	garniture("ruban_noir", "Ruban noir", 1, { gothique = 2, chic = 2 }),
+	objet("bouton_nacre", "Bouton nacré", 1, { chic = 2, elegant = 1 },
+		{ forme = "boule", taille = 0.25, couleur = { 248, 244, 236 }, reflet = 0.3 }),
+	objet("bouton_dore", "Bouton doré", 2, { elegant = 2, chic = 1 },
+		{ forme = "cylindre", taille = 0.28, couleur = { 214, 170, 60 }, reflet = 0.4 }),
+	objet("noeud_satin", "Nœud de satin", 3, { mignon = 4, romantique = 2 },
+		{ forme = "noeud", taille = 0.9, couleur = { 240, 150, 190 }, reflet = 0.15 }),
+	objet("noeud_velours", "Nœud de velours", 4, { gothique = 3, elegant = 2 },
+		{ forme = "noeud", taille = 0.9, couleur = { 60, 20, 40 }, reflet = 0 }),
+	objet("fleur_rose", "Fleur rose", 3, { romantique = 4, mignon = 2 },
+		{ forme = "fleur", taille = 0.6, couleur = { 250, 140, 180 }, reflet = 0 }),
+	objet("fleur_blanche", "Fleur blanche", 3, { romantique = 3, elegant = 2 },
+		{ forme = "fleur", taille = 0.6, couleur = { 250, 250, 245 }, reflet = 0 }),
+	objet("broche_camee", "Broche camée", 8, { elegant = 5, gothique = 2 },
+		{ forme = "cylindre", taille = 0.55, couleur = { 240, 200, 180 }, reflet = 0.2 }),
+	objet("perle", "Perle", 1, { elegant = 2, romantique = 1 },
+		{ forme = "boule", taille = 0.18, couleur = { 250, 246, 240 }, reflet = 0.5 }),
+	objet("etoile_brodee", "Étoile brodée", 2, { mignon = 3 },
+		{ forme = "bloc", taille = 0.4, couleur = { 250, 220, 90 }, reflet = 0 }),
+	objet("croix_argent", "Croix d'argent", 5, { gothique = 5 },
+		{ forme = "croix", taille = 0.6, couleur = { 200, 200, 210 }, reflet = 0.5 }),
+	garniture("dentelle_blanche", "Dentelle blanche", 2, { romantique = 3, elegant = 2 },
+		{ largeur = 0.3, couleur = { 250, 248, 240 }, transparence = 0.15 }),
+	garniture("dentelle_noire", "Dentelle noire", 2, { gothique = 4, elegant = 1 },
+		{ largeur = 0.3, couleur = { 30, 25, 30 }, transparence = 0.15 }),
+	garniture("ruban_rose", "Ruban rose", 1, { mignon = 3 }, { largeur = 0.2, couleur = { 240, 150, 190 }, transparence = 0 }),
+	garniture("galon_dore", "Galon doré", 3, { elegant = 3, chic = 2 }, { largeur = 0.15, couleur = { 214, 170, 60 }, transparence = 0 }),
+	garniture("ruban_noir", "Ruban noir", 1, { gothique = 2, chic = 2 }, { largeur = 0.2, couleur = { 30, 25, 30 }, transparence = 0 }),
 }
 
 ---------------------------------------------------------------------------
