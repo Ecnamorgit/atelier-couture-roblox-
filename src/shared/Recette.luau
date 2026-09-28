@@ -14,6 +14,8 @@ Recette.ECHELLE_MIN, Recette.ECHELLE_MAX = 0.5, 3
 Recette.POITRINE = { 7, 13 }
 Recette.TAILLE = { 5.5, 12 }
 Recette.HANCHES = { 8, 14 }
+Recette.VERSION = 1
+Recette.LONGUEUR_MAX = 100 -- dm de rouleau (spec §6)
 
 local function fini(n)
 	return type(n) == "number" and n == n and n ~= math.huge and n ~= -math.huge
@@ -204,9 +206,37 @@ local function dans(n, a, b)
 	return fini(n) and n >= a and n <= b
 end
 
+-- Champs autorisés à chaque niveau : tout champ inconnu est refusé (le serveur ne sauvegarde que ceux-là)
+local CHAMPS = {
+	racine = { croquis = true, mesures = true, pieces = true, accessoires = true, version = true },
+	croquis = { corsage = true, manches = true, col = true, jupe = true },
+	mesures = { poitrine = true, taille = true, hanches = true },
+	piece = { id = true, tissu = true, x = true, y = true, angle = true, couture = true },
+	objet = { id = true, piece = true, copie = true, u = true, v = true, echelle = true, angle = true },
+	garniture = { id = true, piece = true, copie = true, trajet = true },
+	point = { u = true, v = true },
+}
+local function champsConnus(t, genre)
+	for cle in pairs(t) do
+		if not CHAMPS[genre][cle] then
+			return false
+		end
+	end
+	return true
+end
+local function sequence(t)
+	return type(t) == "table" and estTableau(t)
+end
+
 function Recette.valider(r)
-	if type(r) ~= "table" or type(r.croquis) ~= "table" or type(r.pieces) ~= "table" or type(r.mesures) ~= "table" then
+	if type(r) ~= "table" or type(r.croquis) ~= "table" or not sequence(r.pieces) or type(r.mesures) ~= "table" then
 		return false, "Recette incomplète."
+	end
+	if not champsConnus(r, "racine") or not champsConnus(r.croquis, "croquis") or not champsConnus(r.mesures, "mesures") then
+		return false, "Champ inconnu dans la recette."
+	end
+	if r.version ~= nil and r.version ~= Recette.VERSION then
+		return false, "Version de recette inconnue."
 	end
 	local ok, attendues = pcall(Patron.piecesDuCroquis, r.croquis)
 	if not ok then
@@ -224,10 +254,14 @@ function Recette.valider(r)
 		if type(p) ~= "table" or p.id ~= attendues[i] then
 			return false, "Pièces différentes du croquis."
 		end
+		if not champsConnus(p, "piece") then
+			return false, "Champ inconnu dans une pièce."
+		end
 		if type(p.tissu) ~= "string" or not Catalogue.tissu(p.tissu) then
 			return false, "Tissu inconnu."
 		end
-		if not fini(p.x) or not fini(p.y) or not dans(p.angle, -Recette.ANGLE_MAX, Recette.ANGLE_MAX) then
+		if not dans(p.x, 0, Catalogue.LARGEUR_ROULEAU) or not dans(p.y, 0, Recette.LONGUEUR_MAX)
+			or not dans(p.angle, -Recette.ANGLE_MAX, Recette.ANGLE_MAX) then
 			return false, "Position de pièce invalide."
 		end
 		if not dans(p.couture, 0, 1) then
@@ -235,7 +269,7 @@ function Recette.valider(r)
 		end
 	end
 	local accessoires = r.accessoires or {}
-	if type(accessoires) ~= "table" or #accessoires > Recette.MAX_ACCESSOIRES then
+	if not sequence(accessoires) or #accessoires > Recette.MAX_ACCESSOIRES then
 		return false, "Trop d'accessoires."
 	end
 	for _, a in ipairs(accessoires) do
@@ -250,17 +284,20 @@ function Recette.valider(r)
 		if a.copie ~= nil and not table.find(Patron.copies(piece.id), a.copie) then
 			return false, "Copie de pièce invalide."
 		end
+		if not champsConnus(a, def.genre) then
+			return false, "Champ inconnu dans un accessoire."
+		end
 		if def.genre == "objet" then
 			if not dans(a.u, 0, 1) or not dans(a.v, 0, 1) or not dans(a.echelle, Recette.ECHELLE_MIN, Recette.ECHELLE_MAX)
 				or not dans(a.angle, -360, 360) then
 				return false, "Accessoire mal placé."
 			end
 		else
-			if type(a.trajet) ~= "table" or #a.trajet < 2 or #a.trajet > Recette.MAX_POINTS_GARNITURE then
+			if not sequence(a.trajet) or #a.trajet < 2 or #a.trajet > Recette.MAX_POINTS_GARNITURE then
 				return false, "Garniture invalide."
 			end
 			for _, pt in ipairs(a.trajet) do
-				if type(pt) ~= "table" or not dans(pt.u, 0, 1) or not dans(pt.v, 0, 1) then
+				if type(pt) ~= "table" or not champsConnus(pt, "point") or not dans(pt.u, 0, 1) or not dans(pt.v, 0, 1) then
 					return false, "Garniture mal placée."
 				end
 			end

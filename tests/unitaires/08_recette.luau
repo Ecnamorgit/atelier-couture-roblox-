@@ -114,3 +114,28 @@ local e = exemple()
 U.verifier(Recette.copieAccessoire(e, e.accessoires[1]) == "unique", "pièce non pliée : copie unique")
 U.verifier(Recette.copieAccessoire(e, e.accessoires[2]) == "droite", "copie donnée explicitement")
 U.verifier(Recette.copieAccessoire(e, { id = "perle", piece = 3 }) == "gauche", "pièce pliée : copie gauche par défaut")
+
+-- Relecture finale : validation stricte (filtre du serveur)
+local stricts = {
+	{ "champ inconnu à la racine", function(x) x.inconnu = string.rep("a", 100) end },
+	{ "champ inconnu dans une pièce", function(x) x.pieces[1].bourrage = "x" end },
+	{ "champ inconnu dans un accessoire", function(x) x.accessoires[1].bourrage = "x" end },
+	{ "champ inconnu dans le croquis", function(x) x.croquis.traine = "x" end },
+	{ "champ inconnu dans les mesures", function(x) x.mesures.cou = 3 end },
+	{ "champ inconnu dans un point de garniture", function(x) x.accessoires[3].trajet[1].w = 0 end },
+	{ "accessoires à trous", function(x) x.accessoires[5] = { id = "perle" } end },
+	{ "pièces à trous", function(x) x.pieces[9] = x.pieces[1] end },
+	{ "trajet à trous", function(x) x.accessoires[3].trajet[9] = { u = 0, v = 0 } end },
+	{ "x démesuré", function(x) x.pieces[1].x = 1e308 end },
+	{ "y négatif", function(x) x.pieces[1].y = -5 end },
+	{ "y au-delà de 100 dm", function(x) x.pieces[1].y = 150 end },
+	{ "version inconnue", function(x) x.version = 2 end },
+}
+for _, c in ipairs(stricts) do
+	local x = exemple()
+	c[2](x)
+	U.verifier(not Recette.valider(x), "recette refusée : " .. c[1])
+end
+local v1 = exemple()
+v1.version = 1
+U.verifier(Recette.valider(v1), "version 1 acceptée")

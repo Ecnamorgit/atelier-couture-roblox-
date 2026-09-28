@@ -15,6 +15,8 @@ local ConstructeurRobe = {}
 local PLAFONDS = { robe = 256, vitrine = 128 } -- taille maximale des images de pièces (px)
 local DECOLLEMENT = 0.05 -- dm : les accessoires sont posés juste au-dessus du tissu
 local PAS_GARNITURE = 0.4 -- dm entre deux points d'une garniture
+local MAX_PLAQUES = 64 -- plaques par garniture, quel que soit son tracé
+local PAR_IMAGE = 50 -- pièces Roblox créées entre deux pauses (génération étalée)
 local JAUNE = Color3.fromRGB(255, 214, 90)
 
 ---------------------------------------------------------------------------
@@ -153,7 +155,33 @@ function FORMES.croix(g, cf, s, c, r)
 	bloc(g, Vector3.new(s * 0.6, s * 0.2, s * 0.1), cf * CFrame.new(0, s * 0.2, 0), c, r)
 end
 
-local function construireAccessoire(recette, a, cadre, parent)
+-- Points (u, v) répartis régulièrement le long du tracé d'une garniture (MAX_PLAQUES plaques au plus)
+local function echantillonner(trajet, largeur, hauteur)
+	local cumul = { 0 }
+	for k = 2, #trajet do
+		local du, dv = (trajet[k].u - trajet[k - 1].u) * largeur, (trajet[k].v - trajet[k - 1].v) * hauteur
+		cumul[k] = cumul[k - 1] + math.sqrt(du * du + dv * dv)
+	end
+	local total = cumul[#trajet]
+	local n = math.clamp(math.ceil(total / PAS_GARNITURE), 1, MAX_PLAQUES)
+	local points, k = {}, 1
+	for i = 0, n do
+		local d = total * i / n
+		while k < #trajet - 1 and cumul[k + 1] < d do
+			k += 1
+		end
+		local longueur = cumul[k + 1] - cumul[k]
+		local t = longueur > 0 and math.clamp((d - cumul[k]) / longueur, 0, 1) or 0
+		table.insert(points, {
+			u = trajet[k].u + (trajet[k + 1].u - trajet[k].u) * t,
+			v = trajet[k].v + (trajet[k + 1].v - trajet[k].v) * t,
+		})
+	end
+	return points
+end
+
+-- souffler() est appelé après chaque pièce Roblox créée ; il renvoie faux si la robe a été détruite
+local function construireAccessoire(recette, a, cadre, parent, souffler)
 	local def = Catalogue.accessoire(a.id)
 	local ap = def.apparence
 	local groupe = Instance.new("Model")
@@ -164,20 +192,18 @@ local function construireAccessoire(recette, a, cadre, parent)
 		local pos, n = surface(a.u, a.v)
 		local cf = repere(cadre, pos, n) * CFrame.Angles(0, 0, math.rad(a.angle))
 		FORMES[ap.forme](groupe, cf, ap.taille * a.echelle * e, couleur(ap.couleur), ap.reflet)
+		groupe.Parent = parent
+		souffler()
+		return groupe
 	else
 		-- Garniture : ruban de petites plaques qui suivent le tissu, la face large contre la pièce
+		local b = Polygone.boite(Catalogue.piece(recette.pieces[a.piece].id).contour)
 		local points = {}
-		for k = 1, #a.trajet - 1 do
-			local p0, p1 = a.trajet[k], a.trajet[k + 1]
-			local b = Polygone.boite(Catalogue.piece(recette.pieces[a.piece].id).contour)
-			local du, dv = (p1.u - p0.u) * (b.maxX - b.minX), (p1.v - p0.v) * (b.maxY - b.minY)
-			local etapes = math.max(1, math.ceil(math.sqrt(du * du + dv * dv) / PAS_GARNITURE))
-			for s = (k == 1 and 0 or 1), etapes do
-				local t = s / etapes
-				local pos, n = surface(p0.u + (p1.u - p0.u) * t, p0.v + (p1.v - p0.v) * t)
-				table.insert(points, { ici = cadre * ((pos + n * DECOLLEMENT) * e), haut = cadre * ((pos + n * (DECOLLEMENT + 1)) * e) })
-			end
+		for _, pt in ipairs(echantillonner(a.trajet, b.maxX - b.minX, b.maxY - b.minY)) do
+			local pos, n = surface(pt.u, pt.v)
+			table.insert(points, { ici = cadre * ((pos + n * DECOLLEMENT) * e), haut = cadre * ((pos + n * (DECOLLEMENT + 1)) * e) })
 		end
+		groupe.Parent = parent
 		for k = 1, #points - 1 do
 			local q0, q1 = points[k].ici, points[k + 1].ici
 			local longueur = (q1 - q0).Magnitude
@@ -186,10 +212,12 @@ local function construireAccessoire(recette, a, cadre, parent)
 				local normale = points[k].haut - points[k].ici
 				local part = bloc(groupe, Vector3.new(ap.largeur * e, 0.02, longueur), CFrame.lookAt(milieu, q1, normale), couleur(ap.couleur), 0)
 				part.Transparency = ap.transparence
+				if not souffler() then
+					return groupe
+				end
 			end
 		end
 	end
-	groupe.Parent = parent
 	return groupe
 end
 
@@ -197,8 +225,9 @@ end
 -- Robe complète
 ---------------------------------------------------------------------------
 -- recette : recette valide (Recette.valider). cadre : CFrame de la taille du mannequin (studs).
--- options : { finesse = "robe" | "vitrine", etaler = bool (une pièce par image),
---             surProgres = function(fait, total) }
+-- options : { finesse = "robe" | "vitrine", etaler = bool (pauses entre les pièces et pendant les accessoires),
+--             surProgres = function(fait, total), pause = function (défaut task.wait) }
+-- Si la robe est détruite pendant une pause, la construction s'arrête là.
 -- Retourne le Model « Robe » (parenté tout de suite : les pièces apparaissent au fur et à mesure).
 function ConstructeurRobe.construire(recette, cadre, parent, options)
 	local ok, erreur = Recette.valider(recette)
@@ -217,6 +246,16 @@ function ConstructeurRobe.construire(recette, cadre, parent, options)
 	end
 	local accessoires = recette.accessoires or {}
 	local total = #copies + #accessoires
+	local pause = options.pause or task.wait
+	local faites = 0
+	local function souffler()
+		faites += 1
+		if options.etaler and faites >= PAR_IMAGE then
+			faites = 0
+			pause()
+		end
+		return modele.Parent ~= nil
+	end
 	for k, c in ipairs(copies) do
 		local part = construirePiece(c.piece, c.copie, recette.mesures, cadre, finesse)
 		if part then
@@ -226,14 +265,17 @@ function ConstructeurRobe.construire(recette, cadre, parent, options)
 			options.surProgres(k, total)
 		end
 		if options.etaler then
-			task.wait()
+			pause()
 		end
 		if modele.Parent == nil then
 			return modele -- robe détruite pendant la construction (vitrine quittée)
 		end
 	end
 	for k, a in ipairs(accessoires) do
-		construireAccessoire(recette, a, cadre, modele)
+		construireAccessoire(recette, a, cadre, modele, souffler)
+		if modele.Parent == nil then
+			return modele
+		end
 		if options.surProgres then
 			options.surProgres(#copies + k, total)
 		end

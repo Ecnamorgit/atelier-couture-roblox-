@@ -135,3 +135,59 @@ local perle = robeCol:FindFirstChild("Accessoire_perle"):GetChildren()[1]
 local p = perle.CFrame.Position
 local l = perle.CFrame.LookVector
 U.verifier(p.X == p.X and p.Y == p.Y and p.Z == p.Z and l.X == l.X and l.Y == l.Y and l.Z == l.Z, "perle sur le col : repère fini")
+
+-- Relecture finale : garnitures bornées (au plus 64 plaques chacune, même en zigzag sur une longue jupe)
+local zigzag = {
+	croquis = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_evasee" },
+	mesures = table.clone(Catalogue.TAILLES.M),
+	pieces = {
+		{ id = "corsage_droit_devant", tissu = "coton_blanc", x = 3, y = 3, angle = 0, couture = 1 },
+		{ id = "corsage_droit_dos", tissu = "coton_blanc", x = 9, y = 3, angle = 0, couture = 1 },
+		{ id = "jupe_evasee_devant", tissu = "coton_blanc", x = 5, y = 12, angle = 45, couture = 1 },
+		{ id = "jupe_evasee_dos", tissu = "coton_blanc", x = 5, y = 30, angle = 45, couture = 1 },
+	},
+	accessoires = {},
+}
+for _ = 1, 30 do
+	local trajet = {}
+	for k = 1, 64 do
+		table.insert(trajet, { u = k % 2, v = (k - 1) / 63 })
+	end
+	table.insert(zigzag.accessoires, { id = "ruban_rose", piece = 3, trajet = trajet })
+end
+local robeZ = ConstructeurRobe.construire(zigzag, cadre, M.services.Workspace, {})
+local plaquesMax = 0
+for _, enfant in ipairs(robeZ:GetChildren()) do
+	if enfant.Name == "Accessoire_ruban_rose" then
+		plaquesMax = math.max(plaquesMax, #enfant:GetChildren())
+	end
+end
+U.verifier(plaquesMax > 0 and plaquesMax <= 64, ("une garniture fait au plus 64 plaques (obtenu %d)"):format(plaquesMax))
+
+-- Relecture finale : génération étalée jusque dans les accessoires, et arrêtée si la robe est détruite
+local pauses = 0
+local etalee = ConstructeurRobe.construire(zigzag, cadre, M.services.Workspace, {
+	etaler = true,
+	pause = function()
+		pauses += 1
+	end,
+})
+U.verifier(pauses > 4 + 30, ("pauses entre les pièces et pendant les accessoires (obtenu %d)"):format(pauses))
+U.verifier(#etalee:GetChildren() == 4 + 30, "robe étalée complète")
+local coupee
+coupee = ConstructeurRobe.construire(zigzag, cadre, M.services.Workspace, {
+	etaler = true,
+	pause = function()
+		pauses += 1
+		if coupee == nil and pauses > 0 then
+			-- première pause : la robe n'est pas encore rendue, on la détruit via son parent
+			for _, r in ipairs(M.services.Workspace:GetChildren()) do
+				if r.Name == "Robe" and #r:GetChildren() == 1 then
+					r:Destroy()
+				end
+			end
+		end
+	end,
+})
+U.verifier(coupee.Parent == nil and #coupee:GetChildren() == 1, "robe détruite pendant la génération : construction arrêtée")
+U.verifier(M.editables.maillages == 0 and M.editables.images == 0, "aucun objet modifiable laissé par l'arrêt")
