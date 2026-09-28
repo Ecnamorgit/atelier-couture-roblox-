@@ -106,3 +106,22 @@ Vérifications visuelles :
 
 Écart avec la spec §9 (génération < 200 ms sur PC) : toujours non atteint, pour la raison du spike (appels asynchrones
 de Roblox). La génération étalée (une pièce par image) évite le gel de l'image. **La décision reste au commanditaire.**
+
+## Banc des vitrines et de la génération étalée (relecture finale du plan 2)
+
+Mesuré avec `tests/studio/banc_vitrines.luau` et des variantes dans la même session (Studio, Play, client, `etaler` activé
+donc vraies pauses `task.wait()`) :
+
+| Essai | Résultat |
+|---|---|
+| 3 vitrines, joueur parti pendant la 1re construction puis revenu, socle 2 détruit en cours de route | vitrine quittée libérée : oui ; 2 vitrines construites (socles 1 et 3) ; aucun avertissement ni erreur du jeu |
+| Budget libre d'EditableMesh avant / après ce premier essai | 8 / 7 (baisse unique, voir ci-dessous) |
+| 3 cycles : construction complète, changement de recette, départ pendant la reconstruction, retour | budget 7 → 7 → 7 → 7 ; après arrêt : 7 |
+| 2 socles détruits pendant leur construction | budget 7 → 7 → 7 ; aucun message |
+
+La baisse de 8 à 7 ne se produit qu'une fois par session, au premier usage. Elle ne se reproduit ni par cycle ni par
+destruction en cours de route : pas de fuite d'objet modifiable détectée.
+
+Contrôle visuel des pièces pliées : robe à rayures (lin rayé vert, manches longues et col montant en satin noir rayé).
+Les rayures suivent le droit-fil sur le corsage et la jupe, et **dans la longueur des deux manches, de façon symétrique** :
+l'image des copies droite et gauche d'une pièce pliée est à l'endroit.
