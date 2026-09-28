@@ -38,7 +38,7 @@ print("ENUM CHECK:", "OK" if not bad else bad, file=sys.stderr)
 needed = set(re.findall(r'Instance\.new\("(\w+)"', src_all)) | set(re.findall(r'creer\(\s*"(\w+)"', src_all))
 needed |= {"Workspace","Players","ReplicatedStorage","DataStoreService","UserInputService","RunService",
            "ContextActionService","ProximityPromptService","Player","Model","Folder","ModuleScript","Script",
-           "LocalScript","Camera","Humanoid","Part","MeshPart","PlayerGui","DataModel","IntValue","RemoteFunction","ServerScriptService","StarterPlayer","StarterPlayerScripts","SpawnLocation"}
+           "LocalScript","Camera","Humanoid","Part","MeshPart","AssetService","PlayerGui","DataModel","IntValue","RemoteFunction","ServerScriptService","StarterPlayer","StarterPlayerScripts","SpawnLocation"}
 def anc(c):
     out = []
     while c:

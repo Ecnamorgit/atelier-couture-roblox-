@@ -660,6 +660,7 @@ function M.initialiser()
 		"ContextActionService",
 		"ProximityPromptService",
 		"ServerScriptService",
+		"AssetService",
 	}) do
 		local s = nouvelleInstance(nom)
 		s.Parent = game
@@ -724,6 +725,141 @@ function M.nouveauJoueur(nom)
 	return joueur
 end
 
+---------------------------------------------------------------------------
+-- API modifiables (EditableImage, EditableMesh) et contenu statique, comme mesuré par le spike :
+-- - CreateEditableImage / CreateEditableMesh renvoient nil quand le budget est atteint ;
+-- - CreateDataModelContentAsync renvoie deux valeurs : Enum.CreateContentResult, puis le Content ;
+-- - un MeshPart créé depuis un EditableMesh (sans conversion) perd sa forme quand celui-ci est détruit.
+---------------------------------------------------------------------------
+M.budget = { images = 64, maillages = 7 }
+M.editables = { images = 0, maillages = 0, maxImages = 0, maxMaillages = 0 }
+
+local CONTENU = { __type = "Content" }
+CONTENU.__index = CONTENU
+local Content = {}
+function Content.fromObject(objet)
+	assert(type(objet) == "table" and rawget(objet, "__editable"), "Content.fromObject attend un objet modifiable")
+	assert(not objet.__detruit, "Content.fromObject : objet détruit")
+	return setmetatable({ objet = objet }, CONTENU)
+end
+Content.none = setmetatable({ vide = true }, CONTENU)
+M.Content = Content
+
+local function compter(genre, delta)
+	local e = M.editables
+	e[genre] += delta
+	if genre == "images" then
+		e.maxImages = math.max(e.maxImages, e.images)
+	else
+		e.maxMaillages = math.max(e.maxMaillages, e.maillages)
+	end
+end
+
+local IMAGE = { __type = "Object" }
+IMAGE.__index = IMAGE
+function IMAGE:WritePixelsBuffer(position, taille, buf)
+	assert(not self.__detruit, "EditableImage détruite")
+	assert(typeDe(position) == "Vector2" and typeDe(taille) == "Vector2", "WritePixelsBuffer : Vector2 attendus")
+	assert(type(buf) == "buffer" and buffer.len(buf) == taille.X * taille.Y * 4, "WritePixelsBuffer : taille du buffer incorrecte")
+	assert(taille.X <= self.Size.X and taille.Y <= self.Size.Y, "WritePixelsBuffer : dépasse l'image")
+	self.pixels = buf
+end
+function IMAGE:Destroy()
+	if not self.__detruit then
+		self.__detruit = true
+		compter("images", -1)
+	end
+end
+
+local MAILLAGE = { __type = "Object" }
+MAILLAGE.__index = MAILLAGE
+local function ajouterA(liste, valeur)
+	table.insert(liste, valeur)
+	return #liste
+end
+function MAILLAGE:AddVertex(p)
+	assert(not self.__detruit and typeDe(p) == "Vector3", "AddVertex : Vector3 attendu")
+	return ajouterA(self.sommets, p)
+end
+function MAILLAGE:AddUV(uv)
+	assert(not self.__detruit and typeDe(uv) == "Vector2", "AddUV : Vector2 attendu")
+	return ajouterA(self.uvs, uv)
+end
+function MAILLAGE:AddNormal(n)
+	assert(not self.__detruit and typeDe(n) == "Vector3", "AddNormal : Vector3 attendu")
+	return ajouterA(self.normales, n)
+end
+function MAILLAGE:AddTriangle(a, b, c)
+	for _, k in ipairs({ a, b, c }) do
+		assert(self.sommets[k], "AddTriangle : sommet inconnu")
+	end
+	return ajouterA(self.faces, { a, b, c })
+end
+function MAILLAGE:SetFaceUVs(f, ids)
+	assert(self.faces[f] and #ids == 3, "SetFaceUVs : face ou identifiants invalides")
+	for _, k in ipairs(ids) do
+		assert(self.uvs[k], "SetFaceUVs : UV inconnu")
+	end
+	self.uvsFaces[f] = ids
+end
+function MAILLAGE:SetFaceNormals(f, ids)
+	assert(self.faces[f] and #ids == 3, "SetFaceNormals : face ou identifiants invalides")
+	for _, k in ipairs(ids) do
+		assert(self.normales[k], "SetFaceNormals : normale inconnue")
+	end
+	self.normalesFaces[f] = ids
+end
+function MAILLAGE:Destroy()
+	if not self.__detruit then
+		self.__detruit = true
+		compter("maillages", -1)
+	end
+end
+
+function methodes.CreateEditableImage(_, options)
+	local taille = options and options.Size
+	assert(typeDe(taille) == "Vector2" and taille.X >= 1 and taille.Y >= 1 and taille.X <= 1024 and taille.Y <= 1024,
+		"CreateEditableImage : Size invalide")
+	if M.editables.images >= M.budget.images then
+		return nil
+	end
+	compter("images", 1)
+	return setmetatable({ __editable = "image", Size = taille }, IMAGE)
+end
+function methodes.CreateEditableMesh(_, _options)
+	if M.editables.maillages >= M.budget.maillages then
+		return nil
+	end
+	compter("maillages", 1)
+	return setmetatable({ __editable = "maillage", sommets = {}, uvs = {}, normales = {}, faces = {}, uvsFaces = {}, normalesFaces = {} }, MAILLAGE)
+end
+function methodes.CreateDataModelContentAsync(_, contenu, _options)
+	assert(typeDe(contenu) == "Content" and contenu.objet and not contenu.objet.__detruit, "CreateDataModelContentAsync : objet invalide")
+	local o = contenu.objet
+	local cliche = { genre = o.__editable }
+	if o.__editable == "image" then
+		cliche.taille, cliche.pixels = o.Size, o.pixels
+	else
+		cliche.sommets, cliche.faces = table.clone(o.sommets), table.clone(o.faces)
+		cliche.uvsFaces, cliche.normalesFaces = table.clone(o.uvsFaces), table.clone(o.normalesFaces)
+	end
+	return Enum.CreateContentResult.Success, setmetatable({ statique = true, cliche = cliche }, CONTENU)
+end
+function methodes.CreateMeshPartAsync(_, contenu, _options)
+	assert(typeDe(contenu) == "Content", "CreateMeshPartAsync : Content attendu")
+	local sommets = contenu.statique and contenu.cliche.sommets or (contenu.objet and contenu.objet.sommets)
+	assert(sommets and #sommets > 0, "CreateMeshPartAsync : maillage vide")
+	local mn, mx = v3(math.huge, math.huge, math.huge), v3(-math.huge, -math.huge, -math.huge)
+	for _, p in ipairs(sommets) do
+		mn = v3(math.min(mn.X, p.X), math.min(mn.Y, p.Y), math.min(mn.Z, p.Z))
+		mx = v3(math.max(mx.X, p.X), math.max(mx.Y, p.Y), math.max(mx.Z, p.Z))
+	end
+	local part = nouvelleInstance("MeshPart")
+	rawget(part, "__props").Size = mx - mn
+	rawset(part, "__contenu", contenu) -- les tests vérifient que la forme vient d'un contenu statique
+	return part
+end
+
 M.env = {
 	Vector3 = Vector3,
 	Vector2 = Vector2,
@@ -736,6 +872,7 @@ M.env = {
 	Instance = { new = nouvelleInstance },
 	typeof = typeDe,
 	task = task,
+	Content = Content,
 }
 
 return M

@@ -4,8 +4,8 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 sim = S + "/sim/"
 def lire(p): return open(p, encoding="utf-8").read()
 def nom(chemin): return os.path.basename(chemin)[: -len(".luau")]
-ENTETE = """local game, workspace, os, Vector3, Vector2, CFrame, Color3, UDim, UDim2, Enum, Random, Instance, typeof, task, require, warn =
-	M.game, M.services and M.services.Workspace, M.os, G.Vector3, G.Vector2, G.CFrame, G.Color3, G.UDim, G.UDim2, G.Enum, G.Random, G.Instance, G.typeof, G.task, requireModule, avertir
+ENTETE = """local game, workspace, os, Vector3, Vector2, CFrame, Color3, UDim, UDim2, Enum, Random, Instance, typeof, task, require, warn, Content =
+	M.game, M.services and M.services.Workspace, M.os, G.Vector3, G.Vector2, G.CFrame, G.Color3, G.UDim, G.UDim2, G.Enum, G.Random, G.Instance, G.typeof, G.task, requireModule, avertir, G.Content
 """
 OUTILS_UNITAIRES = """local U = { compte = 0 }
 function U.verifier(condition, message)
