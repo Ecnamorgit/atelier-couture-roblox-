@@ -43,8 +43,9 @@ rojo build -o AtelierCouture.rbxl
 
 Les noms `Couture`, `CoutureData` et `Rendu3D` doivent être exacts.
 
-Option C, la plus simple : ouvrir directement le fichier `AtelierCouture.rbxl` généré par `rojo build`
-(le sol et le point d'apparition sont inclus).
+Option C, la plus simple : ouvrir directement le fichier `AtelierCouture.rbxl` fourni à la racine
+du dépôt (le sol et le point d'apparition sont inclus). Après une modification du code,
+le régénérer avec `rojo build -o AtelierCouture.rbxl`.
 
 Lance ensuite **Play**. La fenêtre de l'atelier s'ouvre au démarrage. Tu peux la rouvrir de deux façons :
 - le bouton **✂ Atelier** à gauche de l'écran ;
