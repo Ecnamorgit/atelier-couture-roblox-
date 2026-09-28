@@ -141,9 +141,19 @@ local function ajusterEchelle()
 	echelle.Scale = math.min(1, (vue.X - 20) / LARGEUR_FENETRE, (vue.Y - 60) / HAUTEUR_FENETRE)
 end
 ajusterEchelle()
-if workspace.CurrentCamera then
-	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(ajusterEchelle)
+local connexionCamera
+local function suivreCamera()
+	if connexionCamera then
+		connexionCamera:Disconnect()
+		connexionCamera = nil
+	end
+	if workspace.CurrentCamera then
+		connexionCamera = workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(ajusterEchelle)
+	end
+	ajusterEchelle()
 end
+suivreCamera()
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(suivreCamera)
 
 local titre = texte({
 	Font = Enum.Font.GothamBold,
@@ -164,7 +174,8 @@ local argentLabel = texte({
 })
 
 bouton({
-	Text = "✕",
+	Text = "×", -- « ✕ » n'existe pas dans Gotham (carré vide)
+	TextSize = 26,
 	Position = UDim2.new(1, -50, 0, 12),
 	Size = UDim2.fromOffset(36, 36),
 	BackgroundColor3 = COULEURS.secondaire,
@@ -306,9 +317,9 @@ local function apercu3D(position, taille, vetement)
 		BackgroundColor3 = COULEURS.secondaire,
 		Position = position,
 		Size = taille,
-		Ambient = Color3.fromRGB(165, 155, 160),
-		LightColor = Color3.fromRGB(255, 250, 245),
-		LightDirection = Vector3.new(0.4, -1, 0.7),
+		Ambient = Color3.fromRGB(200, 194, 198),
+		LightColor = Color3.fromRGB(255, 252, 248),
+		LightDirection = Vector3.new(-0.3, -0.6, 1),
 		Parent = contenu,
 	})
 	arrondir(vue, 12)
@@ -319,7 +330,18 @@ local function apercu3D(position, taille, vetement)
 
 	local modele = Rendu3D.creerMannequin(CFrame.new())
 	modele.Parent = vue
+
+	-- Dans un ViewportFrame, la texture « Fabric » rend le tissu sombre et granuleux :
+	-- l'aperçu utilise une matière lisse (le mannequin de l'atelier garde le tissu)
+	local function lisser()
+		for _, piece in ipairs(modele:GetDescendants()) do
+			if piece:IsA("BasePart") and piece.Material == Enum.Material.Fabric then
+				piece.Material = Enum.Material.SmoothPlastic
+			end
+		end
+	end
 	Rendu3D.habiller(modele, vetement)
+	lisser()
 
 	local angle = 0
 	local cible = Vector3.new(0, 3.9, 0)
@@ -331,6 +353,7 @@ local function apercu3D(position, taille, vetement)
 
 	return function(nouveau)
 		Rendu3D.habiller(modele, nouveau)
+		lisser()
 	end
 end
 
@@ -372,7 +395,8 @@ etapeCommande = function()
 	arrondir(carte, 12)
 
 	local portrait = creer("TextLabel", {
-		Text = string.sub(commande.client, 1, 1),
+		-- Première lettre (UTF-8 : un nom peut commencer par une lettre accentuée)
+		Text = string.match(commande.client, utf8.charpattern) or "?",
 		Font = Enum.Font.GothamBold,
 		TextSize = 40,
 		TextColor3 = Color3.new(1, 1, 1),
@@ -622,7 +646,7 @@ etapeDecoupe = function()
 	end
 
 	bouton({
-		Text = "⟳ Pivoter (R)",
+		Text = "⇄ Pivoter (R)",
 		BackgroundColor3 = COULEURS.secondaire,
 		TextColor3 = COULEURS.texte,
 		Size = UDim2.new(1, 0, 0, 32),
@@ -1063,14 +1087,24 @@ etapeFinitions = function()
 		Parent = contenu,
 	})
 
-	local function majCout()
+	local function coutChoix()
 		local total = 0
 		for _, d in ipairs(CoutureData.Decorations) do
 			if choix[d.id] then
 				total += d.prix
 			end
 		end
-		coutLabel.Text = ("Coût des finitions : %d $"):format(total)
+		return total
+	end
+
+	local function majCout()
+		coutLabel.Text = ("Coût des finitions : %d $"):format(coutChoix())
+	end
+
+	local function argentDisponible()
+		local stats = joueur:FindFirstChild("leaderstats")
+		local argent = stats and stats:FindFirstChild("Argent")
+		return argent and argent.Value or 0
 	end
 
 	for index, d in ipairs(CoutureData.Decorations) do
@@ -1083,6 +1117,11 @@ etapeFinitions = function()
 			Size = UDim2.new(1, -X, 0, 44),
 			Parent = contenu,
 		}, function()
+			-- Le serveur ignore les finitions qu'on ne peut pas payer : on prévient ici
+			if not choix[d.id] and coutChoix() + d.prix > argentDisponible() then
+				afficherMessage("Pas assez d'argent pour cette finition.", COULEURS.erreur)
+				return
+			end
 			choix[d.id] = not choix[d.id] or nil
 			b.BackgroundColor3 = choix[d.id] and COULEURS.accent or COULEURS.panneau
 			b.TextColor3 = choix[d.id] and Color3.new(1, 1, 1) or COULEURS.texte

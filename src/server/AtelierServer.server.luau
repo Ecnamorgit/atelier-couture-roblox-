@@ -66,7 +66,11 @@ Rendu3D.habiller(mannequin, {
 
 -- Sauvegarde : désactivée sans erreur si les API ne sont pas autorisées (ex. Studio)
 local store
-do
+if game.PlaceId == 0 then
+	-- Lieu jamais publié (fichier ouvert dans Studio) : GetDataStore lèverait une erreur
+	-- qui met le débogueur de Studio en pause à chaque Play
+	warn("[Atelier] Lieu non publié : progression non sauvegardée.")
+else
 	local ok, resultat = pcall(function()
 		return DataStoreService:GetDataStore("AtelierCouture_v1")
 	end)
@@ -78,23 +82,39 @@ do
 end
 
 local etats = {}
+-- Joueurs dont la sauvegarde a été lue sans erreur : seuls ceux-là peuvent être réécrits.
+-- Sinon, une panne passagère du DataStore au chargement ferait écraser la vraie
+-- progression par l'argent de départ au moment de quitter.
+local chargementReussi = {}
+local dejaSauve = {}
 
+-- Retourne (true, données ou nil) si la lecture a abouti, false sinon
 local function charger(player)
 	if not store then
-		return nil
+		return false
 	end
-	local ok, data = pcall(function()
-		return store:GetAsync("joueur_" .. player.UserId)
-	end)
-	if ok and type(data) == "table" then
-		return data
+	for essai = 1, 3 do
+		local ok, data = pcall(function()
+			return store:GetAsync("joueur_" .. player.UserId)
+		end)
+		if ok then
+			return true, type(data) == "table" and data or nil
+		end
+		warn("[Atelier] Lecture de la sauvegarde impossible pour " .. player.Name .. " : " .. tostring(data))
+		-- API désactivées (Studio) : inutile de réessayer
+		if string.find(tostring(data), "API", 1, true) then
+			return false
+		end
+		if essai < 3 then
+			task.wait(essai)
+		end
 	end
-	return nil
+	return false
 end
 
 local function sauvegarder(player)
 	local stats = player:FindFirstChild("leaderstats")
-	if not store or not stats then
+	if not store or not stats or not chargementReussi[player] then
 		return
 	end
 	local data = { argent = stats.Argent.Value, reputation = stats["Réputation"].Value }
@@ -142,7 +162,11 @@ local function onPlayerAdded(player)
 	reputation.Value = 0
 	reputation.Parent = stats
 
-	local data = charger(player)
+	local lu, data = charger(player)
+	if player.Parent ~= Players then
+		return -- parti pendant le chargement
+	end
+	chargementReussi[player] = lu or nil
 	if data then
 		argent.Value = tonumber(data.argent) or ARGENT_DEPART
 		reputation.Value = tonumber(data.reputation) or 0
@@ -156,13 +180,31 @@ for _, player in ipairs(Players:GetPlayers()) do
 end
 
 Players.PlayerRemoving:Connect(function(player)
-	sauvegarder(player)
+	if not dejaSauve[player] then
+		dejaSauve[player] = true
+		sauvegarder(player)
+	end
 	etats[player] = nil
+	chargementReussi[player] = nil
+	dejaSauve[player] = nil
 end)
 
+-- À la fermeture du serveur : sauvegardes en parallèle (le délai de BindToClose est limité)
 game:BindToClose(function()
+	local restants = 0
 	for _, player in ipairs(Players:GetPlayers()) do
-		sauvegarder(player)
+		if not dejaSauve[player] then
+			dejaSauve[player] = true
+			restants += 1
+			task.spawn(function()
+				sauvegarder(player)
+				restants -= 1
+			end)
+		end
+	end
+	local limite = os.clock() + 25
+	while restants > 0 and os.clock() < limite do
+		task.wait(0.1)
 	end
 end)
 
@@ -360,7 +402,7 @@ local function livrer(player, etat, resultat)
 	-- Finitions : payées au moment de la livraison, dans la limite de l'argent disponible
 	local choisies, dejaVues, cout = {}, {}, 0
 	local demandees = type(resultat) == "table" and resultat.decorations
-	if type(demandees) == "table" then
+	if type(demandees) == "table" and #demandees <= 2 * #CoutureData.Decorations then
 		for _, id in ipairs(demandees) do
 			local deco = type(id) == "string" and CoutureData.getDecoration(id)
 			if deco and not dejaVues[id] and argent.Value - cout >= deco.prix then
@@ -385,8 +427,7 @@ local function livrer(player, etat, resultat)
 		couture = noteCouture,
 		finitions = noteFinitions,
 	}
-	local total = notes.couleur * 0.25 + notes.decoupe * 0.3 + notes.couture * 0.3 + notes.finitions * 0.15
-	local etoiles = math.clamp(math.floor(total * 5 + 0.5), 1, 5)
+	local total, etoiles = CoutureData.noteFinale(notes)
 	local paiement = math.floor(vetement.prixBase * total * tissu.qualite + 0.5)
 	if etoiles == 5 then
 		paiement += POURBOIRE

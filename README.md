@@ -17,6 +17,7 @@ déjà faits : ici, on **fabrique** le vêtement.
    et change à chaque finition ajoutée.
 6. **Livraison** : le serveur note couleur (25 %), découpe (30 %), couture (30 %) et finitions (15 %).
    Il en tire des étoiles, la paie (avec un pourboire pour 5 étoiles) et la réputation.
+   Un critère raté (sous 40 %) plafonne la note à 3 étoiles, même si le reste est parfait.
 7. **Vêtement en 3D** : la création est exposée sur le mannequin de l'atelier. Le bouton
    « Porter sur mon avatar » l'enfile sur ton personnage (R15 ou R6), et elle revient après une réapparition.
    Un travail bâclé se voit : pans de travers, longueurs inégales, couleur irrégulière si une pièce
@@ -51,8 +52,10 @@ Lance ensuite **Play**. La fenêtre de l'atelier s'ouvre au démarrage. Tu peux 
 - le bouton **✂ Atelier** à gauche de l'écran ;
 - l'établi en bois, créé automatiquement devant le point d'apparition, avec la touche **E**.
 
-La sauvegarde (argent et réputation) passe par DataStore. Dans Studio, elle ne marche que si
-*Game Settings → Security → Enable Studio Access to API Services* est activé. Sinon, le jeu tourne sans sauvegarder.
+La sauvegarde (argent et réputation) passe par DataStore. Elle ne marche que sur un lieu publié, et dans Studio
+seulement si *Game Settings → Security → Enable Studio Access to API Services* est activé. Sinon, le jeu tourne
+sans sauvegarder. Si la lecture d'une sauvegarde échoue (panne passagère), le serveur ne la réécrit pas
+à la déconnexion, pour ne pas écraser la vraie progression par l'argent de départ.
 
 ## Architecture
 
@@ -79,7 +82,7 @@ La sauvegarde (argent et réputation) passe par DataStore. Dans Studio, elle ne 
 
 ## Tests
 
-`tests/lancer.sh` (Linux, Python 3) exécute le vrai code du jeu dans un Roblox simulé, sans Studio.
+`tests/lancer.sh` (Linux, macOS ou Windows via Git Bash, avec Python 3) exécute le vrai code du jeu dans un Roblox simulé, sans Studio.
 Chaque propriété, événement et méthode est vérifié d'après les définitions officielles de l'API Roblox.
 Le script :
 - joue plusieurs parties complètes en cliquant dans l'interface (commande, tissu, découpe, couture au clavier

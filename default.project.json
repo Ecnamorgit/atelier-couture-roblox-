@@ -22,6 +22,11 @@
         }
       }
     },
+    "TextChatService": {
+      "$properties": {
+        "ChatVersion": "TextChatService"
+      }
+    },
     "ReplicatedStorage": {
       "Couture": {
         "$path": "src/shared"

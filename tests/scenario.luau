@@ -103,7 +103,7 @@ verifier(texteContenant("Bienvenue dans ton atelier") ~= nil, "écran d'accueil"
 verifier(texteContenant("100 $") ~= nil, "l'argent est affiché")
 
 -- Fermer puis rouvrir par l'invite de l'établi
-cliquer("✕")
+cliquer("×")
 verifier(not gui.AtelierCouture.Fenetre.Visible, "la croix ferme la fenêtre")
 M.services.ProximityPromptService.PromptTriggered:Fire(workspace.Etabli.AtelierPrompt, joueur)
 verifier(gui.AtelierCouture.Fenetre.Visible, "l'établi rouvre la fenêtre")
@@ -600,9 +600,23 @@ verifier(not appel("Livrer", {}).ok, "pas de double livraison")
 verifier(not appel("Hacker").ok, "action inconnue refusée")
 verifier(appel("Retirer").ok and appel("Porter").ok, "porter / retirer par le serveur")
 
+-- Barème : un critère raté plafonne à 3 étoiles, même si le reste est parfait
+do
+	local _, e = CoutureData.noteFinale({ couleur = 1, decoupe = 1, couture = 0.13, finitions = 1 })
+	verifier(e <= 3, "couture à 13 % : au plus 3 étoiles (obtenu " .. e .. ")")
+	local total, e5 = CoutureData.noteFinale({ couleur = 1, decoupe = 1, couture = 1, finitions = 1 })
+	verifier(e5 == 5 and proche(total, 1), "tout parfait : 5 étoiles")
+	local _, e1 = CoutureData.noteFinale({ couleur = 0.2, decoupe = 0, couture = 0, finitions = 0.3 })
+	verifier(e1 == 1, "tout raté : 1 étoile")
+end
+
 -- Sauvegarde : en Studio sans API, rien ne plante
 M.services.Players.PlayerRemoving:Fire(joueur)
 M.fermeture()
+-- La lecture a échoué : le serveur ne doit pas écraser la sauvegarde avec l'argent de départ
+for _, a in ipairs(M.avertissements) do
+	verifier(not string.find(a, "Sauvegarde non effectuée", 1, true), "aucune écriture après un chargement raté")
+end
 
 print(("Triche : toutes les tentatives sont bloquées. Avertissements : %d"):format(#M.avertissements))
 for _, a in ipairs(M.avertissements) do

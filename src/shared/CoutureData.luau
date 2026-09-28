@@ -236,6 +236,26 @@ function CoutureData.precisionPiqure(couture, position)
 	return math.max(0, 0.7 - (ecart - demi) * 4)
 end
 
+-- Poids de chaque critère dans la note finale
+CoutureData.POIDS = { couleur = 0.25, decoupe = 0.3, couture = 0.3, finitions = 0.15 }
+-- Sous ce seuil, un critère est « raté » : le vêtement ne peut pas dépasser 3 étoiles
+CoutureData.SEUIL_RATE = 0.4
+
+-- notes = { couleur, decoupe, couture, finitions } entre 0 et 1.
+-- Retourne la note globale (0 à 1) et les étoiles (1 à 5).
+function CoutureData.noteFinale(notes)
+	local total, pire = 0, math.huge
+	for critere, poids in pairs(CoutureData.POIDS) do
+		total += notes[critere] * poids
+		pire = math.min(pire, notes[critere])
+	end
+	local etoiles = math.clamp(math.floor(total * 5 + 0.5), 1, 5)
+	if pire < CoutureData.SEUIL_RATE then
+		etoiles = math.min(etoiles, 3)
+	end
+	return total, etoiles
+end
+
 -- 0 = vêtement impeccable, 1 = vêtement raté (sert au rendu 3D)
 function CoutureData.defautVetement(decoupe, couture)
 	return math.clamp(1 - (decoupe + couture) / 2, 0, 1)
