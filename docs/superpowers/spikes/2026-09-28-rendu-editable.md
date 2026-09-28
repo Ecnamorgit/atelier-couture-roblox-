@@ -88,3 +88,21 @@ voie (maillages de pièces préconstruits, soit l'approche B de la conception).
 4. Tester `nil` après chaque `CreateEditable…`, et afficher la pièce en couleur unie si la création échoue (spec §5, Pannes).
 5. **Mesure sur téléphone à faire par le commanditaire** avant la fin du plan 2 : publier `spike/Spike.rbxl` en privé
    et envoyer la capture du rapport.
+
+## Banc du plan 2 (Studio, PC) — chaîne de rendu complète
+
+Mesuré avec `tests/studio/banc_rendu.luau` (Studio en mode Play, côté client) :
+
+| Mesure | Valeur |
+|---|---|
+| Robe complète, finesse « robe » (8 pièces + 4 accessoires, sans étalement) | 640 ms (622 à 671 ms sur les passages de préparation) |
+| Même robe, finesse « vitrine » | 549 ms (534 ms en préparation) |
+| Pièces créées | 8 |
+
+Vérifications visuelles :
+- Robe complète : pièces jointives, imprimé à l'endroit (jupe en biais à 45°), décolleté en V, col Claudine, manches ballon, nœud, bouton, fleur et dentelle posés ; le mannequin (buste, taille, bassin) ne traverse pas le tissu
+- Essai d'orientation : bande bleue en haut, rouge du côté de la bille verte → **image ni retournée ni en miroir** : oui
+- Robe de vitrine : même robe, maillage et images plus grossiers, rendu correct à distance de vitrine
+
+Écart avec la spec §9 (génération < 200 ms sur PC) : toujours non atteint, pour la raison du spike (appels asynchrones
+de Roblox). La génération étalée (une pièce par image) évite le gel de l'image. **La décision reste au commanditaire.**

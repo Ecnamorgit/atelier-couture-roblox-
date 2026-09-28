@@ -115,6 +115,12 @@ mais pas encore branchées sur le jeu :
 | `Notation` | Droit-fil, couture, qualité, jauges de style, exigences et paie |
 | `Commandes` | Commandes de clientes toujours réalisables |
 | `Pixels` | Motifs de tissu et découpe exacte de l'image d'une pièce |
+| `Recette` | Recette de robe en JSON (attributs, sauvegarde) et validation complète |
+| `Maillage` | Triangulation d'une pièce enroulée autour du corps |
+| `Mannequin` | Mannequin de couturière dimensionné selon les mesures |
+| `Editables` | Seul accès aux API modifiables de Roblox (conversion en contenu statique) |
+| `ConstructeurRobe` | Robe 3D à partir d'une recette : pièces texturées et accessoires |
+| `Vitrines` | Robes exposées construites près du joueur, libérées quand il s'éloigne |
 
 Les tests unitaires sont dans `tests/unitaires/` et tournent avec `bash tests/lancer.sh`, avant le scénario de l'ancien jeu.
 Le test de faisabilité du rendu 3D est dans `spike/`, et ses mesures dans `docs/superpowers/spikes/`.
