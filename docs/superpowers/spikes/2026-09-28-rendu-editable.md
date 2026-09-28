@@ -47,7 +47,10 @@
 
 ## Mesures complémentaires
 
-- Découpe réelle (`Pixels.imagePiece`, trapèze à 45°) dans Studio : voir la tâche 10 du plan 1.
+- Module `Pixels` dans Studio (mode Edit, trapèze 6 × 6 dm à 45°, image 192 × 192) :
+  - dessin du motif (une fois par tissu, mis en cache) : 4,5 ms (uni) à 15,2 ms (vichy) ;
+  - découpe de la pièce : **41,7 à 45,9 ms** dans la version du plan, puis **3,9 à 5,1 ms** après avoir sorti de la boucle
+    le calcul de la boîte, du cosinus et du sinus (tâche 10). Les tests d'exactitude au pixel restent verts.
 
 ## Décisions (règles fixées avant la mesure)
 

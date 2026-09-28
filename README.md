@@ -99,3 +99,22 @@ reste nécessaire pour juger l'apparence.
 - Défilé multijoueur avec votes (à la Dress to Impress), clients récurrents, amélioration de l'atelier,
   sabotage volontaire comme dans Dressmaker.
 - Vêtements en maillage (layered clothing) pour un rendu plus fluide que les panneaux actuels.
+
+## Refonte en cours : le cœur de l'atelier
+
+La refonte inspirée de *Dressmaker* est décrite dans `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`.
+Le plan 1 (`docs/superpowers/plans/2026-09-28-coeur-plan1-fondations.md`) ajoute les fondations, testées
+mais pas encore branchées sur le jeu :
+
+| Module (`src/shared/`) | Rôle |
+|---|---|
+| `Polygone` | Géométrie 2D des pièces de patron |
+| `Catalogue` | Pièces, variantes, tissus, accessoires et constantes |
+| `Patron` | Pièces d'un croquis, trajets de couture, enroulement 3D autour du corps |
+| `Coupon` | Rouleau de découpe : pose, pli, chevauchements, longueur consommée |
+| `Notation` | Droit-fil, couture, qualité, jauges de style, exigences et paie |
+| `Commandes` | Commandes de clientes toujours réalisables |
+| `Pixels` | Motifs de tissu et découpe exacte de l'image d'une pièce |
+
+Les tests unitaires sont dans `tests/unitaires/` et tournent avec `bash tests/lancer.sh`, avant le scénario de l'ancien jeu.
+Le test de faisabilité du rendu 3D est dans `spike/`, et ses mesures dans `docs/superpowers/spikes/`.

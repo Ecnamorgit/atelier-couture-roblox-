@@ -120,12 +120,21 @@ function Pixels.imagePiece(motif, idPiece, placement, copie, plafond)
 	local largeur, hauteur, b = Pixels.taillePiece(idPiece, plafond)
 	local l, h = b.maxX - b.minX, b.maxY - b.minY
 	local buf = buffer.create(largeur * hauteur * 4)
+	-- Même calcul que surRouleau, sorti de la boucle (un appel par pixel coûtait ~15 fois plus cher)
+	local cx, cy = (b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2
+	local a = math.rad(placement.angle or 0)
+	local c, s = math.cos(a), math.sin(a)
+	local miroir = copie == "droite"
 	for j = 0, hauteur - 1 do
-		local y = b.minY + (j + 0.5) / hauteur * h
+		local dy = b.minY + (j + 0.5) / hauteur * h - cy
 		for i = 0, largeur - 1 do
-			local x = b.minX + (i + 0.5) / largeur * l
-			local p = Pixels.surRouleau(idPiece, placement, copie, x, y)
-			local mx, my = Pixels.pixelMotif(p.x, p.y)
+			local dx = b.minX + (i + 0.5) / largeur * l - cx
+			local bx = placement.x + c * dx - s * dy
+			local by = placement.y + s * dx + c * dy
+			if miroir then
+				bx = 2 * Catalogue.PLI - bx
+			end
+			local mx, my = math.floor(bx * PX) % N, math.floor(by * PX) % N
 			buffer.writeu32(buf, (j * largeur + i) * 4, buffer.readu32(motif, (my * N + mx) * 4))
 		end
 	end
