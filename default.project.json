@@ -1,0 +1,43 @@
+{
+  "name": "atelier-couture",
+  "tree": {
+    "$className": "DataModel",
+    "Workspace": {
+      "Baseplate": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Locked": true,
+          "Size": [256, 16, 256],
+          "CFrame": [0, -8, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+          "Color": [0.388, 0.373, 0.384]
+        }
+      },
+      "SpawnLocation": {
+        "$className": "SpawnLocation",
+        "$properties": {
+          "Anchored": true,
+          "Size": [12, 1, 12],
+          "CFrame": [0, 0.5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]
+        }
+      }
+    },
+    "ReplicatedStorage": {
+      "Couture": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "AtelierServer": {
+        "$path": "src/server/AtelierServer.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "AtelierClient": {
+          "$path": "src/client/AtelierClient.client.luau"
+        }
+      }
+    }
+  }
+}
