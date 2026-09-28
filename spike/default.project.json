@@ -1,0 +1,75 @@
+{
+  "name": "spike-rendu-editable",
+  "tree": {
+    "$className": "DataModel",
+    "Workspace": {
+      "Baseplate": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Size": [
+            128,
+            2,
+            128
+          ],
+          "CFrame": [
+            0,
+            -1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1
+          ],
+          "Color": [
+            0.388,
+            0.373,
+            0.384
+          ]
+        }
+      },
+      "SpawnLocation": {
+        "$className": "SpawnLocation",
+        "$properties": {
+          "Anchored": true,
+          "Size": [
+            6,
+            1,
+            6
+          ],
+          "CFrame": [
+            0,
+            0.5,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Spike": {
+          "$path": "Spike.client.luau"
+        }
+      }
+    },
+    "TextChatService": {
+      "$properties": {
+        "ChatVersion": "TextChatService"
+      }
+    }
+  }
+}
