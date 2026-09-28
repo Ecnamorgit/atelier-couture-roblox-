@@ -10,6 +10,7 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local joueur = Players.LocalPlayer
 local dossier = ReplicatedStorage:WaitForChild("Couture")
 local CoutureData = require(dossier:WaitForChild("CoutureData"))
+local Rendu3D = require(dossier:WaitForChild("Rendu3D"))
 local remote = dossier:WaitForChild("CoutureRemote")
 
 local L, H = CoutureData.LARGEUR_COUPON, CoutureData.HAUTEUR_COUPON
@@ -28,8 +29,6 @@ local COULEURS = {
 	erreur = Color3.fromRGB(210, 60, 60),
 	or_ = Color3.fromRGB(240, 180, 40),
 }
-
-local rng = Random.new()
 
 ---------------------------------------------------------------------------
 -- Petits utilitaires d'interface
@@ -236,6 +235,7 @@ local etat = {
 	tissu = nil,
 	placements = {},
 	decoupe = 0,
+	pivotees = 0,
 	coutures = {},
 }
 
@@ -295,8 +295,43 @@ local function demanderCommande()
 	etat.tissu = nil
 	etat.placements = {}
 	etat.decoupe = 0
+	etat.pivotees = 0
 	etat.coutures = {}
 	etapeCommande()
+end
+
+-- Aperçu 3D du vêtement sur un mannequin qui tourne, dans un ViewportFrame
+local function apercu3D(position, taille, vetement)
+	local vue = creer("ViewportFrame", {
+		BackgroundColor3 = COULEURS.secondaire,
+		Position = position,
+		Size = taille,
+		Ambient = Color3.fromRGB(165, 155, 160),
+		LightColor = Color3.fromRGB(255, 250, 245),
+		LightDirection = Vector3.new(0.4, -1, 0.7),
+		Parent = contenu,
+	})
+	arrondir(vue, 12)
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = 40
+	camera.Parent = vue
+	vue.CurrentCamera = camera
+
+	local modele = Rendu3D.creerMannequin(CFrame.new())
+	modele.Parent = vue
+	Rendu3D.habiller(modele, vetement)
+
+	local angle = 0
+	local cible = Vector3.new(0, 3.9, 0)
+	camera.CFrame = CFrame.lookAt(cible + Vector3.new(0, 0.6, -9.5), cible)
+	lier(RunService.RenderStepped:Connect(function(dt)
+		angle += dt * 0.5
+		camera.CFrame = CFrame.lookAt(cible + Vector3.new(math.sin(angle) * 9.5, 0.6, -math.cos(angle) * 9.5), cible)
+	end))
+
+	return function(nouveau)
+		Rendu3D.habiller(modele, nouveau)
+	end
 end
 
 ---------------------------------------------------------------------------
@@ -308,7 +343,8 @@ etapeAccueil = function()
 	texte({
 		Text = "Bienvenue dans ton atelier ! Des clients vont te passer commande : choisis le tissu, "
 			.. "découpe les pièces du patron, couds-les puis livre le vêtement. "
-			.. "Plus le travail est soigné, plus la paie et la réputation montent.",
+			.. "Plus le travail est soigné, plus la paie et la réputation montent. "
+			.. "Chaque création est exposée sur le mannequin de l'atelier, et tu peux la porter !",
 		TextSize = 18,
 		Size = UDim2.new(1, 0, 0, 90),
 		Parent = contenu,
@@ -734,25 +770,39 @@ etapeDecoupe = function()
 	end))
 
 	boutonCouper.Activated:Connect(function()
+		local liste = {}
 		for i = 1, #vetement.pieces do
-			if not etat.placements[i] then
+			local p = etat.placements[i]
+			if not p then
 				afficherMessage("Place toutes les pièces avant de couper.", COULEURS.alerte)
 				return
 			end
+			table.insert(liste, { i = i, x = p.x, y = p.y, pivote = p.pivote })
 		end
-		etapeCouture()
+		local reponse = appeler("CommencerCouture", liste)
+		if not reponse.ok then
+			afficherMessage(reponse.erreur, COULEURS.erreur)
+			return
+		end
+		etat.decoupe = reponse.decoupe
+		etat.pivotees = 0
+		for _, p in pairs(etat.placements) do
+			if p.pivote then
+				etat.pivotees += 1
+			end
+		end
+		etapeCouture(reponse.couture, os.clock())
 	end)
 
 	redessiner()
 end
 
 ---------------------------------------------------------------------------
--- 3. Couture : piquer au bon moment
+-- 3. Couture : piquer au bon moment (arbitré par le serveur)
 ---------------------------------------------------------------------------
 
-etapeCouture = function()
+etapeCouture = function(premiere, reception)
 	nouvelleEtape("3. Couds les pièces")
-	local vetement = etat.vetement
 	local jeton = jetonEtape
 	etat.coutures = {}
 
@@ -789,16 +839,30 @@ etapeCouture = function()
 		BackgroundColor3 = COULEURS.ok,
 		BackgroundTransparency = 0.3,
 		BorderSizePixel = 0,
+		Size = UDim2.fromScale(0, 1),
 		Parent = barre,
 	})
 	local aiguille = creer("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = COULEURS.texte,
 		BorderSizePixel = 0,
+		Position = UDim2.new(0, 0, 0, -8),
 		Size = UDim2.new(0, 4, 1, 16),
 		ZIndex = 3,
 		Parent = barre,
 	})
+	-- Endroit où le serveur a jugé la piqûre
+	local marque = creer("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundColor3 = COULEURS.accent,
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, 0, 0, -12),
+		Size = UDim2.new(0, 8, 1, 24),
+		Visible = false,
+		ZIndex = 4,
+		Parent = barre,
+	})
+	arrondir(marque, 4)
 	local retour = texte({
 		Font = Enum.Font.GothamBold,
 		TextSize = 24,
@@ -821,53 +885,65 @@ etapeCouture = function()
 		Parent = contenu,
 	})
 
-	local indice = 1
-	local t, vitesse = 0, 0.6
-	local zoneDebut, zoneLargeur = 0, 0.2
-	local enPause, fini = false, false
+	local parametres = nil
+	local debutLocal = 0
+	local enPause, fini = true, false
 
-	local function preparer()
-		titreCouture.Text = ("Couture %d / %d : %s"):format(indice, #vetement.coutures, vetement.coutures[indice])
-		zoneLargeur = math.max(0.08, 0.2 - 0.025 * (indice - 1))
-		zoneDebut = rng:NextNumber(0.05, 0.95 - zoneLargeur)
-		zone.Position = UDim2.fromScale(zoneDebut, 0)
-		zone.Size = UDim2.fromScale(zoneLargeur, 1)
-		vitesse = 0.55 + 0.12 * (indice - 1)
-		t = rng:NextNumber(0, 2)
-		retour.Text = ""
-		enPause = false
+	-- Lance une couture reçue du serveur, après la pause éventuelle
+	local function demarrer(p, recu)
+		local delai = p.delai or 0
+		local function lancer()
+			if jeton ~= jetonEtape then
+				return
+			end
+			parametres = p
+			debutLocal = recu + delai
+			titreCouture.Text = ("Couture %d / %d : %s"):format(p.indice, p.total, p.nom)
+			zone.Position = UDim2.fromScale(p.zoneDebut, 0)
+			zone.Size = UDim2.fromScale(p.zoneLargeur, 1)
+			retour.Text = ""
+			marque.Visible = false
+			enPause = false
+		end
+		if delai > 0 then
+			task.delay(delai, lancer)
+		else
+			lancer()
+		end
 	end
 
-	-- Aller-retour de l'aiguille entre 0 et 1
-	local function positionAiguille()
-		local p = t % 2
-		return p > 1 and 2 - p or p
-	end
-
-	lier(RunService.RenderStepped:Connect(function(dt)
-		if enPause or fini then
+	lier(RunService.RenderStepped:Connect(function()
+		if enPause or fini or not parametres then
 			return
 		end
-		t += dt * vitesse
-		aiguille.Position = UDim2.new(positionAiguille(), 0, 0, -8)
+		local position = CoutureData.positionAiguille(parametres, math.max(0, os.clock() - debutLocal))
+		aiguille.Position = UDim2.new(position, 0, 0, -8)
 	end))
 
 	local function piquer()
-		if enPause or fini then
+		if enPause or fini or not parametres then
 			return
 		end
 		enPause = true
-		local centre = zoneDebut + zoneLargeur / 2
-		local demi = zoneLargeur / 2
-		local ecart = math.abs(positionAiguille() - centre)
-		local precision
-		if ecart <= demi then
-			precision = 1 - 0.3 * (ecart / demi)
-		else
-			precision = math.max(0, 0.7 - (ecart - demi) * 4)
-		end
-		table.insert(etat.coutures, precision)
+		local tempsClient = os.clock() - debutLocal
+		local nomCouture = parametres.nom
+		aiguille.Position = UDim2.new(CoutureData.positionAiguille(parametres, math.max(0, tempsClient)), 0, 0, -8)
 
+		local reponse = appeler("Piquer", tempsClient)
+		local recu = os.clock()
+		if jeton ~= jetonEtape then
+			return
+		end
+		if not reponse.ok then
+			afficherMessage(reponse.erreur, COULEURS.erreur)
+			enPause = false
+			return
+		end
+
+		local precision = reponse.precision
+		table.insert(etat.coutures, precision)
+		marque.Position = UDim2.new(reponse.position, 0, 0, -12)
+		marque.Visible = true
 		if precision >= 0.9 then
 			retour.Text, retour.TextColor3 = "Parfait !", COULEURS.ok
 		elseif precision >= 0.7 then
@@ -877,25 +953,19 @@ etapeCouture = function()
 		else
 			retour.Text, retour.TextColor3 = "Raté !", COULEURS.erreur
 		end
-		historique.Text ..= ("✓ %s : %d %%\n"):format(vetement.coutures[indice], math.floor(precision * 100 + 0.5))
+		historique.Text ..= ("✓ %s : %d %%\n"):format(nomCouture, math.floor(precision * 100 + 0.5))
 
-		task.delay(0.9, function()
-			if jeton ~= jetonEtape then
-				return
+		if reponse.terminee then
+			fini = true
+			local somme = 0
+			for _, p in ipairs(etat.coutures) do
+				somme += p
 			end
-			if indice < #vetement.coutures then
-				indice += 1
-				preparer()
-			else
-				fini = true
-				local somme = 0
-				for _, p in ipairs(etat.coutures) do
-					somme += p
-				end
-				titreCouture.Text = ("Couture terminée : %d %%"):format(math.floor(somme / #etat.coutures * 100 + 0.5))
-				boutonPiquer.Text = "Finitions →"
-			end
-		end)
+			titreCouture.Text = ("Couture terminée : %d %%"):format(math.floor(somme / #etat.coutures * 100 + 0.5))
+			boutonPiquer.Text = "Finitions →"
+		else
+			demarrer(reponse.suivante, recu)
+		end
 	end
 
 	boutonPiquer.Activated:Connect(function()
@@ -912,7 +982,7 @@ etapeCouture = function()
 			return Enum.ContextActionResult.Pass
 		end
 		if etatEntree == Enum.UserInputState.Begin then
-			piquer()
+			task.spawn(piquer)
 		end
 		return Enum.ContextActionResult.Sink
 	end, false, Enum.ContextActionPriority.High.Value, Enum.KeyCode.Space)
@@ -920,7 +990,7 @@ etapeCouture = function()
 		ContextActionService:UnbindAction("AtelierPiquer")
 	end)
 
-	preparer()
+	demarrer(premiere, reception)
 end
 
 ---------------------------------------------------------------------------
@@ -929,7 +999,7 @@ end
 
 etapeFinitions = function()
 	nouvelleEtape("4. Finitions")
-	local commande, tissu = etat.commande, etat.tissu
+	local commande, tissu, vetement = etat.commande, etat.tissu, etat.vetement
 	local choix = {}
 
 	local somme = 0
@@ -938,14 +1008,40 @@ etapeFinitions = function()
 	end
 	local noteCouture = #etat.coutures > 0 and somme / #etat.coutures or 0
 
+	local function decorationsChoisies()
+		local liste = {}
+		for _, d in ipairs(CoutureData.Decorations) do
+			if choix[d.id] then
+				table.insert(liste, d.id)
+			end
+		end
+		return liste
+	end
+
+	local function vetementEnCours()
+		return {
+			vetement = vetement.id,
+			tissu = tissu.id,
+			decorations = decorationsChoisies(),
+			decoupe = etat.decoupe,
+			couture = noteCouture,
+			pivotees = etat.pivotees,
+			graine = commande.graine,
+		}
+	end
+
+	local majApercu = apercu3D(UDim2.fromOffset(0, 0), UDim2.fromOffset(300, 410), vetementEnCours())
+
+	local X = 320
 	texte({
-		Text = ("Tissu : %s\nDécoupe : %d %%\nCouture : %d %%"):format(
+		Text = ("Tissu : %s\nDécoupe : %d %%     Couture : %d %%"):format(
 			tissu.nom,
 			math.floor(etat.decoupe * 100 + 0.5),
 			math.floor(noteCouture * 100 + 0.5)
 		),
 		TextYAlignment = Enum.TextYAlignment.Top,
-		Size = UDim2.new(1, 0, 0, 66),
+		Position = UDim2.fromOffset(X, 0),
+		Size = UDim2.new(1, -X, 0, 44),
 		Parent = contenu,
 	})
 
@@ -954,15 +1050,16 @@ etapeFinitions = function()
 		Text = deco and ("Le client souhaite : %s."):format(deco.nom)
 			or "Le client n'a rien demandé de particulier : une petite touche fait toujours plaisir.",
 		Font = Enum.Font.GothamBold,
-		Position = UDim2.fromOffset(0, 74),
-		Size = UDim2.new(1, 0, 0, 24),
+		TextYAlignment = Enum.TextYAlignment.Top,
+		Position = UDim2.fromOffset(X, 50),
+		Size = UDim2.new(1, -X, 0, 44),
 		Parent = contenu,
 	})
 
 	local coutLabel = texte({
 		TextColor3 = COULEURS.texteDoux,
-		Position = UDim2.fromOffset(0, 270),
-		Size = UDim2.new(1, 0, 0, 24),
+		Position = UDim2.fromOffset(X, 318),
+		Size = UDim2.new(1, -X, 0, 24),
 		Parent = contenu,
 	})
 
@@ -977,48 +1074,31 @@ etapeFinitions = function()
 	end
 
 	for index, d in ipairs(CoutureData.Decorations) do
-		local colonne, ligne = (index - 1) % 2, math.floor((index - 1) / 2)
 		local b
 		b = bouton({
 			Text = ("%s  (%d $)"):format(d.nom, d.prix),
 			BackgroundColor3 = COULEURS.panneau,
 			TextColor3 = COULEURS.texte,
-			Position = UDim2.fromOffset(colonne * 300, 110 + ligne * 72),
-			Size = UDim2.fromOffset(284, 60),
+			Position = UDim2.fromOffset(X, 100 + (index - 1) * 52),
+			Size = UDim2.new(1, -X, 0, 44),
 			Parent = contenu,
 		}, function()
 			choix[d.id] = not choix[d.id] or nil
 			b.BackgroundColor3 = choix[d.id] and COULEURS.accent or COULEURS.panneau
 			b.TextColor3 = choix[d.id] and Color3.new(1, 1, 1) or COULEURS.texte
 			majCout()
+			majApercu(vetementEnCours())
 		end)
 	end
 	majCout()
 
 	bouton({
 		Text = "Livrer au client",
-		Position = UDim2.fromOffset(0, 320),
+		Position = UDim2.fromOffset(X, 356),
 		Size = UDim2.fromOffset(240, 50),
 		Parent = contenu,
 	}, function()
-		local placements = {}
-		for i = 1, #etat.vetement.pieces do
-			local p = etat.placements[i]
-			if p then
-				table.insert(placements, { i = i, x = p.x, y = p.y, pivote = p.pivote })
-			end
-		end
-		local decorations = {}
-		for _, d in ipairs(CoutureData.Decorations) do
-			if choix[d.id] then
-				table.insert(decorations, d.id)
-			end
-		end
-		local reponse = appeler("Livrer", {
-			placements = placements,
-			coutures = etat.coutures,
-			decorations = decorations,
-		})
+		local reponse = appeler("Livrer", { decorations = decorationsChoisies() })
 		if not reponse.ok then
 			afficherMessage(reponse.erreur, COULEURS.erreur)
 			return
@@ -1035,12 +1115,14 @@ end
 etapeResultat = function(reponse)
 	nouvelleEtape("Livraison")
 
+	apercu3D(UDim2.new(1, -300, 0, 0), UDim2.fromOffset(300, 410), reponse.vetement)
+
 	texte({
 		Text = string.rep("★", reponse.etoiles) .. string.rep("☆", 5 - reponse.etoiles),
 		Font = Enum.Font.GothamBold,
 		TextSize = 44,
 		TextColor3 = COULEURS.or_,
-		Size = UDim2.new(1, 0, 0, 52),
+		Size = UDim2.fromOffset(460, 52),
 		Parent = contenu,
 	})
 	texte({
@@ -1052,15 +1134,16 @@ etapeResultat = function(reponse)
 		TextSize = 22,
 		TextColor3 = COULEURS.ok,
 		Position = UDim2.fromOffset(0, 58),
-		Size = UDim2.new(1, 0, 0, 28),
+		Size = UDim2.fromOffset(460, 28),
 		Parent = contenu,
 	})
 	texte({
 		Text = "« " .. reponse.commentaire .. " »",
 		Font = Enum.Font.GothamMedium,
 		TextSize = 18,
-		Position = UDim2.fromOffset(0, 96),
-		Size = UDim2.new(1, 0, 0, 48),
+		TextYAlignment = Enum.TextYAlignment.Top,
+		Position = UDim2.fromOffset(0, 94),
+		Size = UDim2.fromOffset(460, 50),
 		Parent = contenu,
 	})
 
@@ -1071,17 +1154,17 @@ etapeResultat = function(reponse)
 		{ "Finitions", reponse.notes.finitions },
 	}
 	for index, ligne in ipairs(lignes) do
-		local y = 150 + (index - 1) * 36
+		local y = 152 + (index - 1) * 36
 		texte({
 			Text = ligne[1],
 			Position = UDim2.fromOffset(0, y),
-			Size = UDim2.fromOffset(110, 26),
+			Size = UDim2.fromOffset(100, 26),
 			Parent = contenu,
 		})
 		local fond = creer("Frame", {
 			BackgroundColor3 = COULEURS.secondaire,
-			Position = UDim2.fromOffset(120, y + 5),
-			Size = UDim2.fromOffset(360, 16),
+			Position = UDim2.fromOffset(104, y + 5),
+			Size = UDim2.fromOffset(280, 16),
 			Parent = contenu,
 		})
 		arrondir(fond, 8)
@@ -1093,18 +1176,45 @@ etapeResultat = function(reponse)
 		arrondir(remplissage, 8)
 		texte({
 			Text = ("%d %%"):format(math.floor(ligne[2] * 100 + 0.5)),
-			Position = UDim2.fromOffset(492, y),
+			Position = UDim2.fromOffset(396, y),
 			Size = UDim2.fromOffset(60, 26),
 			Parent = contenu,
 		})
 	end
 
 	bouton({
+		Text = "👗 Porter sur mon avatar",
+		Position = UDim2.fromOffset(0, 306),
+		Size = UDim2.fromOffset(280, 46),
+		Parent = contenu,
+	}, function()
+		local r = appeler("Porter")
+		if not r.ok then
+			afficherMessage(r.erreur, COULEURS.erreur)
+			return
+		end
+		afficherMessage("Ferme l'atelier pour admirer ta tenue !", COULEURS.ok)
+	end)
+	bouton({
+		Text = "Retirer",
+		BackgroundColor3 = COULEURS.secondaire,
+		TextColor3 = COULEURS.texte,
+		Position = UDim2.fromOffset(292, 306),
+		Size = UDim2.fromOffset(120, 46),
+		Parent = contenu,
+	}, function()
+		local r = appeler("Retirer")
+		if not r.ok then
+			afficherMessage(r.erreur, COULEURS.erreur)
+		end
+	end)
+	bouton({
 		Text = "Client suivant",
-		Position = UDim2.fromOffset(0, 310),
-		Size = UDim2.fromOffset(240, 50),
+		Position = UDim2.fromOffset(0, 364),
+		Size = UDim2.fromOffset(240, 46),
 		Parent = contenu,
 	}, demanderCommande)
 end
 
+fenetre.Visible = true
 etapeAccueil()

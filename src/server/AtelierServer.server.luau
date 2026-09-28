@@ -1,20 +1,68 @@
--- AtelierServer : commandes, argent, validation de la découpe et notation des vêtements livrés.
+-- AtelierServer : commandes, argent, validation de la découpe, mini-jeu de couture
+-- arbitré par le serveur, notation, mannequin de l'atelier et vêtement porté par l'avatar.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
 
 local dossier = ReplicatedStorage:WaitForChild("Couture")
 local CoutureData = require(dossier:WaitForChild("CoutureData"))
+local Rendu3D = require(dossier:WaitForChild("Rendu3D"))
 
 local ARGENT_DEPART = 100
 local POURBOIRE = 15
 local DELAI_ENTRE_APPELS = 0.2
+-- Marge acceptée entre le temps annoncé par le client et le temps mesuré par le serveur
+local TOLERANCE_PIQURE = 0.08
 
 local rng = Random.new()
 
 local remote = Instance.new("RemoteFunction")
 remote.Name = "CoutureRemote"
 remote.Parent = dossier
+
+---------------------------------------------------------------------------
+-- Atelier : établi et mannequin
+---------------------------------------------------------------------------
+
+local etabli = workspace:FindFirstChild("Etabli")
+if not etabli then
+	etabli = Instance.new("Part")
+	etabli.Name = "Etabli"
+	etabli.Anchored = true
+	etabli.Size = Vector3.new(8, 3, 4)
+	etabli.CFrame = CFrame.new(0, 1.5, -14)
+	etabli.Color = Color3.fromRGB(176, 124, 84)
+	etabli.Material = Enum.Material.Wood
+	etabli.Parent = workspace
+end
+if etabli:IsA("BasePart") and not etabli:FindFirstChild("AtelierPrompt") then
+	local invite = Instance.new("ProximityPrompt")
+	invite.Name = "AtelierPrompt"
+	invite.ActionText = "Ouvrir l'atelier"
+	invite.ObjectText = "Établi de couture"
+	invite.HoldDuration = 0
+	invite.MaxActivationDistance = 12
+	invite.RequiresLineOfSight = false
+	invite.Parent = etabli
+end
+
+-- Le mannequin présente la dernière création livrée (une robe d'exemple au départ)
+local mannequin = Rendu3D.creerMannequin(CFrame.new(7, 0, -14) * CFrame.Angles(0, math.pi, 0))
+mannequin.Name = "MannequinAtelier"
+mannequin.Parent = workspace
+Rendu3D.habiller(mannequin, {
+	vetement = "robe",
+	tissu = "soie_rose",
+	decorations = { "dentelle", "ruban" },
+	decoupe = 1,
+	couture = 1,
+	pivotees = 0,
+	graine = 7,
+})
+
+---------------------------------------------------------------------------
+-- Joueurs et sauvegarde
+---------------------------------------------------------------------------
 
 -- Sauvegarde : désactivée sans erreur si les API ne sont pas autorisées (ex. Studio)
 local store
@@ -54,12 +102,34 @@ local function sauvegarder(player)
 		store:SetAsync("joueur_" .. player.UserId, data)
 	end)
 	if not ok then
-		warn("[Atelier] Sauvegarde échouée pour " .. player.Name .. " : " .. tostring(err))
+		warn("[Atelier] Sauvegarde non effectuée pour " .. player.Name .. " : " .. tostring(err))
+	end
+end
+
+-- Remet le vêtement porté après une réapparition (une fois l'apparence et la taille appliquées)
+local function rhabiller(player)
+	local etat = etats[player]
+	local personnage = player.Character
+	if etat and etat.porte and etat.dernierVetement and personnage then
+		Rendu3D.habiller(personnage, etat.dernierVetement)
 	end
 end
 
 local function onPlayerAdded(player)
-	etats[player] = { commande = nil, tissu = nil, dernierAppel = 0 }
+	etats[player] = {
+		commande = nil,
+		tissu = nil,
+		decoupe = nil,
+		pivotees = 0,
+		couture = nil,
+		dernierVetement = nil,
+		porte = false,
+		dernierAppel = -math.huge,
+	}
+
+	player.CharacterAppearanceLoaded:Connect(function()
+		rhabiller(player)
+	end)
 
 	local stats = Instance.new("Folder")
 	stats.Name = "leaderstats"
@@ -96,6 +166,10 @@ game:BindToClose(function()
 	end
 end)
 
+---------------------------------------------------------------------------
+-- Actions du joueur
+---------------------------------------------------------------------------
+
 local function choisir(liste)
 	return liste[rng:NextInteger(1, #liste)]
 end
@@ -106,10 +180,14 @@ local function nouvelleCommande(player, etat)
 		vetement = choisir(CoutureData.Vetements).id,
 		teinte = choisir(CoutureData.Teintes).id,
 		deco = rng:NextNumber() < 0.6 and choisir(CoutureData.Decorations).id or nil,
+		graine = rng:NextInteger(1, 1000000),
 	}
 	commande.texte = CoutureData.phraseCommande(commande)
 	etat.commande = commande
 	etat.tissu = nil
+	etat.decoupe = nil
+	etat.pivotees = 0
+	etat.couture = nil
 
 	-- Filet de sécurité : toujours de quoi acheter au moins un tissu
 	local argent = player.leaderstats.Argent
@@ -158,6 +236,83 @@ local function lirePlacements(liste, vetement)
 	return placements
 end
 
+-- Prépare la couture suivante ; elle commence après « delai » secondes
+local function preparerCouture(etat, vetement, indice, delai)
+	local parametres = CoutureData.parametresCouture(vetement, indice, rng)
+	etat.couture.parametres = parametres
+	etat.couture.debut = os.clock() + delai
+	local envoi = table.clone(parametres)
+	envoi.delai = delai
+	return envoi
+end
+
+-- La découpe est validée ici, à partir des positions des pièces : le serveur ne fait
+-- pas confiance à une note envoyée par le client.
+local function commencerCouture(etat, liste)
+	if not etat.commande or not etat.tissu then
+		return { ok = false, erreur = "Aucune commande en cours." }
+	end
+	if etat.couture then
+		return { ok = false, erreur = "La couture a déjà commencé." }
+	end
+	local vetement = CoutureData.getVetement(etat.commande.vetement)
+	local note, details = CoutureData.evaluerDecoupe(vetement, lirePlacements(liste, vetement))
+	for _, detail in ipairs(details) do
+		if not detail.placee then
+			return { ok = false, erreur = "Place toutes les pièces avant de couper." }
+		end
+	end
+	local pivotees = 0
+	for _, detail in ipairs(details) do
+		if detail.pivote then
+			pivotees += 1
+		end
+	end
+	etat.decoupe = note
+	etat.pivotees = pivotees
+	etat.couture = { precisions = {} }
+	return { ok = true, decoupe = note, couture = preparerCouture(etat, vetement, 1, 0) }
+end
+
+-- Le moment de la piqûre est mesuré par le serveur. Le temps annoncé par le client
+-- n'est retenu qu'à TOLERANCE près (pour absorber la variation du ping) : impossible
+-- d'annoncer une précision, ni de choisir librement l'instant.
+local function piquer(player, etat, tempsClient)
+	local couture = etat.couture
+	if not couture or not couture.parametres then
+		return { ok = false, erreur = "Aucune couture en cours." }
+	end
+	local ping = 0
+	pcall(function()
+		ping = math.clamp(player:GetNetworkPing(), 0, 0.5)
+	end)
+	local tempsServeur = os.clock() - couture.debut - 1.5 * ping
+	if tempsServeur < -0.15 then
+		return { ok = false, erreur = "L'aiguille n'est pas encore prête." }
+	end
+	local tolerance = TOLERANCE_PIQURE + 0.5 * ping
+	local temps = tempsServeur
+	if type(tempsClient) == "number" and tempsClient == tempsClient then
+		temps = math.clamp(tempsClient, tempsServeur - tolerance, tempsServeur + tolerance)
+	end
+	temps = math.max(temps, 0)
+
+	local parametres = couture.parametres
+	local position = CoutureData.positionAiguille(parametres, temps)
+	local precision = CoutureData.precisionPiqure(parametres, position)
+	table.insert(couture.precisions, precision)
+
+	local reponse = { ok = true, precision = precision, position = position }
+	if parametres.indice < parametres.total then
+		local vetement = CoutureData.getVetement(etat.commande.vetement)
+		reponse.suivante = preparerCouture(etat, vetement, parametres.indice + 1, CoutureData.PAUSE_ENTRE_COUTURES)
+	else
+		couture.parametres = nil
+		reponse.terminee = true
+	end
+	return reponse
+end
+
 local REMARQUES = {
 	couleur = "Ce n'est pas vraiment la couleur que j'avais demandée…",
 	decoupe = "Les pièces sont mal coupées, ça tombe de travers.",
@@ -183,39 +338,30 @@ end
 
 local function livrer(player, etat, resultat)
 	local commande = etat.commande
-	if not commande then
+	if not commande or not etat.tissu then
 		return { ok = false, erreur = "Aucune commande en cours." }
 	end
-	if not etat.tissu then
-		return { ok = false, erreur = "Achète d'abord un tissu." }
-	end
-	if type(resultat) ~= "table" then
-		return { ok = false, erreur = "Données de livraison invalides." }
+	local vetement = CoutureData.getVetement(commande.vetement)
+	local couture = etat.couture
+	if not couture or #couture.precisions < #vetement.coutures then
+		return { ok = false, erreur = "Termine d'abord toutes les coutures." }
 	end
 
-	local vetement = CoutureData.getVetement(commande.vetement)
 	local tissu = CoutureData.getTissu(etat.tissu)
 	local argent = player.leaderstats.Argent
 	local reputation = player.leaderstats["Réputation"]
 
-	-- La découpe est recalculée ici : le serveur ne fait pas confiance à la note du client
-	local noteDecoupe = CoutureData.evaluerDecoupe(vetement, lirePlacements(resultat.placements, vetement))
-
-	-- Le mini-jeu de couture se joue côté client : on borne simplement chaque précision
-	local coutures = type(resultat.coutures) == "table" and resultat.coutures or {}
 	local somme = 0
-	for i = 1, #vetement.coutures do
-		local precision = coutures[i]
-		if type(precision) == "number" and precision == precision then
-			somme += math.clamp(precision, 0, 1)
-		end
+	for _, precision in ipairs(couture.precisions) do
+		somme += precision
 	end
-	local noteCouture = somme / #vetement.coutures
+	local noteCouture = somme / #couture.precisions
 
 	-- Finitions : payées au moment de la livraison, dans la limite de l'argent disponible
 	local choisies, dejaVues, cout = {}, {}, 0
-	if type(resultat.decorations) == "table" then
-		for _, id in ipairs(resultat.decorations) do
+	local demandees = type(resultat) == "table" and resultat.decorations
+	if type(demandees) == "table" then
+		for _, id in ipairs(demandees) do
 			local deco = type(id) == "string" and CoutureData.getDecoration(id)
 			if deco and not dejaVues[id] and argent.Value - cout >= deco.prix then
 				dejaVues[id] = true
@@ -235,7 +381,7 @@ local function livrer(player, etat, resultat)
 
 	local notes = {
 		couleur = tissu.teinte == commande.teinte and 1 or 0.2,
-		decoupe = noteDecoupe,
+		decoupe = etat.decoupe,
 		couture = noteCouture,
 		finitions = noteFinitions,
 	}
@@ -248,8 +394,24 @@ local function livrer(player, etat, resultat)
 
 	argent.Value += paiement
 	reputation.Value += etoiles
+
+	-- Le vêtement livré est exposé sur le mannequin de l'atelier
+	local vetementFini = {
+		vetement = vetement.id,
+		tissu = tissu.id,
+		decorations = choisies,
+		decoupe = notes.decoupe,
+		couture = noteCouture,
+		pivotees = etat.pivotees,
+		graine = commande.graine,
+	}
+	etat.dernierVetement = vetementFini
+	Rendu3D.habiller(mannequin, vetementFini)
+
 	etat.commande = nil
 	etat.tissu = nil
+	etat.decoupe = nil
+	etat.couture = nil
 
 	return {
 		ok = true,
@@ -258,7 +420,28 @@ local function livrer(player, etat, resultat)
 		coutFinitions = cout,
 		notes = notes,
 		commentaire = commentaire(etoiles, notes),
+		vetement = vetementFini,
 	}
+end
+
+local function porter(player, etat)
+	if not etat.dernierVetement then
+		return { ok = false, erreur = "Livre d'abord un vêtement." }
+	end
+	local personnage = player.Character
+	if not personnage or not Rendu3D.habiller(personnage, etat.dernierVetement) then
+		return { ok = false, erreur = "Ton avatar n'est pas encore prêt, réessaie." }
+	end
+	etat.porte = true
+	return { ok = true }
+end
+
+local function retirer(player, etat)
+	etat.porte = false
+	if player.Character then
+		Rendu3D.deshabiller(player.Character)
+	end
+	return { ok = true }
 end
 
 remote.OnServerInvoke = function(player, action, argument)
@@ -266,6 +449,12 @@ remote.OnServerInvoke = function(player, action, argument)
 	if not etat or not player:FindFirstChild("leaderstats") then
 		return { ok = false, erreur = "L'atelier se prépare, réessaie dans un instant." }
 	end
+
+	-- La piqûre a sa propre protection (pause obligatoire entre deux coutures)
+	if action == "Piquer" then
+		return piquer(player, etat, argument)
+	end
+
 	local maintenant = os.clock()
 	if maintenant - etat.dernierAppel < DELAI_ENTRE_APPELS then
 		return { ok = false, erreur = "Doucement !" }
@@ -276,31 +465,14 @@ remote.OnServerInvoke = function(player, action, argument)
 		return nouvelleCommande(player, etat)
 	elseif action == "AcheterTissu" then
 		return acheterTissu(player, etat, argument)
+	elseif action == "CommencerCouture" then
+		return commencerCouture(etat, argument)
 	elseif action == "Livrer" then
 		return livrer(player, etat, argument)
+	elseif action == "Porter" then
+		return porter(player, etat)
+	elseif action == "Retirer" then
+		return retirer(player, etat)
 	end
 	return { ok = false, erreur = "Action inconnue." }
-end
-
--- Établi avec une invite de proximité pour ouvrir l'atelier (créé s'il n'existe pas déjà)
-local etabli = workspace:FindFirstChild("Etabli")
-if not etabli then
-	etabli = Instance.new("Part")
-	etabli.Name = "Etabli"
-	etabli.Anchored = true
-	etabli.Size = Vector3.new(8, 3, 4)
-	etabli.Position = Vector3.new(0, 1.5, -14)
-	etabli.Color = Color3.fromRGB(176, 124, 84)
-	etabli.Material = Enum.Material.Wood
-	etabli.Parent = workspace
-end
-if etabli:IsA("BasePart") and not etabli:FindFirstChild("AtelierPrompt") then
-	local invite = Instance.new("ProximityPrompt")
-	invite.Name = "AtelierPrompt"
-	invite.ActionText = "Ouvrir l'atelier"
-	invite.ObjectText = "Établi de couture"
-	invite.HoldDuration = 0
-	invite.MaxActivationDistance = 12
-	invite.RequiresLineOfSight = false
-	invite.Parent = etabli
 end

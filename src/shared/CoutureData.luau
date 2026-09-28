@@ -5,6 +5,9 @@ local CoutureData = {}
 CoutureData.LARGEUR_COUPON = 12
 CoutureData.HAUTEUR_COUPON = 10
 
+-- Pause (secondes) entre deux coutures, le temps d'afficher le résultat de la piqûre
+CoutureData.PAUSE_ENTRE_COUTURES = 0.9
+
 CoutureData.Teintes = {
 	{ id = "rose", masculin = "rose", feminin = "rose" },
 	{ id = "bleu", masculin = "bleu", feminin = "bleue" },
@@ -14,14 +17,14 @@ CoutureData.Teintes = {
 	{ id = "blanc", masculin = "blanc", feminin = "blanche" },
 }
 
--- qualite : multiplicateur appliqué à la paie du client
+-- qualite : multiplicateur appliqué à la paie du client ; brillant : rendu satiné en 3D
 CoutureData.Tissus = {
 	{ id = "coton_rose", nom = "Coton rose", teinte = "rose", couleur = Color3.fromRGB(240, 164, 192), prix = 12, qualite = 1 },
-	{ id = "soie_rose", nom = "Soie framboise", teinte = "rose", couleur = Color3.fromRGB(214, 84, 146), prix = 28, qualite = 1.3 },
+	{ id = "soie_rose", nom = "Soie framboise", teinte = "rose", couleur = Color3.fromRGB(214, 84, 146), prix = 28, qualite = 1.3, brillant = true },
 	{ id = "lin_bleu", nom = "Lin bleu ciel", teinte = "bleu", couleur = Color3.fromRGB(128, 166, 216), prix = 14, qualite = 1.05 },
 	{ id = "velours_bleu", nom = "Velours bleu nuit", teinte = "bleu", couleur = Color3.fromRGB(46, 62, 130), prix = 26, qualite = 1.25 },
 	{ id = "coton_vert", nom = "Coton sauge", teinte = "vert", couleur = Color3.fromRGB(150, 186, 140), prix = 12, qualite = 1 },
-	{ id = "satin_vert", nom = "Satin émeraude", teinte = "vert", couleur = Color3.fromRGB(34, 130, 90), prix = 27, qualite = 1.25 },
+	{ id = "satin_vert", nom = "Satin émeraude", teinte = "vert", couleur = Color3.fromRGB(34, 130, 90), prix = 27, qualite = 1.25, brillant = true },
 	{ id = "coton_jaune", nom = "Coton moutarde", teinte = "jaune", couleur = Color3.fromRGB(230, 190, 80), prix = 12, qualite = 1 },
 	{ id = "lin_noir", nom = "Lin noir", teinte = "noir", couleur = Color3.fromRGB(40, 38, 44), prix = 15, qualite = 1.05 },
 	{ id = "coton_blanc", nom = "Coton blanc", teinte = "blanc", couleur = Color3.fromRGB(244, 240, 232), prix = 10, qualite = 1 },
@@ -201,6 +204,41 @@ function CoutureData.evaluerDecoupe(vetement, placements)
 	end
 
 	return total / #vetement.pieces, details
+end
+
+-- Mini-jeu de couture : le serveur tire les paramètres, le client les affiche,
+-- et la position de l'aiguille ne dépend que du temps écoulé depuis le début de la couture.
+function CoutureData.parametresCouture(vetement, indice, rng)
+	local largeur = math.max(0.08, 0.2 - 0.025 * (indice - 1))
+	return {
+		indice = indice,
+		total = #vetement.coutures,
+		nom = vetement.coutures[indice],
+		zoneLargeur = largeur,
+		zoneDebut = rng:NextNumber(0.05, 0.95 - largeur),
+		vitesse = 0.55 + 0.12 * (indice - 1),
+		phase = rng:NextNumber(0, 2),
+	}
+end
+
+-- Aller-retour de l'aiguille entre 0 et 1
+function CoutureData.positionAiguille(couture, temps)
+	local p = (couture.phase + temps * couture.vitesse) % 2
+	return p > 1 and 2 - p or p
+end
+
+function CoutureData.precisionPiqure(couture, position)
+	local demi = couture.zoneLargeur / 2
+	local ecart = math.abs(position - (couture.zoneDebut + demi))
+	if ecart <= demi then
+		return 1 - 0.3 * (ecart / demi)
+	end
+	return math.max(0, 0.7 - (ecart - demi) * 4)
+end
+
+-- 0 = vêtement impeccable, 1 = vêtement raté (sert au rendu 3D)
+function CoutureData.defautVetement(decoupe, couture)
+	return math.clamp(1 - (decoupe + couture) / 2, 0, 1)
 end
 
 return CoutureData
