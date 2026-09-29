@@ -7,7 +7,7 @@ et le tissu découpé se voit tel quel sur la robe en 3D.
 Le jeu est en cours de refonte, sous-projet par sous-projet
 (spec : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`, plans : `docs/superpowers/plans/`).
 
-## État actuel (plan 3a)
+## État actuel (plan 3b)
 
 Jouable dans Studio, en solo, sans sauvegarde (l'état de la partie vit dans le client) :
 
@@ -18,8 +18,14 @@ Jouable dans Studio, en solo, sans sauvegarde (l'état de la partie vit dans le 
 3. **Achat** : métrage conseillé par tissu, quantité réglable, coût au mètre.
 4. **Table de découpe** : les pièces du patron se glissent (souris ou doigt) et se tournent sur le rouleau.
    Droit-fil aimanté, pièces pliées coupées en double au pli, chevauchements refusés, place proposée.
-5. La suite (épinglage, couture, décorations, photo et livraison) arrive au plan 3b ; serveur, boutiques
-   et sauvegarde au plan 4.
+5. **Épinglage** : le mannequin prend les mesures de la cliente ; chaque pièce touchée s'y épingle,
+   dans le tissu exactement tel qu'il a été découpé.
+6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé
+   pendant que le tissu tire ; vitesse tortue, normale ou lapin, découd-vite, assistance (note plafonnée à 85 %).
+   La qualité de la robe (droit-fil × couture, pondérée par la surface) s'affiche à la fin.
+7. La suite (décorations, photo et livraison) arrive au plan 3c ; serveur, boutiques et sauvegarde au plan 4.
+
+« Recommencer la robe » demande une confirmation (deuxième appui) : le tissu déjà coupé est perdu.
 
 ## Installation
 
@@ -45,9 +51,16 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Pixels` | Motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron |
   | `Recette` | Recette d'une robe en JSON et validation complète (filtre du serveur au plan 4) |
   | `Maillage`, `Mannequin`, `Editables`, `ConstructeurRobe`, `Vitrines` | Robe 3D, mannequin, vitrines |
-  | `EtatAtelier` | État de la commande et règles de chaque étape (repris par le serveur au plan 4) |
+  | `EtatAtelier` | État de la commande et règles de chaque étape, relevé de couture vraisemblable, recette de la robe (repris par le serveur au plan 4) |
 - `src/client/Atelier/` (LocalScript `Atelier` et ses modules) : l'interface.
-  `Session` fait le lien avec l'état ; `TableDecoupe` est la logique pure de la table ; un module `Ecran…` par étape.
+  `Session` fait le lien avec l'état ; `TableDecoupe` et `MachineCoudre` sont la logique pure de la table
+  de découpe et de la machine à coudre ; `Scene` tient le mannequin, la robe épinglée et la caméra du poste ;
+  un module `Ecran…` par étape.
+
+**Limite assumée (couture)** : le relevé de l'aiguille vient du client. `EtatAtelier` vérifie qu'il est
+vraisemblable (une mesure tous les 0,1 dm de trajet à 2 près, écarts d'au plus 2 dm, durée compatible avec
+la vitesse maximale), mais un tricheur peut s'attribuer une bonne couture. L'enjeu se limite à la qualité
+de la robe, donc à un peu d'argent.
 
 ## Tests
 

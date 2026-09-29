@@ -249,6 +249,7 @@ local Workspace = M.services.Workspace
 local camera = Workspace.CurrentCamera
 verifier(titre() == "4. Épinglage", "après la dernière coupe : l'épinglage")
 verifier(fenetre.AnchorPoint.X == 1, "la fenêtre se range à droite : le mannequin est visible")
+verifier(M.coreGui[Enum.CoreGuiType.PlayerList] == false, "la liste des joueurs de Roblox ne cache pas le haut du panneau")
 local scene = Workspace:FindFirstChild("AtelierLocal")
 verifier(scene ~= nil and scene:FindFirstChild("Mannequin") ~= nil, "le mannequin de la cliente est dans l'atelier")
 verifier(camera.CameraType == Enum.CameraType.Scriptable, "caméra fixe sur le mannequin")

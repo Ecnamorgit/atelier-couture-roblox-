@@ -544,6 +544,9 @@ end
 function methodes.GetService(_, nom)
 	return M.services[nom] or error("Service non simulé : " .. nom)
 end
+function methodes.SetCoreGuiEnabled(_, genre, actif)
+	M.coreGui[genre] = actif
+end
 function methodes.BindToClose(_, f)
 	M.fermeture = f
 end
@@ -658,6 +661,7 @@ M.os = setmetatable({
 function M.initialiser()
 	M.joueurs = {}
 	M.actions = {}
+	M.coreGui = {} -- [Enum.CoreGuiType] = activé (StarterGui:SetCoreGuiEnabled)
 	local game = nouvelleInstance("DataModel")
 	rawget(game, "__props").Name = "Game"
 	M.game = game
@@ -673,6 +677,7 @@ function M.initialiser()
 		"ProximityPromptService",
 		"ServerScriptService",
 		"AssetService",
+		"StarterGui",
 	}) do
 		local s = nouvelleInstance(nom)
 		s.Parent = game

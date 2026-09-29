@@ -29,6 +29,9 @@ local EN_PANNEAU = { epinglage = true, decorations = true }
 
 local C = UiKit.COULEURS
 local joueur = Players.LocalPlayer
+
+-- La liste des joueurs de Roblox (en haut à droite) cacherait le haut du panneau de l'atelier
+game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 local session = Session.nouvelle()
 local scene = Scene.nouvelle()
 
