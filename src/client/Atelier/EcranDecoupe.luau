@@ -118,6 +118,7 @@ return function(ctx)
 		statut.Text = e.valide and "Place libre : tu peux couper." or e.erreur
 		statut.TextColor3 = e.valide and C.ok or C.erreur
 		couper.BackgroundColor3 = e.valide and C.accent or C.secondaire
+		couper.TextColor3 = e.valide and Color3.new(1, 1, 1) or C.texteDoux
 		couper.AutoButtonColor = e.valide
 	end
 

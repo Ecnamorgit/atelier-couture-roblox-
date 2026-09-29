@@ -1,31 +1,27 @@
-# Atelier de couture — prototype Roblox
+# Atelier de couture — jeu Roblox
 
-Prototype jouable d'un jeu de couture sur Roblox, inspiré de *Dressmaker* (Cozy Lives / Free Lives, 2026).
-Sur Roblox, les jeux de mode existants (Dress to Impress, Fashion Famous…) font assembler des vêtements
-déjà faits : ici, on **fabrique** le vêtement.
+Jeu de couture sur Roblox, inspiré des mécaniques de *Dressmaker* (Cozy Lives / Free Lives, 2026).
+On ne choisit pas un vêtement tout fait : on **dessine**, **coupe**, **coud** et **décore** la robe,
+et le tissu découpé se voit tel quel sur la robe en 3D.
 
-## Boucle de jeu
+Le jeu est en cours de refonte, sous-projet par sous-projet
+(spec : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`, plans : `docs/superpowers/plans/`).
 
-1. **Commande** : un client demande un vêtement (jupe, haut ou robe), une couleur et parfois une finition.
-2. **Tissu** : on achète un coupon. Les tissus nobles (soie, velours, satin) coûtent plus cher mais augmentent la paie.
-3. **Découpe** : on place les pièces du patron sur le coupon (grille de 12 × 10 cases).
-   - Des pièces qui se chevauchent sont mal coupées.
-   - Une pièce pivotée ne suit plus le droit-fil : le vêtement tombe mal (note divisée par 2).
-4. **Couture** : pour chaque couture, on appuie sur « Piquer ! » ou sur Espace quand l'aiguille passe dans la zone verte.
-   La zone rétrécit et l'aiguille accélère au fil des coutures.
-5. **Finitions** : dentelle, boutons, ruban, broderie (payantes). Un aperçu 3D du vêtement tourne à côté
-   et change à chaque finition ajoutée.
-6. **Livraison** : le serveur note couleur (25 %), découpe (30 %), couture (30 %) et finitions (15 %).
-   Il en tire des étoiles, la paie (avec un pourboire pour 5 étoiles) et la réputation.
-   Un critère raté (sous 40 %) plafonne la note à 3 étoiles, même si le reste est parfait.
-7. **Vêtement en 3D** : la création est exposée sur le mannequin de l'atelier. Le bouton
-   « Porter sur mon avatar » l'enfile sur ton personnage (R15 ou R6), et elle revient après une réapparition.
-   Un travail bâclé se voit : pans de travers, longueurs inégales, couleur irrégulière si une pièce
-   a été coupée hors du droit-fil.
+## État actuel (plan 3a)
+
+Jouable dans Studio, en solo, sans sauvegarde (l'état de la partie vit dans le client) :
+
+1. **Commande** : la clochette fait entrer une cliente (taille S, M ou L) avec 1 à 3 exigences de style,
+   de couleur, de qualité ou d'accessoire.
+2. **Carnet de croquis** : corsage, manches, col et jupe au choix ; un tissu par pièce (24 tissus, filtre par style).
+   Les jauges de style et l'état des exigences se mettent à jour en direct.
+3. **Achat** : métrage conseillé par tissu, quantité réglable, coût au mètre.
+4. **Table de découpe** : les pièces du patron se glissent (souris ou doigt) et se tournent sur le rouleau.
+   Droit-fil aimanté, pièces pliées coupées en double au pli, chevauchements refusés, place proposée.
+5. La suite (épinglage, couture, décorations, photo et livraison) arrive au plan 3b ; serveur, boutiques
+   et sauvegarde au plan 4.
 
 ## Installation
-
-### Option A — Rojo (recommandé)
 
 ```bash
 rojo serve        # dans ce dossier, puis « Connect » depuis le plugin Rojo dans Roblox Studio
@@ -33,94 +29,32 @@ rojo serve        # dans ce dossier, puis « Connect » depuis le plugin Rojo da
 rojo build -o AtelierCouture.rbxl
 ```
 
-### Option B — copier-coller dans Roblox Studio
-
-| Fichier | Où le créer dans Studio | Type |
-|---|---|---|
-| `src/shared/CoutureData.luau` | `ReplicatedStorage` → dossier **`Couture`** → **`CoutureData`** | ModuleScript |
-| `src/shared/Rendu3D.luau` | `ReplicatedStorage` → dossier **`Couture`** → **`Rendu3D`** | ModuleScript |
-| `src/server/AtelierServer.server.luau` | `ServerScriptService` → `AtelierServer` | Script |
-| `src/client/AtelierClient.client.luau` | `StarterPlayer` → `StarterPlayerScripts` → `AtelierClient` | LocalScript |
-
-Les noms `Couture`, `CoutureData` et `Rendu3D` doivent être exacts.
-
-Option C, la plus simple : ouvrir directement le fichier `AtelierCouture.rbxl` fourni à la racine
-du dépôt (le sol et le point d'apparition sont inclus). Après une modification du code,
-le régénérer avec `rojo build -o AtelierCouture.rbxl`.
-
-Lance ensuite **Play**. La fenêtre de l'atelier s'ouvre au démarrage. Tu peux la rouvrir de deux façons :
-- le bouton **✂ Atelier** à gauche de l'écran ;
-- l'établi en bois, créé automatiquement devant le point d'apparition, avec la touche **E**.
-
-La sauvegarde (argent et réputation) passe par DataStore. Elle ne marche que sur un lieu publié, et dans Studio
-seulement si *Game Settings → Security → Enable Studio Access to API Services* est activé. Sinon, le jeu tourne
-sans sauvegarder. Si la lecture d'une sauvegarde échoue (panne passagère), le serveur ne la réécrit pas
-à la déconnexion, pour ne pas écraser la vraie progression par l'argent de départ.
+Le fichier `AtelierCouture.rbxl` fourni est prêt à ouvrir. Après une modification du code, le régénérer avec
+`rojo build -o AtelierCouture.rbxl`. Le rendu 3D des robes utilise les API EditableMesh / EditableImage :
+dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plus) et avoir activé ces API.
 
 ## Architecture
 
-- `CoutureData` (partagé) : tissus, vêtements, finitions, phrases des clients, note de découpe
-  et règles du mini-jeu de couture.
-- `Rendu3D` (partagé) : fabrique le vêtement en pièces 3D soudées au corps (mannequin, avatar R15 ou R6),
-  et le mannequin lui-même. Le serveur s'en sert pour le mannequin et l'avatar, le client pour l'aperçu.
-- `AtelierServer` : c'est lui qui fait foi. Il gère l'argent et les commandes, valide la découpe à partir
-  des positions des pièces, arbitre la couture, facture les finitions, calcule la paie et habille
-  le mannequin et l'avatar.
-- `AtelierClient` : toute l'interface, construite en code (aucun asset à importer), adaptée aux petits écrans.
-
-## Anti-triche
-
-- Le client n'envoie jamais de note. Il envoie la position des pièces (le serveur recalcule la découpe)
-  et, pour chaque piqûre, le temps écoulé depuis le début de la couture.
-- Le serveur tire lui-même la zone verte, la vitesse et le départ de l'aiguille, puis chronomètre chaque couture.
-  Le temps annoncé par le client n'est accepté qu'à 0,08 s près (plus une marge liée au ping),
-  ce qui absorbe le délai réseau sans permettre de choisir l'instant.
-- Impossible de piquer pendant la pause entre deux coutures, de relancer une couture pour obtenir une zone
-  plus facile, de livrer avant la fin, de payer deux fois une finition, ni d'appeler le serveur en rafale.
-- Limite honnête : comme dans tout jeu de rythme, un programme qui appuierait au bon moment
-  à la place du joueur réussirait. Mais il ne peut plus s'attribuer 100 %.
+- `src/shared/` (ReplicatedStorage.Couture) : logique partagée, sans interface.
+  | Module | Rôle |
+  |---|---|
+  | `Polygone`, `Patron` | Géométrie 2D des pièces, enroulement 3D autour du corps |
+  | `Catalogue` | Pièces, variantes, tissus, accessoires, constantes |
+  | `Coupon`, `Metrage` | Rouleau de découpe (pli, chevauchements) et métrage conseillé |
+  | `Notation`, `Commandes` | Droit-fil, couture, qualité, styles, exigences, paie ; commandes réalisables |
+  | `Pixels` | Motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron |
+  | `Recette` | Recette d'une robe en JSON et validation complète (filtre du serveur au plan 4) |
+  | `Maillage`, `Mannequin`, `Editables`, `ConstructeurRobe`, `Vitrines` | Robe 3D, mannequin, vitrines |
+  | `EtatAtelier` | État de la commande et règles de chaque étape (repris par le serveur au plan 4) |
+- `src/client/Atelier/` (LocalScript `Atelier` et ses modules) : l'interface.
+  `Session` fait le lien avec l'état ; `TableDecoupe` est la logique pure de la table ; un module `Ecran…` par étape.
 
 ## Tests
 
-`tests/lancer.sh` (Linux, macOS ou Windows via Git Bash, avec Python 3) exécute le vrai code du jeu dans un Roblox simulé, sans Studio.
-Chaque propriété, événement et méthode est vérifié d'après les définitions officielles de l'API Roblox.
-Le script :
-- joue plusieurs parties complètes en cliquant dans l'interface (commande, tissu, découpe, couture au clavier
-  et à la souris, finitions, livraison, porter / retirer, réapparition) ;
-- contrôle 216 combinaisons de rendu 3D (3 vêtements × finitions × qualité × R15 / R6 / tourné / mannequin) :
-  valeurs finies, repères orthonormés, soudures cohérentes, rien sous le sol, jupe hors des jambes ;
-- tente de tricher (fausse précision, faux chronomètre, piqûres pendant la pause, finitions en double…).
+`bash tests/lancer.sh` (Linux, macOS ou Windows via Git Bash, avec Python 3) exécute le code du jeu dans un
+Roblox simulé, validé d'après les définitions officielles de l'API (luau-lsp 1.70.1) :
+- les tests unitaires de `tests/unitaires/` (logique, géométrie, rendu avec doublures des API modifiables) ;
+- `tests/scenario.luau` : une commande jouée de bout en bout en cliquant dans l'interface.
 
-Ce qu'une simulation ne peut pas garantir : le rendu visuel réel dans Roblox. Le premier essai dans Studio
-reste nécessaire pour juger l'apparence.
-
-## Pistes
-
-- Défilé multijoueur avec votes (à la Dress to Impress), clients récurrents, amélioration de l'atelier,
-  sabotage volontaire comme dans Dressmaker.
-- Vêtements en maillage (layered clothing) pour un rendu plus fluide que les panneaux actuels.
-
-## Refonte en cours : le cœur de l'atelier
-
-La refonte inspirée de *Dressmaker* est décrite dans `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`.
-Le plan 1 (`docs/superpowers/plans/2026-09-28-coeur-plan1-fondations.md`) ajoute les fondations, testées
-mais pas encore branchées sur le jeu :
-
-| Module (`src/shared/`) | Rôle |
-|---|---|
-| `Polygone` | Géométrie 2D des pièces de patron |
-| `Catalogue` | Pièces, variantes, tissus, accessoires et constantes |
-| `Patron` | Pièces d'un croquis, trajets de couture, enroulement 3D autour du corps |
-| `Coupon` | Rouleau de découpe : pose, pli, chevauchements, longueur consommée |
-| `Notation` | Droit-fil, couture, qualité, jauges de style, exigences et paie |
-| `Commandes` | Commandes de clientes toujours réalisables |
-| `Pixels` | Motifs de tissu et découpe exacte de l'image d'une pièce |
-| `Recette` | Recette de robe en JSON (attributs, sauvegarde) et validation complète |
-| `Maillage` | Triangulation d'une pièce enroulée autour du corps |
-| `Mannequin` | Mannequin de couturière dimensionné selon les mesures |
-| `Editables` | Seul accès aux API modifiables de Roblox (conversion en contenu statique) |
-| `ConstructeurRobe` | Robe 3D à partir d'une recette : pièces texturées et accessoires |
-| `Vitrines` | Robes exposées construites près du joueur, libérées quand il s'éloigne |
-
-Les tests unitaires sont dans `tests/unitaires/` et tournent avec `bash tests/lancer.sh`, avant le scénario de l'ancien jeu.
-Le test de faisabilité du rendu 3D est dans `spike/`, et ses mesures dans `docs/superpowers/spikes/`.
+Ce qu'une simulation ne voit pas (rendu, glisser au doigt, tailles d'écran) se vérifie dans Studio :
+bancs d'essai `tests/studio/` et rapport `docs/superpowers/spikes/2026-09-28-rendu-editable.md`.

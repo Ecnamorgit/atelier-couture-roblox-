@@ -124,6 +124,8 @@ cliquer("Filtre_romantique")
 cliquer("Tissu_soie_rose_fleurs")
 verifier(fenetre.Contenu:FindFirstChild("ChoixTissu") == nil, "le choix du tissu se ferme")
 verifier(texte("Soie rose fleurie") ~= nil, "le corsage devant est en soie rose fleurie")
+local pastille = pieces:FindFirstChild("Pastille")
+verifier(pastille:IsA("ImageLabel") and pastille.ImageContent.statique == true, "la pastille de la pièce montre le motif du tissu")
 cliquer("ToutEnUnTissu")
 local nbSoie = 0
 for _, d in ipairs(pieces:GetChildren()) do
@@ -163,8 +165,14 @@ local panneau = fenetre.Contenu.Panneau
 verifier(panneau.DroitFil.Text == "Droit-fil : 100 %", "pièce proposée au droit-fil")
 cliquer("Tourner15")
 verifier(panneau.DroitFil.Text ~= "Droit-fil : 100 %", "tourner de 15° dégrade le droit-fil")
+verifier(panneau.Statut.Text == "La pièce dépasse du tissu.", "tournée contre le bord, la pièce dépasse du rouleau")
+local function luminance(c)
+	return 0.299 * c.R + 0.587 * c.G + 0.114 * c.B
+end
+verifier(math.abs(luminance(panneau.Couper.TextColor3) - luminance(panneau.Couper.BackgroundColor3)) > 0.35, "« Couper » reste lisible quand la coupe est impossible")
 cliquer("Tourner-15")
 verifier(panneau.DroitFil.Text == "Droit-fil : 100 %", "retour au droit-fil")
+verifier(math.abs(luminance(panneau.Couper.TextColor3) - luminance(panneau.Couper.BackgroundColor3)) > 0.35, "« Couper » lisible quand la coupe est possible")
 verifier(fenetre.Contenu.Rouleau.Tissu.PieceCourante.Visible, "la pièce courante est affichée sur le rouleau")
 local coupes, essais = 0, 0
 while titre() == "3. Table de découpe" and essais < 20 do

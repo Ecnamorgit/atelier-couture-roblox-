@@ -191,8 +191,12 @@ return function(ctx)
 			local y = (i - 1) * 36
 			local t = tissus[id] and Catalogue.tissu(tissus[id])
 			UiKit.texte({ Text = Catalogue.piece(id).nom, TextSize = 14, Position = UDim2.fromOffset(0, y + 6), Size = UDim2.fromOffset(200, 22), Parent = listePieces })
-			local pastille = UiKit.arrondir(UiKit.creer("Frame", { Name = "Pastille", BackgroundColor3 = t and UiKit.couleur(t.motif.couleurs[1]) or C.secondaire, Position = UDim2.fromOffset(204, y + 4), Size = UDim2.fromOffset(26, 26), Parent = listePieces }), 13)
+			local pastille = UiKit.arrondir(UiKit.creer("ImageLabel", { Name = "Pastille", BackgroundColor3 = t and UiKit.couleur(t.motif.couleurs[1]) or C.secondaire, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(64, 64), Position = UDim2.fromOffset(204, y + 4), Size = UDim2.fromOffset(26, 26), Parent = listePieces }), 13)
 			pastille.BackgroundTransparency = t and 0 or 0.5
+			local motif = t and Vignettes.motif(t.id)
+			if motif then
+				pastille.ImageContent = motif
+			end
 			UiKit.texte({ Text = t and t.nom or "(aucun tissu)", TextSize = 14, TextColor3 = t and C.texte or C.texteDoux, Position = UDim2.fromOffset(238, y + 6), Size = UDim2.fromOffset(170, 22), Parent = listePieces })
 			UiKit.boutonDoux({ Name = "Tissu_" .. id, Text = "Tissu…", TextSize = 14, Position = UDim2.fromOffset(412, y), Size = UDim2.fromOffset(110, 32), Parent = listePieces }, function()
 				ouvrirChoix({ id })
