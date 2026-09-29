@@ -7,7 +7,7 @@ et le tissu découpé se voit tel quel sur la robe en 3D.
 Le jeu est en cours de refonte, sous-projet par sous-projet
 (spec : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`, plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 1 terminé, plan 4d-3)
+## État actuel (sous-projet 1 terminé côté code, plan 4d-3 ; reste l'essai sur téléphone)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -56,11 +56,12 @@ client. Si la partie n'est pas encore arrivée au bout d'une minute, le joueur e
 **Sons** : une musique d'ambiance, un petit clic à chaque bouton, la clochette, la caisse, les ciseaux, la
 machine à coudre (tant qu'on coud, au rythme de la vitesse), le tissu qu'on découd, les décorations, le
 déclic de la photo et la réaction de la cliente. Tout vient de la bibliothèque libre de Roblox (sons de
-l'interface de Roblox, Pro Sound Effects, APM Music) ; le bouton « Son », sous « Atelier », coupe tout.
+l'interface de Roblox, Pro Sound Effects, APM Music) ; le bouton « Son », dans la barre de titre de la
+fenêtre, coupe tout.
 
 **Téléphone et clavier** : tant que la fenêtre de l'atelier est ouverte, l'avatar ne bouge pas (le stick et
-le bouton de saut ne passent pas sous la fenêtre) ; on la ferme pour se promener dans la rue. La fenêtre se
-réduit pour tenir dans l'écran.
+le bouton de saut ne passent pas sous la fenêtre) ; on la ferme pour se promener dans la rue, et le bouton
+« Atelier » la rouvre. La fenêtre se réduit pour tenir dans l'écran.
 
 ## Installation
 

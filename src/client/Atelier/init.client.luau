@@ -179,23 +179,26 @@ session:surAttente(function(actif)
 	end
 end)
 
-fenetre:GetPropertyChangedSignal("Visible"):Connect(function()
-	scene:ouvrir(fenetre.Visible, session.etat)
-end)
-
-UiKit.bouton({
+-- « Atelier », à gauche de l'écran, rouvre la fenêtre ; il n'apparaît que fenêtre fermée (sur tablette et
+-- téléphone, la fenêtre centrée passerait dessous, et un appui sur son bord la fermerait)
+local boutonAtelier = UiKit.bouton({
 	Name = "OuvrirAtelier",
 	Text = "Atelier",
 	AnchorPoint = Vector2.new(0, 0.5),
 	Position = UDim2.new(0, 16, 0.5, 0),
 	Size = UDim2.fromOffset(140, 44),
+	Visible = not fenetre.Visible,
 	Parent = gui,
 }, function()
-	fenetre.Visible = not fenetre.Visible
+	fenetre.Visible = true
+end)
+fenetre:GetPropertyChangedSignal("Visible"):Connect(function()
+	boutonAtelier.Visible = not fenetre.Visible
+	scene:ouvrir(fenetre.Visible, session.etat)
 end)
 
 -- Sons : un petit clic à chaque bouton, un bruit par action réussie, la musique d'ambiance ; le bouton
--- « Son » (sous « Atelier ») coupe tout
+-- « Son », dans la barre de titre de la fenêtre, coupe tout
 UiKit.surClic = function()
 	Sons.jouer("clic")
 end
@@ -212,10 +215,8 @@ boutonSon = UiKit.boutonDoux({
 	Name = "Son",
 	Text = "Son : oui",
 	TextSize = 14,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 16, 0.5, 46),
-	Size = UDim2.fromOffset(140, 36),
-	Parent = gui,
+	Size = UDim2.fromOffset(90, 36),
+	Parent = fenetre,
 }, function()
 	Sons.activer(not Sons.actif)
 	boutonSon.Text = if Sons.actif then "Son : oui" else "Son : non"
@@ -231,15 +232,17 @@ local function disposer(enPanneau)
 		titre.Size = UDim2.new(1, -76, 0, 32)
 		argent.Position = UDim2.fromOffset(20, 46)
 		argent.TextXAlignment = Enum.TextXAlignment.Left
+		boutonSon.Position = UDim2.new(1, -150, 0, 46) -- sur la ligne de l'argent, à droite
 		contenu.Position = UDim2.fromOffset(20, 84)
 		contenu.Size = UDim2.new(1, -40, 1, -118)
 	else
 		fenetre.AnchorPoint = Vector2.new(0.5, 0.5)
 		fenetre.Position = UDim2.fromScale(0.5, 0.5)
 		fenetre.Size = UDim2.fromOffset(UiKit.LARGEUR, UiKit.HAUTEUR)
-		titre.Size = UDim2.new(1, -260, 0, 32)
-		argent.Position = UDim2.new(1, -240, 0, 14)
+		titre.Size = UDim2.new(1, -360, 0, 32)
+		argent.Position = UDim2.new(1, -340, 0, 14)
 		argent.TextXAlignment = Enum.TextXAlignment.Right
+		boutonSon.Position = UDim2.new(1, -148, 0, 12) -- entre l'argent et la croix
 		contenu.Position = UDim2.fromOffset(20, 60)
 		contenu.Size = UDim2.new(1, -40, 1, -94)
 	end

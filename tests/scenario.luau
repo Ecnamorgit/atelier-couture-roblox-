@@ -143,6 +143,29 @@ local function nombreSons()
 	return #(M.sonsJoues or {})
 end
 verifier(SoundService:FindFirstChild("Atelier_musique") ~= nil and SoundService.Atelier_musique.IsPlaying, "la musique d'ambiance joue")
+-- « Son » est dans la barre de titre, sans rien chevaucher ; « Atelier » n'apparaît que fenêtre fermée (sur
+-- tablette et téléphone, la fenêtre centrée passe sous le bord gauche de l'écran)
+local function rectangle(e)
+	local W, H = fenetre.Size.X.Offset, fenetre.Size.Y.Offset
+	local ancre = e.AnchorPoint or Vector2.new()
+	local l, h = e.Size.X.Scale * W + e.Size.X.Offset, e.Size.Y.Scale * H + e.Size.Y.Offset
+	local x, y = e.Position.X.Scale * W + e.Position.X.Offset - ancre.X * l, e.Position.Y.Scale * H + e.Position.Y.Offset - ancre.Y * h
+	return x, y, x + l, y + h
+end
+local function chevauche(a, b)
+	local ax0, ay0, ax1, ay1 = rectangle(a)
+	local bx0, by0, bx1, by1 = rectangle(b)
+	return ax0 < bx1 and bx0 < ax1 and ay0 < by1 and by0 < ay1
+end
+local function sonALaPlace()
+	local son = fenetre:FindFirstChild("Son")
+	return son ~= nil and not chevauche(son, fenetre.Titre) and not chevauche(son, fenetre.Argent) and not chevauche(son, fenetre.Fermer) and not chevauche(son, fenetre.Contenu) and not chevauche(fenetre.Titre, fenetre.Argent)
+end
+verifier(sonALaPlace(), "« Son » dans la barre de titre de la fenêtre, sans rien chevaucher")
+verifier(not gui.Atelier.OuvrirAtelier.Visible, "fenêtre ouverte : « Atelier » caché (il passerait sur la fenêtre)")
+cliquer("Fermer")
+verifier(gui.Atelier.OuvrirAtelier.Visible, "fenêtre fermée : « Atelier » pour la rouvrir")
+cliquer("OuvrirAtelier")
 cliquer("Son")
 verifier(boutonNomme("Son").Text == "Son : non" and not SoundService.Atelier_musique.IsPlaying, "« Son » : la musique s'arrête")
 local nCoupe = nombreSons()
@@ -432,6 +455,7 @@ verifier(coupes == 6, "6 pièces coupées (manche et col pliés comptent pour un
 local Workspace = M.services.Workspace
 local camera = Workspace.CurrentCamera
 verifier(titre() == "4. Épinglage", "après la dernière coupe : l'épinglage")
+verifier(sonALaPlace(), "fenêtre en panneau : « Son » reste dans la barre, sans rien chevaucher")
 verifier(fenetre.AnchorPoint.X == 1, "la fenêtre se range à droite : le mannequin est visible")
 verifier(M.coreGui[Enum.CoreGuiType.PlayerList] == false, "la liste des joueurs de Roblox ne cache pas le haut du panneau")
 local scene = Workspace:FindFirstChild("AtelierLocal")
