@@ -92,6 +92,9 @@ function Cliente.construire(commande, cadre, parent)
 		cheveux.Parent = modele
 	end
 	modele:ScaleTo(Cliente.ECHELLE)
+	-- Après ScaleTo, Roblox ne recalcule les articulations qu'une fois l'avatar dans le jeu (les pieds
+	-- descendent d'environ 0,16 stud) : on le range avant de le mesurer
+	modele.Parent = parent
 	-- Le pivot d'un avatar est sa racine (au niveau des hanches) : on le monte de la hauteur des jambes
 	local bas = math.huge
 	for _, d in ipairs(modele:GetDescendants()) do
@@ -101,7 +104,6 @@ function Cliente.construire(commande, cadre, parent)
 	end
 	local hauteur = bas < math.huge and modele:GetPivot().Position.Y - bas or 0
 	modele:PivotTo(cadre * CFrame.new(0, hauteur, 0))
-	modele.Parent = parent
 	return modele
 end
 
