@@ -18,7 +18,22 @@ function TableDecoupe.nouvelle(etat)
 	return self
 end
 
--- Pièces du tissu en cours qui restent à couper
+-- Ordre de proposition, comme Metrage : les pièces non pliées d'abord, les plus hautes en premier,
+-- les pièces pliées à la fin (au milieu du rouleau, elles bloqueraient une pièce plus large)
+local function avant(a, b)
+	local pa, pb = Catalogue.piece(a).pliee == true, Catalogue.piece(b).pliee == true
+	if pa ~= pb then
+		return pb
+	end
+	local _, ha = Metrage.encombrement(a, Catalogue.piece(a).biais and 45 or 0)
+	local _, hb = Metrage.encombrement(b, Catalogue.piece(b).biais and 45 or 0)
+	if math.abs(ha - hb) > 1e-9 then
+		return ha > hb
+	end
+	return a < b
+end
+
+-- Pièces du tissu en cours qui restent à couper, dans l'ordre de proposition
 function TableDecoupe:piecesRestantes(idTissu)
 	local out = {}
 	for _, id in ipairs(self.etat:piecesAPoser()) do
@@ -26,6 +41,7 @@ function TableDecoupe:piecesRestantes(idTissu)
 			table.insert(out, id)
 		end
 	end
+	table.sort(out, avant)
 	return out
 end
 

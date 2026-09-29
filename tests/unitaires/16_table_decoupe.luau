@@ -94,3 +94,68 @@ local Coupon = U.module("Coupon")
 local Polygone = U.module("Polygone")
 local boite = Polygone.boite(Coupon.contoursPoses("manche_ballon", t3.placement)[1])
 U.verifier(boite.maxX > 6.8 and boite.maxX <= 7, ("manche pliée proposée contre le pli (bord droit à %.2f dm)"):format(boite.maxX))
+
+-- En suivant les places proposées, la robe tient dans le métrage conseillé, même à plusieurs tissus
+local EtatAtelier = U.module("EtatAtelier")
+local Metrage = U.module("Metrage")
+local Catalogue = U.module("Catalogue")
+local function suivrePropositions(croquisEssai, tissusEssai)
+	local e = EtatAtelier.nouveau(100000)
+	e:nouvelleCommande(Random.new(1))
+	if not e:validerCroquis(croquisEssai, tissusEssai).ok then
+		return false, "croquis refusé"
+	end
+	for _, tissu in ipairs(e:tissusUtilises()) do
+		local ids = {}
+		for _, id in ipairs(e:piecesDuCroquis()) do
+			if tissusEssai[id] == tissu then
+				table.insert(ids, id)
+			end
+		end
+		e:acheter(tissu, Metrage.conseil(ids))
+	end
+	e:commencerDecoupe()
+	local tableEssai = TableDecoupe.nouvelle(e)
+	local faux = {
+		couper = function(_, id, placement)
+			return e:couper(id, placement)
+		end,
+	}
+	for _ = 1, 12 do
+		if e.etape ~= "decoupe" then
+			break
+		end
+		local r = tableEssai:couper(faux)
+		if not r.ok then
+			return false, r.erreur
+		end
+	end
+	return e.etape == "epinglage", "pièces restantes"
+end
+local ok, pourquoi = suivrePropositions({ corsage = "corsage_v", manches = "manches_ballon", col = "col_sans", jupe = "jupe_trapeze" }, {
+	corsage_v_devant = "lin_bleu",
+	manche_ballon = "lin_bleu",
+	jupe_trapeze_devant = "lin_bleu",
+	corsage_droit_dos = "coton_blanc",
+	jupe_trapeze_dos = "coton_blanc",
+})
+U.verifier(ok, "corsage, manche pliée et jupe dans 8 dm de lin : " .. tostring(pourquoi))
+local rng = Random.new(42)
+local echecs, premier = 0, nil
+for _ = 1, 150 do
+	local croquisEssai = {}
+	for _, famille in ipairs(Catalogue.FAMILLES) do
+		local variantes = Catalogue.variantesDe(famille)
+		croquisEssai[famille] = variantes[rng:NextInteger(1, #variantes)].id
+	end
+	local tissusEssai = {}
+	for _, id in ipairs(U.module("Patron").piecesDuCroquis(croquisEssai)) do
+		tissusEssai[id] = ({ "lin_bleu", "coton_blanc", "soie_rouge" })[rng:NextInteger(1, 3)]
+	end
+	local reussi = suivrePropositions(croquisEssai, tissusEssai)
+	if not reussi then
+		echecs += 1
+		premier = premier or croquisEssai
+	end
+end
+U.verifier(echecs == 0, ("150 robes à 3 tissus : %d dépassent le métrage conseillé"):format(echecs))

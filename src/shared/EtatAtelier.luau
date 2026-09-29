@@ -191,6 +191,7 @@ function EtatAtelier:recommencer()
 	end
 	consommer(self)
 	self.croquis, self.tissus, self.coupees = nil, {}, {}
+	self.argent = math.max(self.argent, EtatAtelier.FILET) -- jamais bloqué sans argent ni tissu
 	self.etape = "carnet"
 	return { ok = true }
 end

@@ -143,3 +143,53 @@ U.verifier(Notation.bilan(roseEtBleu).teinte == "rose", "deux tissus roses (60 d
 -- Relecture finale : garniture aux coordonnées non finies → longueur 0, jamais NaN
 local l = Notation.longueurGarniture("jupe_droite_devant", { { u = 0 / 0, v = 0 }, { u = 1, v = math.huge } })
 U.verifier(l == l and l == 0, "garniture aux coordonnées non finies : longueur 0")
+
+-- Relecture finale du plan 3a : le carnet prévoit ce que dira la livraison
+-- (a) Égalité de surface entre deux couleurs : une seule règle (la couleur de la première pièce du croquis)
+local croquisDroit = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
+local bicolore = {
+	corsage_droit_devant = "soie_rouge",
+	jupe_droite_devant = "soie_rouge",
+	corsage_droit_dos = "soie_rose_fleurs",
+	jupe_droite_dos = "soie_rose_fleurs",
+}
+local piecesBicolores = {}
+for _, id in ipairs(Patron.piecesDuCroquis(croquisDroit)) do
+	table.insert(piecesBicolores, { id = id, tissu = bicolore[id], x = 3, y = 3, angle = 0, couture = 1 })
+end
+U.verifier(Notation.teinteDominante(piecesBicolores) == "rouge", "égalité de surface : la couleur de la première pièce du croquis")
+U.verifier(Notation.bilan({ croquis = croquisDroit, pieces = piecesBicolores }).teinte == "rouge", "le bilan suit la même règle")
+local fBicolore = Notation.fourchette(croquisDroit, bicolore)
+U.verifier(Notation.prevision({ type = "teinte", teinte = "rouge" }, croquisDroit, bicolore, fBicolore) == "ok", "carnet : rouge dominant prévu")
+U.verifier(Notation.prevision({ type = "teinte", teinte = "rose" }, croquisDroit, bicolore, fBicolore) == "non", "carnet : rose non dominant")
+local incomplet = table.clone(bicolore)
+incomplet.jupe_droite_dos = nil
+U.verifier(Notation.prevision({ type = "teinte", teinte = "rouge" }, croquisDroit, incomplet, Notation.fourchette(croquisDroit, incomplet)) == "?", "carnet : couleur inconnue tant qu'une pièce n'a pas de tissu")
+
+-- (b) L'accessoire imposé compte dans la fourchette du carnet
+local croquisGothique = { corsage = "corsage_droit", manches = "manches_longues", col = "col_montant", jupe = "jupe_evasee" }
+local velours = {}
+for _, id in ipairs(Patron.piecesDuCroquis(croquisGothique)) do
+	velours[id] = "velours_noir"
+end
+local auMoins60 = { type = "min", style = "gothique", valeur = 60 }
+local sansBroche = Notation.fourchette(croquisGothique, velours)
+U.verifier(sansBroche.gothique.max < 60, "sans la broche, la robe en velours noir reste sous 60 en Gothique")
+local imposes = Notation.accessoiresImposes({ auMoins60, { type = "accessoire", id = "broche_camee" } })
+U.verifier(#imposes == 1 and imposes[1].id == "broche_camee", "accessoires imposés par la commande")
+local avecBroche = Notation.fourchette(croquisGothique, velours, imposes)
+U.verifier(U.proche(avecBroche.gothique.min, sansBroche.gothique.min + Catalogue.K.accessoires * 2), "la broche imposée ajoute ses points de style")
+U.verifier(Notation.prevision(auMoins60, croquisGothique, velours, avecBroche) == "ok", "carnet : « au moins 60 en Gothique » atteint avec la broche imposée")
+local bilanBroche = Notation.bilan({
+	croquis = croquisGothique,
+	pieces = (function()
+		local out = {}
+		for _, id in ipairs(Patron.piecesDuCroquis(croquisGothique)) do
+			table.insert(out, { id = id, tissu = "velours_noir", x = 3, y = 3, angle = 0, couture = 1 })
+		end
+		return out
+	end)(),
+	accessoires = { { id = "broche_camee", piece = 1, u = 0.5, v = 0.5, echelle = 1, angle = 0 } },
+})
+U.verifier(U.proche(bilanBroche.styles.gothique, avecBroche.gothique.min), "le carnet prévoit le score de la livraison")
+U.verifier(Notation.prevision({ type = "qualite", valeur = 0.8 }, croquisGothique, velours, avecBroche) == "?", "qualité : connue à la couture")

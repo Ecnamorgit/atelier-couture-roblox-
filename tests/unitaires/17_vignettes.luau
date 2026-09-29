@@ -1,0 +1,13 @@
+local Vignettes = U.module("Vignettes")
+
+-- Mémoire des images pleine : rien, sans erreur ; on réessaie quelques secondes plus tard
+M.budget.images = 0
+U.verifier(Vignettes.silhouette("jupe_droite_devant") == nil and Vignettes.motif("coton_blanc") == nil, "mémoire des images pleine : pas d'image, sans erreur")
+M.budget.images = 64
+U.verifier(Vignettes.silhouette("jupe_droite_devant") == nil, "juste après un échec, on n'insiste pas")
+M.avancer(Vignettes.ESSAI_APRES + 0.5)
+local silhouette = Vignettes.silhouette("jupe_droite_devant")
+U.verifier(silhouette ~= nil and silhouette.statique, "quelques secondes plus tard, on réessaie : silhouette")
+U.verifier(Vignettes.silhouette("jupe_droite_devant") == silhouette, "réussie : gardée en cache")
+local motif = Vignettes.motif("coton_blanc")
+U.verifier(motif ~= nil and motif.statique, "motif obtenu au nouvel essai")

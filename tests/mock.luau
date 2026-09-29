@@ -403,6 +403,18 @@ INST.__index = function(self, k)
 			return CFrame.new()
 		elseif k == "Size" and estUn(classe, "BasePart") then
 			return v3(4, 1, 2)
+		elseif k == "AbsoluteSize" and estUn(classe, "GuiObject") then
+			-- Pas de moteur de mise en page : on approche par les décalages en pixels (échelles ignorées)
+			local taille = props.Size
+			return Vector2.new(taille and taille.X.Offset or 0, taille and taille.Y.Offset or 0)
+		elseif k == "AbsolutePosition" and estUn(classe, "GuiObject") then
+			local x, y, i = 0, 0, self
+			while i and estUn(rawget(i, "__classe"), "GuiObject") do
+				local p = rawget(i, "__props").Position
+				x, y = x + (p and p.X.Offset or 0), y + (p and p.Y.Offset or 0)
+				i = rawget(i, "__props").Parent
+			end
+			return Vector2.new(x, y)
 		end
 		return DEFAUTS[k]
 	end

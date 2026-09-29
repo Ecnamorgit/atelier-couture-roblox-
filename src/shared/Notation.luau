@@ -149,10 +149,11 @@ function Notation.styles(entree)
 	return scores
 end
 
--- Jauges du carnet : choix = { [idPiece] = idTissu ou nil }.
+-- Jauges du carnet : choix = { [idPiece] = idTissu ou nil } ; accessoires = accessoires imposés par
+-- la commande ({ { id } }, voir accessoiresImposes), qui seront forcément sur la robe.
 -- Retourne { [style] = { acquis, min, max } } : acquis = points des variantes seules,
 -- min / max = fourchette possible selon les tissus encore à choisir.
-function Notation.fourchette(croquis, choix)
+function Notation.fourchette(croquis, choix, accessoires)
 	local K = Catalogue.K
 	local pieces = Patron.piecesDuCroquis(croquis)
 	local aireTotale = 0
@@ -183,6 +184,11 @@ function Notation.fourchette(croquis, choix)
 		for _, famille in ipairs(Catalogue.FAMILLES) do
 			brutAcquis += K.pieces * (Catalogue.variante(croquis[famille]).style[s] or 0)
 		end
+		for _, a in ipairs(accessoires or {}) do
+			local style, fois = pointsAccessoire(a)
+			bas += K.accessoires * (style[s] or 0) * fois
+			haut += K.accessoires * (style[s] or 0) * fois
+		end
 		out[s] = {
 			acquis = base[s],
 			min = math.clamp(brutAcquis + bas, 0, 100),
@@ -192,14 +198,64 @@ function Notation.fourchette(croquis, choix)
 	return out
 end
 
+-- Accessoires qu'une commande impose : { { id } }
+function Notation.accessoiresImposes(exigences)
+	local out = {}
+	for _, e in ipairs(exigences) do
+		if e.type == "accessoire" then
+			table.insert(out, { id = e.id })
+		end
+	end
+	return out
+end
+
+-- Teinte dominante : surfaces additionnées par couleur (deux tissus roses comptent ensemble).
+-- À égalité, la couleur de la première pièce. pieces = { { id, tissu } } dans l'ordre du croquis.
+function Notation.teinteDominante(pieces)
+	local parTeinte = {}
+	for _, p in ipairs(pieces) do
+		local t = Catalogue.tissu(p.tissu).teinte
+		parTeinte[t] = (parTeinte[t] or 0) + Patron.aire(p.id)
+	end
+	local teinte, aireMax = nil, -1
+	for _, p in ipairs(pieces) do
+		local t = Catalogue.tissu(p.tissu).teinte
+		if parTeinte[t] > aireMax + 1e-9 then
+			teinte, aireMax = t, parTeinte[t]
+		end
+	end
+	return teinte
+end
+
+-- Prévision du carnet pour une exigence : "ok", "non", ou "?" (dépend des tissus encore à choisir,
+-- de la couture ou des décorations). fourchette = Notation.fourchette(croquis, choix, imposés).
+function Notation.prevision(e, croquis, choix, fourchette)
+	if e.type == "min" then
+		local f = fourchette[e.style]
+		return f.min >= e.valeur and "ok" or (f.max < e.valeur and "non" or "?")
+	elseif e.type == "max" then
+		local f = fourchette[e.style]
+		return f.max <= e.valeur and "ok" or (f.min > e.valeur and "non" or "?")
+	elseif e.type == "teinte" then
+		local pieces = {}
+		for _, id in ipairs(Patron.piecesDuCroquis(croquis)) do
+			if not choix[id] then
+				return "?"
+			end
+			table.insert(pieces, { id = id, tissu = choix[id] })
+		end
+		return Notation.teinteDominante(pieces) == e.teinte and "ok" or "non"
+	end
+	return "?" -- qualité (à la couture) et accessoire (aux décorations)
+end
+
 ---------------------------------------------------------------------------
 -- Bilan d'une recette, exigences, paie
 ---------------------------------------------------------------------------
 -- recette = { croquis, pieces = { { id, tissu, x, y, angle, couture } }, accessoires = { … } }
 -- Retourne { styles, qualite, teinte, accessoires = { [id] = nombre }, nbPieces }
 function Notation.bilan(recette)
-	local tissus, piecesNotees, parTeinte = {}, {}, {}
-	local teinte, aireMax = nil, -1
+	local tissus, piecesNotees = {}, {}
 	for _, p in ipairs(recette.pieces) do
 		assert(Catalogue.tissu(p.tissu), "tissu inconnu : " .. tostring(p.tissu))
 		local aire = Patron.aire(p.id)
@@ -207,17 +263,7 @@ function Notation.bilan(recette)
 		local df = Notation.droitFil(Notation.angleFil(p.angle, p.id), Catalogue.piece(p.id).biais)
 		table.insert(piecesNotees, { aire = aire, droitFil = df, couture = p.couture or 0 })
 	end
-	-- Teinte dominante : surfaces additionnées par couleur (deux tissus roses comptent ensemble)
-	for idTissu, aire in pairs(tissus) do
-		local t = Catalogue.tissu(idTissu).teinte
-		parTeinte[t] = (parTeinte[t] or 0) + aire
-	end
-	for _, p in ipairs(recette.pieces) do
-		local t = Catalogue.tissu(p.tissu).teinte
-		if parTeinte[t] > aireMax then
-			teinte, aireMax = t, parTeinte[t]
-		end
-	end
+	local teinte = Notation.teinteDominante(recette.pieces)
 	local accessoires, comptes = {}, {}
 	for _, a in ipairs(recette.accessoires or {}) do
 		local entree = { id = a.id }

@@ -11,6 +11,8 @@ local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 
 local PX = 36 -- pixels par dm : le rouleau de 14 dm fait 504 px de large
 local ACHAT_RAPIDE = 5 -- dm ajoutés par le bouton « Plus de tissu »
+local CALME = 0.4 -- s : un double clic ne coupe pas la pièce suivante, n'achète pas deux fois
+local PAPIER = Color3.fromRGB(255, 248, 222) -- à défaut de silhouette (mémoire des images pleine)
 
 local function taillePiece(idPiece)
 	local b = Polygone.boite(Catalogue.piece(idPiece).contour)
@@ -43,12 +45,13 @@ return function(ctx)
 	})
 	local pli = UiKit.creer("Frame", { Name = "Pli", BackgroundColor3 = C.texte, BackgroundTransparency = 0.4, BorderSizePixel = 0, Position = UDim2.fromOffset(7 * PX - 1, 0), Size = UDim2.new(0, 2, 1, 0), ZIndex = 2, Parent = tissuImage })
 	local calque = UiKit.creer("Frame", { Name = "Coupees", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = tissuImage })
-	local piece = UiKit.creer("ImageButton", { Name = "PieceCourante", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), AutoButtonColor = false, ZIndex = 5, Parent = tissuImage })
+	local piece = UiKit.creer("ImageButton", { Name = "PieceCourante", BackgroundTransparency = 1, BackgroundColor3 = PAPIER, AnchorPoint = Vector2.new(0.5, 0.5), AutoButtonColor = false, ZIndex = 5, Parent = tissuImage })
 
 	-- Panneau de droite
 	local panneau = UiKit.creer("Frame", { Name = "Panneau", BackgroundTransparency = 1, Position = UDim2.fromOffset(14 * PX + 24, 0), Size = UDim2.new(1, -(14 * PX + 24), 1, 0), Parent = contenu })
-	local onglets = UiKit.creer("Frame", { Name = "Onglets", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 34), Parent = panneau })
-	local liste = UiKit.creer("Frame", { Name = "ListePieces", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, 0, 0, 158), Parent = panneau })
+	-- Onglets des tissus : une barre qui défile quand il y a plus de deux tissus
+	local onglets = UiKit.creer("ScrollingFrame", { Name = "Onglets", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollingDirection = Enum.ScrollingDirection.X, ScrollBarThickness = 10, ScrollBarImageColor3 = C.accent, Size = UDim2.new(1, 0, 0, 44), Parent = panneau })
+	local liste = UiKit.creer("Frame", { Name = "ListePieces", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 156), Parent = panneau })
 	local droitFil = UiKit.texte({ Name = "DroitFil", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, 204), Size = UDim2.new(1, 0, 0, 22), Parent = panneau })
 	local statut = UiKit.texte({ Name = "Statut", TextSize = 14, Position = UDim2.fromOffset(0, 226), Size = UDim2.new(1, 0, 0, 36), Parent = panneau })
 
@@ -78,7 +81,7 @@ return function(ctx)
 		if not r.ok then
 			ctx.message(r.erreur, C.erreur)
 		end
-	end)
+	end, CALME)
 	local couper = UiKit.bouton({ Name = "Couper", Text = "Couper", Position = UDim2.fromOffset(0, 348), Size = UDim2.new(1, 0, 0, 44), Parent = panneau }, function()
 		local r = table_:couper(session)
 		if not r.ok then
@@ -88,7 +91,7 @@ return function(ctx)
 			rafraichir()
 			montrerPiece()
 		end
-	end)
+	end, CALME)
 	UiKit.boutonDoux({ Name = "Recommencer", Text = "Recommencer la robe", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromOffset(200, 34), Parent = panneau }, function()
 		local r = session:recommencer()
 		if not r.ok then
@@ -112,6 +115,7 @@ return function(ctx)
 		if silhouette then
 			piece.ImageContent = silhouette
 		end
+		piece.BackgroundTransparency = silhouette and 1 or 0.35 -- sans silhouette : la boîte de la pièce, en papier
 		piece.ImageColor3 = e.valide and Color3.new(1, 1, 1) or Color3.fromRGB(255, 120, 120)
 		droitFil.Text = ("Droit-fil : %d %%"):format(math.floor(e.droitFil * 100 + 0.5))
 		droitFil.TextColor3 = e.droitFil >= 0.999 and C.ok or (e.droitFil >= 0.7 and C.alerte or C.erreur)
@@ -167,6 +171,9 @@ return function(ctx)
 					local silhouette = Vignettes.silhouette(id)
 					if silhouette then
 						img.ImageContent = silhouette
+					else
+						img.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+						img.BackgroundTransparency = 0.5
 					end
 				end
 			end
@@ -175,7 +182,7 @@ return function(ctx)
 		onglets:ClearAllChildren()
 		for k, o in ipairs(table_:onglets()) do
 			local actif = o.tissu == table_.tissu
-			local b = UiKit.boutonDoux({ Name = "Onglet_" .. o.tissu, Text = ("%s (%d)"):format(Catalogue.tissu(o.tissu).nom, o.reste), TextSize = 13, Position = UDim2.fromOffset((k - 1) * 170, 0), Size = UDim2.fromOffset(164, 32), Parent = onglets }, function()
+			local b = UiKit.boutonDoux({ Name = "Onglet_" .. o.tissu, Text = ("%s (%d)"):format(Catalogue.tissu(o.tissu).nom, o.reste), TextSize = 14, Position = UDim2.fromOffset((k - 1) * 170, 0), Size = UDim2.fromOffset(164, 32), Parent = onglets }, function()
 				table_:choisirTissu(o.tissu)
 				rafraichir()
 				montrerPiece()
@@ -183,11 +190,12 @@ return function(ctx)
 			b.BackgroundColor3 = actif and C.accent or C.secondaire
 			b.TextColor3 = actif and Color3.new(1, 1, 1) or C.texte
 		end
+		onglets.CanvasSize = UDim2.fromOffset(#table_:onglets() * 170, 0)
 		-- Pièces restantes de ce tissu
 		liste:ClearAllChildren()
 		for k, id in ipairs(table_:piecesRestantes()) do
 			local actif = id == table_.selection
-			local b = UiKit.boutonDoux({ Name = "Piece_" .. id, Text = Catalogue.piece(id).nom .. (Catalogue.piece(id).pliee and " (pliée)" or ""), TextSize = 13, Position = UDim2.fromOffset(0, (k - 1) * 26), Size = UDim2.new(1, 0, 0, 24), Parent = liste }, function()
+			local b = UiKit.boutonDoux({ Name = "Piece_" .. id, Text = Catalogue.piece(id).nom .. (Catalogue.piece(id).pliee and " (pliée)" or ""), TextSize = 14, Position = UDim2.fromOffset(0, (k - 1) * 26), Size = UDim2.new(1, 0, 0, 24), Parent = liste }, function()
 				table_:selectionner(id)
 				rafraichir()
 				montrerPiece()
@@ -200,31 +208,43 @@ return function(ctx)
 
 	-- Glisser la pièce (souris ou doigt). La fenêtre peut être réduite (UIScale sur petit écran) :
 	-- on convertit avec la taille réelle du rouleau à l'écran, et on garde l'écart entre le doigt
-	-- et le centre de la pièce au moment où on la saisit.
-	local glisse, ecartX, ecartY = false, 0, 0
+	-- et le centre de la pièce au moment où on la saisit. Pendant la saisie, le rouleau ne défile pas,
+	-- et seul le doigt qui tient la pièce la déplace.
+	local saisie, ecartX, ecartY = nil, 0, 0
 	local function versRouleau(position)
 		local pxEcran = tissuImage.AbsoluteSize.X / 14
 		local x = (position.X - tissuImage.AbsolutePosition.X) / pxEcran
 		local y = (position.Y - tissuImage.AbsolutePosition.Y) / pxEcran
 		return x, y
 	end
+	local function lacher()
+		saisie = nil
+		vue.ScrollingEnabled = true
+	end
 	table.insert(connexions, piece.InputBegan:Connect(function(input)
-		if table_.placement and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+		if table_.placement and not saisie and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
 			local x, y = versRouleau(input.Position)
 			ecartX, ecartY = table_.placement.x - x, table_.placement.y - y
-			glisse = true
+			saisie = input
+			vue.ScrollingEnabled = false
 		end
 	end))
 	table.insert(connexions, UserInputService.InputChanged:Connect(function(input)
-		if glisse and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		if not saisie then
+			return
+		end
+		local suit = if saisie.UserInputType == Enum.UserInputType.Touch
+			then input == saisie
+			else input.UserInputType == Enum.UserInputType.MouseMovement
+		if suit then
 			local x, y = versRouleau(input.Position)
 			table_:deplacer(x + ecartX, y + ecartY)
 			placerPiece()
 		end
 	end))
 	table.insert(connexions, UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			glisse = false
+		if saisie and (input == saisie or (saisie.UserInputType == Enum.UserInputType.MouseButton1 and input.UserInputType == Enum.UserInputType.MouseButton1)) then
+			lacher()
 		end
 	end))
 	-- R : tourner de 15° (Maj + R : dans l'autre sens)

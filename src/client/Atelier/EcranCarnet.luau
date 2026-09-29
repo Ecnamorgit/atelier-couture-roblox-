@@ -10,35 +10,6 @@ local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 local NOMS_FAMILLES = { corsage = "Corsage", manches = "Manches", col = "Col", jupe = "Jupe" }
 local CROQUIS_DEPART = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
 
--- État d'une exigence d'après la fourchette du carnet : "ok", "non" ou "?" (dépend de la suite)
-local function statutExigence(e, fourchette, croquis, tissus)
-	if e.type == "min" then
-		local f = fourchette[e.style]
-		return f.min >= e.valeur and "ok" or (f.max < e.valeur and "non" or "?")
-	elseif e.type == "max" then
-		local f = fourchette[e.style]
-		return f.max <= e.valeur and "ok" or (f.min > e.valeur and "non" or "?")
-	elseif e.type == "teinte" then
-		local parTeinte, total = {}, 0
-		for _, id in ipairs(Patron.piecesDuCroquis(croquis)) do
-			if not tissus[id] then
-				return "?"
-			end
-			local t = Catalogue.tissu(tissus[id]).teinte
-			parTeinte[t] = (parTeinte[t] or 0) + Patron.aire(id)
-			total += Patron.aire(id)
-		end
-		local meilleure, aire = nil, -1
-		for t, a in pairs(parTeinte) do
-			if a > aire then
-				meilleure, aire = t, a
-			end
-		end
-		return meilleure == e.teinte and "ok" or "non"
-	end
-	return "?" -- qualité (à la couture) et accessoire (aux décorations)
-end
-
 return function(ctx)
 	local UiKit, session, contenu = ctx.UiKit, ctx.session, ctx.contenu
 	local C = UiKit.COULEURS
@@ -153,7 +124,7 @@ return function(ctx)
 					for k = 1, math.min(2, #styles) do
 						table.insert(etiquettes, Catalogue.NOMS_STYLES[styles[k].s])
 					end
-					UiKit.texte({ Text = ("%d po/m · %s"):format(t.prix, table.concat(etiquettes, ", ")), TextSize = 12, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(72, 50), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
+					UiKit.texte({ Text = ("%d po/m · %s"):format(t.prix, table.concat(etiquettes, ", ")), TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(72, 50), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
 					carte.Activated:Connect(function()
 						for _, id in ipairs(pieces) do
 							tissus[id] = t.id
@@ -170,7 +141,7 @@ return function(ctx)
 			table.insert(filtres, { nom = Catalogue.NOMS_STYLES[s], style = s })
 		end
 		for k, f in ipairs(filtres) do
-			UiKit.boutonDoux({ Name = "Filtre_" .. (f.style or "tous"), Text = f.nom, TextSize = 13, Position = UDim2.fromOffset((k - 1) * 96, 0), Size = UDim2.fromOffset(90, 34), ZIndex = 11, Parent = choix }, function()
+			UiKit.boutonDoux({ Name = "Filtre_" .. (f.style or "tous"), Text = f.nom, TextSize = 14, Position = UDim2.fromOffset((k - 1) * 106, 0), Size = UDim2.fromOffset(100, 34), ZIndex = 11, Parent = choix }, function()
 				remplir(f.style)
 			end)
 		end
@@ -217,7 +188,7 @@ return function(ctx)
 		for _, id in ipairs(pieces) do
 			choixPieces[id] = tissus[id]
 		end
-		local fourchette = Notation.fourchette(croquis, choixPieces)
+		local fourchette = Notation.fourchette(croquis, choixPieces, Notation.accessoiresImposes(etat.commande.exigences))
 		for style, j in pairs(jauges) do
 			local f = fourchette[style]
 			j.acquis.Size = UDim2.fromScale(f.min / 100, 1)
@@ -226,7 +197,7 @@ return function(ctx)
 		local SYMBOLES = { ok = "✓", non = "×", ["?"] = "…" }
 		local COULEURS_STATUT = { ok = C.ok, non = C.erreur, ["?"] = C.texteDoux }
 		for i, e in ipairs(etat.commande.exigences) do
-			local statut = statutExigence(e, fourchette, croquis, choixPieces)
+			local statut = Notation.prevision(e, croquis, choixPieces, fourchette)
 			lignesExigences[i].Text = SYMBOLES[statut] .. "  " .. UiKit.exigence(e, Catalogue)
 			lignesExigences[i].TextColor3 = COULEURS_STATUT[statut]
 		end

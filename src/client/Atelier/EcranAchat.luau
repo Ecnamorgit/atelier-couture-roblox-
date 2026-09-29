@@ -19,6 +19,18 @@ return function(ctx)
 		Parent = contenu,
 	})
 
+	-- Une ligne par tissu, dans une liste qui défile au-dessus des boutons du bas
+	local HAUTEUR_LIGNE = 84
+	local liste = UiKit.creer("ScrollingFrame", {
+		Name = "Lignes",
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 6,
+		Position = UDim2.fromOffset(0, 32),
+		Size = UDim2.new(1, 0, 1, -32 - 56),
+		CanvasSize = UDim2.fromOffset(0, #etat:tissusUtilises() * HAUTEUR_LIGNE),
+		Parent = contenu,
+	})
 	local lignes = {}
 	local quantites = {}
 	local function conseil(idTissu)
@@ -45,7 +57,7 @@ return function(ctx)
 	for i, idTissu in ipairs(etat:tissusUtilises()) do
 		local t = Catalogue.tissu(idTissu)
 		quantites[idTissu] = math.max(0, conseil(idTissu) - (etat.stock[idTissu] or 0))
-		local ligne = UiKit.arrondir(UiKit.creer("Frame", { Name = "Ligne_" .. idTissu, BackgroundColor3 = C.panneau, Position = UDim2.fromOffset(0, 32 + (i - 1) * 84), Size = UDim2.new(1, 0, 0, 76), Parent = contenu }), 10)
+		local ligne = UiKit.arrondir(UiKit.creer("Frame", { Name = "Ligne_" .. idTissu, BackgroundColor3 = C.panneau, Position = UDim2.fromOffset(0, (i - 1) * HAUTEUR_LIGNE), Size = UDim2.new(1, -10, 0, 76), Parent = liste }), 10)
 		local echantillon = UiKit.arrondir(UiKit.creer("ImageLabel", {
 			BackgroundColor3 = UiKit.couleur(t.motif.couleurs[1]),
 			Position = UDim2.fromOffset(10, 10),
@@ -83,7 +95,7 @@ return function(ctx)
 			else
 				ctx.message(r.erreur, C.erreur)
 			end
-		end)
+		end, 0.4)
 		lignes[idTissu] = l
 		majLigne(idTissu)
 	end

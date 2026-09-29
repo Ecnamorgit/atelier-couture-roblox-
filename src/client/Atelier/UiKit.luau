@@ -56,8 +56,11 @@ function UiKit.texte(props)
 	}, props))
 end
 
--- Bouton ; auClic est appelé par Activated (souris, doigt, manette)
-function UiKit.bouton(props, auClic)
+UiKit.DELAI_NOUVEAU = 0.4 -- s : un bouton qui vient d'apparaître ignore les clics (second clic d'un double clic)
+
+-- Bouton ; auClic est appelé par Activated (souris, doigt, manette). calme (s, facultatif) : délai
+-- pendant lequel un nouveau clic est ignoré, pour les actions à ne pas répéter par un double clic.
+function UiKit.bouton(props, auClic, calme)
 	local b = UiKit.creer("TextButton", fusionner({
 		BackgroundColor3 = UiKit.COULEURS.accent,
 		TextColor3 = Color3.new(1, 1, 1),
@@ -68,14 +71,22 @@ function UiKit.bouton(props, auClic)
 	}, props))
 	UiKit.arrondir(b, 8)
 	if auClic then
-		b.Activated:Connect(auClic)
+		local apparu, dernier = os.clock(), -math.huge
+		b.Activated:Connect(function(...)
+			local maintenant = os.clock()
+			if maintenant - apparu < UiKit.DELAI_NOUVEAU or maintenant - dernier < (calme or 0) then
+				return
+			end
+			dernier = maintenant
+			auClic(...)
+		end)
 	end
 	return b
 end
 
 -- Bouton secondaire (fond clair)
-function UiKit.boutonDoux(props, auClic)
-	return UiKit.bouton(fusionner({ BackgroundColor3 = UiKit.COULEURS.secondaire, TextColor3 = UiKit.COULEURS.texte }, props), auClic)
+function UiKit.boutonDoux(props, auClic, calme)
+	return UiKit.bouton(fusionner({ BackgroundColor3 = UiKit.COULEURS.secondaire, TextColor3 = UiKit.COULEURS.texte }, props), auClic, calme)
 end
 
 -- Échelle d'une fenêtre de taille de référence pour tenir dans l'écran (téléphones)
