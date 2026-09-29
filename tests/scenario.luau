@@ -303,6 +303,34 @@ UIS.InputEnded:Fire({ UserInputType = Enum.UserInputType.Touch, Position = Vecto
 verifier(rouleau.ScrollingEnabled == false, "le second doigt levé ne lâche pas la pièce")
 UIS.InputEnded:Fire(doigt)
 verifier(rouleau.ScrollingEnabled == true, "pièce lâchée : le rouleau défile de nouveau")
+-- Molette sur la pièce : elle tourne de 15° ; le rouleau ne défile pas tant que la souris est dessus
+local angleAvant = pieceC.Rotation
+pieceC.MouseEnter:Fire()
+verifier(rouleau.ScrollingEnabled == false, "souris sur la pièce : la molette ne fait pas défiler le rouleau")
+pieceC.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseWheel, Position = Vector3.new(0, 0, 1) })
+verifier(pieceC.Rotation == angleAvant + 15, "molette vers le haut : la pièce tourne de 15°")
+pieceC.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseWheel, Position = Vector3.new(0, 0, -1) })
+verifier(pieceC.Rotation == angleAvant, "molette vers le bas : elle revient")
+pieceC.MouseLeave:Fire()
+verifier(rouleau.ScrollingEnabled == true, "souris hors de la pièce : le rouleau défile de nouveau")
+-- A et D : le rouleau se déroule de 2 dm ou revient ; les touches ne font pas marcher l'avatar
+local deroule = M.actions.AtelierDerouler
+verifier(deroule ~= nil and table.find(deroule.touches, Enum.KeyCode.A) ~= nil and table.find(deroule.touches, Enum.KeyCode.D) ~= nil, "A et D servent à dérouler tant que la table est affichée")
+local defileAvant = rouleau.CanvasPosition.Y
+verifier(deroule.f("AtelierDerouler", Enum.UserInputState.Begin, { KeyCode = Enum.KeyCode.D }) == Enum.ContextActionResult.Sink, "D ne fait pas marcher l'avatar")
+verifier(rouleau.CanvasPosition.Y == defileAvant + 2 * 36, "D : le rouleau se déroule de 2 dm")
+deroule.f("AtelierDerouler", Enum.UserInputState.Begin, { KeyCode = Enum.KeyCode.A })
+verifier(rouleau.CanvasPosition.Y == defileAvant, "A : il revient")
+-- Fenêtre fermée : A, D et R sont rendus au jeu
+cliquer("Fermer")
+verifier(M.actions.AtelierDerouler == nil, "fenêtre fermée : A et D rendus à l'avatar")
+local rotationFermee = pieceC.Rotation
+UIS.InputBegan:Fire({ KeyCode = Enum.KeyCode.R, UserInputType = Enum.UserInputType.Keyboard }, false)
+verifier(pieceC.Rotation == rotationFermee, "fenêtre fermée : R ne tourne plus la pièce")
+cliquer("OuvrirAtelier")
+verifier(M.actions.AtelierDerouler ~= nil, "fenêtre rouverte : A et D déroulent de nouveau")
+-- Tissu entamé : rien de coupé, le rouleau est intact
+verifier(string.find(panneau.InfoRouleau.Text, "Entamé : 0 / ", 1, true) == 1 and not rouleau.Tissu.Entame.Visible, "rien de coupé : rouleau intact")
 cliquer("Proposer")
 -- « Plus de tissu » cliqué deux fois très vite : un seul achat
 local avantPlus = argent()
@@ -324,6 +352,12 @@ while titre() == "3. Table de découpe" and essais < 20 do
 		end
 		if titre() ~= "3. Table de découpe" or #panneau.ListePieces:GetChildren() < restantes then
 			coupes += 1
+			if coupes == 1 and titre() == "3. Table de découpe" then
+				-- Couper consomme le rouleau jusqu'au bas de la pièce la plus basse : le tissu entamé s'affiche
+				local c = requireModule(scriptClient.Session).courante.etat.coupons.soie_rose_fleurs
+				verifier(c:longueurUtilisee() > 0 and panneau.InfoRouleau.Text == ("Entamé : %d / %d dm"):format(c:longueurUtilisee(), c.longueur), "une pièce coupée : le tissu entamé s'affiche")
+				verifier(rouleau.Tissu.Entame.Visible and rouleau.Tissu.Entame.Position.Y.Offset == c:longueurUtilisee() * 36, "une ligne marque le tissu entamé sur le rouleau")
+			end
 		end
 		if titre() == "3. Table de découpe" then
 			verifier(#fenetre.Contenu.Rouleau.Tissu.Coupees:GetChildren() >= 1, "les pièces coupées restent visibles")

@@ -1,8 +1,10 @@
--- Écran de la table de découpe : le rouleau vu de dessus (motif du tissu, pli, pièces déjà coupées),
--- la pièce sélectionnée à glisser à la souris ou au doigt, la rotation, le droit-fil et la coupe.
+-- Écran de la table de découpe : le rouleau vu de dessus (motif du tissu, pli, pièces déjà coupées,
+-- tissu entamé), la pièce sélectionnée à glisser à la souris ou au doigt, la rotation (boutons, R, molette
+-- sur la pièce), le déroulé (défilement, A et D), le droit-fil et la coupe.
 -- La logique (position, aimantation, validité) est dans TableDecoupe.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Polygone = require(Couture:WaitForChild("Polygone"))
@@ -13,6 +15,8 @@ local PX = 36 -- pixels par dm : le rouleau de 14 dm fait 504 px de large
 local ACHAT_RAPIDE = 5 -- dm ajoutés par le bouton « Plus de tissu »
 local CALME = 0.4 -- s : un double clic ne coupe pas la pièce suivante, n'achète pas deux fois
 local PAPIER = Color3.fromRGB(255, 248, 222) -- à défaut de silhouette (mémoire des images pleine)
+local DEROULER = 2 -- dm par appui sur A ou D
+local ACTION_DEROULER = "AtelierDerouler" -- A et D déroulent le rouleau (au lieu de faire marcher l'avatar)
 
 local function taillePiece(idPiece)
 	local b = Polygone.boite(Catalogue.piece(idPiece).contour)
@@ -45,6 +49,8 @@ return function(ctx)
 	})
 	local pli = UiKit.creer("Frame", { Name = "Pli", BackgroundColor3 = C.texte, BackgroundTransparency = 0.4, BorderSizePixel = 0, Position = UDim2.fromOffset(7 * PX - 1, 0), Size = UDim2.new(0, 2, 1, 0), ZIndex = 2, Parent = tissuImage })
 	local calque = UiKit.creer("Frame", { Name = "Coupees", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = tissuImage })
+	-- Tissu entamé : couper consomme le rouleau jusqu'au bas de la pièce la plus basse
+	local ligneEntame = UiKit.creer("Frame", { Name = "Entame", BackgroundColor3 = C.alerte, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5), Size = UDim2.new(1, 0, 0, 3), ZIndex = 4, Visible = false, Parent = tissuImage })
 	local piece = UiKit.creer("ImageButton", { Name = "PieceCourante", BackgroundTransparency = 1, BackgroundColor3 = PAPIER, AnchorPoint = Vector2.new(0.5, 0.5), AutoButtonColor = false, ZIndex = 5, Parent = tissuImage })
 
 	-- Panneau de droite
@@ -52,7 +58,8 @@ return function(ctx)
 	-- Onglets des tissus : une barre qui défile quand il y a plus de deux tissus
 	local onglets = UiKit.creer("ScrollingFrame", { Name = "Onglets", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollingDirection = Enum.ScrollingDirection.X, ScrollBarThickness = 10, ScrollBarImageColor3 = C.accent, Size = UDim2.new(1, 0, 0, 44), Parent = panneau })
 	local liste = UiKit.creer("Frame", { Name = "ListePieces", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 156), Parent = panneau })
-	local droitFil = UiKit.texte({ Name = "DroitFil", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, 204), Size = UDim2.new(1, 0, 0, 22), Parent = panneau })
+	local droitFil = UiKit.texte({ Name = "DroitFil", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, 204), Size = UDim2.new(0.5, 0, 0, 22), Parent = panneau })
+	local infoRouleau = UiKit.texte({ Name = "InfoRouleau", TextSize = 14, TextColor3 = C.texteDoux, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(0.5, 0, 0, 204), Size = UDim2.new(0.5, 0, 0, 22), Parent = panneau })
 	local statut = UiKit.texte({ Name = "Statut", TextSize = 14, Position = UDim2.fromOffset(0, 226), Size = UDim2.new(1, 0, 0, 36), Parent = panneau })
 
 	local rafraichir, placerPiece
@@ -141,6 +148,10 @@ return function(ctx)
 			tissuImage.ImageContent = motif
 		end
 		vue.CanvasSize = UDim2.fromOffset(0, coupon.longueur * PX)
+		local entame = coupon:longueurUtilisee()
+		infoRouleau.Text = ("Entamé : %d / %d dm"):format(entame, coupon.longueur)
+		ligneEntame.Visible = entame > 0
+		ligneEntame.Position = UDim2.fromOffset(0, entame * PX)
 		local plie = false
 		for _, id in ipairs(table_:piecesRestantes()) do
 			plie = plie or Catalogue.piece(id).pliee == true
@@ -211,6 +222,7 @@ return function(ctx)
 	-- et le centre de la pièce au moment où on la saisit. Pendant la saisie, le rouleau ne défile pas,
 	-- et seul le doigt qui tient la pièce la déplace.
 	local saisie, ecartX, ecartY = nil, 0, 0
+	local survol = false -- souris sur la pièce : la molette la tourne, le rouleau ne défile pas
 	local function versRouleau(position)
 		local pxEcran = tissuImage.AbsoluteSize.X / 14
 		local x = (position.X - tissuImage.AbsolutePosition.X) / pxEcran
@@ -219,7 +231,7 @@ return function(ctx)
 	end
 	local function lacher()
 		saisie = nil
-		vue.ScrollingEnabled = true
+		vue.ScrollingEnabled = not survol
 	end
 	table.insert(connexions, piece.InputBegan:Connect(function(input)
 		if table_.placement and not saisie and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
@@ -247,13 +259,48 @@ return function(ctx)
 			lacher()
 		end
 	end))
-	-- R : tourner de 15° (Maj + R : dans l'autre sens)
+	-- Molette sur la pièce : tourner de 15° (vers le haut : sens des aiguilles d'une montre)
+	table.insert(connexions, piece.MouseEnter:Connect(function()
+		survol = true
+		vue.ScrollingEnabled = false
+	end))
+	table.insert(connexions, piece.MouseLeave:Connect(function()
+		survol = false
+		vue.ScrollingEnabled = saisie == nil
+	end))
+	table.insert(connexions, piece.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseWheel and ctx.fenetre.Visible and table_.placement then
+			tourner(input.Position.Z > 0 and 15 or -15)
+		end
+	end))
+	-- R (fenêtre ouverte) : tourner de 15° (Maj + R : dans l'autre sens)
 	table.insert(connexions, UserInputService.InputBegan:Connect(function(input, traite)
-		if not traite and input.KeyCode == Enum.KeyCode.R then
+		if not traite and ctx.fenetre.Visible and input.KeyCode == Enum.KeyCode.R then
 			local inverse = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.RightShift)
 			tourner(inverse and -15 or 15)
 		end
 	end))
+	-- A et D : dérouler le rouleau (2 dm plus loin) ou revenir. Liées seulement quand la fenêtre est
+	-- visible, et absorbées : l'avatar ne marche pas pendant ce temps.
+	local function lierDerouler(actif)
+		if not actif then
+			ContextActionService:UnbindAction(ACTION_DEROULER)
+			return
+		end
+		ContextActionService:BindActionAtPriority(ACTION_DEROULER, function(_, etatEntree, input)
+			if etatEntree == Enum.UserInputState.Begin then
+				local sens = input.KeyCode == Enum.KeyCode.D and 1 or -1
+				local y = math.clamp(vue.CanvasPosition.Y + sens * DEROULER * PX, 0, vue.CanvasSize.Y.Offset)
+				vue.CanvasPosition = Vector2.new(0, y)
+			end
+			return Enum.ContextActionResult.Sink
+		end, false, Enum.ContextActionPriority.High.Value, Enum.KeyCode.A, Enum.KeyCode.D)
+	end
+	local function surVisibilite()
+		lierDerouler(ctx.fenetre.Visible)
+	end
+	table.insert(connexions, ctx.fenetre:GetPropertyChangedSignal("Visible"):Connect(surVisibilite))
+	surVisibilite()
 
 	local desabonner = session:surChangement(function()
 		rafraichir()
@@ -263,6 +310,7 @@ return function(ctx)
 	montrerPiece()
 	return function()
 		desabonner()
+		lierDerouler(false)
 		for _, c in ipairs(connexions) do
 			c:Disconnect()
 		end
