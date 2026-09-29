@@ -7,7 +7,7 @@ et le tissu découpé se voit tel quel sur la robe en 3D.
 Le jeu est en cours de refonte, sous-projet par sous-projet
 (spec : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`, plans : `docs/superpowers/plans/`).
 
-## État actuel (plan 4c)
+## État actuel (plan 4d-1)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -36,10 +36,16 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    la robe (styles, qualité, couleur dominante, accessoires). Acceptée : paie = base × (0,5 + qualité), et la
    robe part en vitrine ; la cliente remercie et s'en va. Refusée : les exigences ratées s'affichent (avec le
    score actuel pour les styles) ; on retouche les décorations ou on abandonne.
-9. La suite : finition (plan 4d).
+9. La suite : écarts à la spec §4, sons, réglages mobiles, équilibrage, mobilier (plan 4d-2).
 
-« Recommencer la robe » demande une confirmation (deuxième appui) : le tissu coupé et les décorations
-posées sont perdus.
+« Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
+demandent une confirmation (deuxième appui).
+
+**Réseau lent ou coupé** : au-delà de 0,3 s d'attente du serveur, « Un instant… » s'affiche en gris sous la
+fenêtre. Un refus passager (serveur occupé ou injoignable, trop d'appels) s'affiche en gris et ne défait
+rien : une pièce cousue reste finie, on la rend de nouveau. Une réponse perdue est rattrapée : le client
+redemande l'état au serveur, et chaque refus des règles emporte l'état du serveur, qui répare la copie du
+client. Si la partie n'est pas encore arrivée au bout d'une minute, le joueur en est prévenu.
 
 ## Installation
 
@@ -78,11 +84,18 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   par joueur, écriture par `UpdateAsync` avec un verrou de session, migrations, reprise de l'argent de
   l'ancienne clé `AtelierCouture_v1`) : lue à l'arrivée, écrite toutes les 60 s, au départ et à l'arrêt du
   serveur. Rien n'est écrit si la lecture a échoué (le joueur est prévenu), ni sur un lieu non publié.
+  Une écriture à la fois par joueur (la sauvegarde régulière et celle du départ ne se croisent pas, et un
+  retour rapide sur le même serveur attend l'écriture du départ) ; à l'arrêt du serveur, les parties en
+  cours de lecture sont attendues ; une partie trop lourde (plus de 3,5 millions de caractères) perd ses
+  plus anciennes robes.
   `Boutiques` construit la rue : une boutique par joueur (murs, porte et fenêtre, enseigne à son nom,
   comptoir et clochette, étagère de tissus, table, machine), et le socle de sa vitrine, qui porte la
   recette de sa dernière robe livrée (attribut `Recette`) ; chaque client construit les robes proches.
+  Une boutique impossible à construire n'empêche pas de jouer : l'atelier est alors hors de la rue.
 - `src/client/Atelier/` (LocalScript `Atelier` et ses modules) : l'interface.
-  `Session` envoie chaque action au serveur et recharge sur place la copie de l'état qu'il renvoie ; `TableDecoupe` et `MachineCoudre` sont la logique pure de la table
+  `Session` envoie chaque action au serveur (une à la fois) et recharge sur place la copie de l'état qu'il
+  renvoie, acceptée ou refusée ; elle signale l'attente à l'interface et redemande l'état après une réponse
+  perdue. `TableDecoupe` et `MachineCoudre` sont la logique pure de la table
   de découpe, de la machine à coudre et de l'éditeur de décorations (`Decorateur`) ; `Cliente` construit
   l'avatar de la cliente et sa bulle ; `Scene` tient, dans la boutique du joueur, la cliente, le mannequin,
   la robe épinglée, l'aperçu des décorations, les réglages de la photo et la caméra du poste ;
