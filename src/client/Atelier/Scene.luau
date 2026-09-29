@@ -421,6 +421,17 @@ function Scene:ouvrir(ouverte, etat)
 	self:regarder(ouverte and Scene.POSTES[etat.etape] == true)
 end
 
+-- Commandes de l'avatar : coupées tant que la fenêtre de l'atelier est ouverte (au téléphone, le stick et le
+-- bouton de saut passeraient sous la fenêtre ; au clavier, l'avatar marcherait derrière elle), rendues quand
+-- on la ferme. Un seul appel par changement.
+function Scene:majControles()
+	local coupees = self.ouverte == true
+	if coupees ~= self.controlesCoupes then
+		self.controlesCoupes = coupees
+		self.controles(not coupees)
+	end
+end
+
 -- Caméra fixe sur le mannequin (actif), ou rendue au joueur
 function Scene:regarder(actif)
 	local camera = Workspace.CurrentCamera
@@ -438,12 +449,11 @@ function Scene:regarder(actif)
 			camera.CFrame = axe * CFrame.Angles(0, math.rad(self.orbite), 0) * axe:Inverse() * vue
 		end
 		self.cameraFixe = true
-		self.controles(false)
 	elseif self.cameraFixe then
 		camera.CameraType = Enum.CameraType.Custom
 		self.cameraFixe = false
-		self.controles(true)
 	end
+	self:majControles()
 	self:effacerCliente()
 	self:effacerAvatars()
 end
@@ -487,6 +497,7 @@ end
 
 function Scene:detruire()
 	self:finirPhoto()
+	self.ouverte = false
 	self:regarder(false)
 	self.connexionAvatars:Disconnect()
 	self.pieces = {}

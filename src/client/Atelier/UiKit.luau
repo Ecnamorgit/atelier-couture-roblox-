@@ -128,8 +128,9 @@ function UiKit.boutonConfirme(props, auClic, principal)
 end
 
 -- Échelle d'une fenêtre de taille de référence pour tenir dans l'écran (téléphones)
+-- (jamais sous 0,35 : au démarrage, Roblox peut annoncer un écran de 1 × 1)
 function UiKit.echelle(tailleEcran)
-	return math.min(1, (tailleEcran.X - 20) / UiKit.LARGEUR, (tailleEcran.Y - 60) / UiKit.HAUTEUR)
+	return math.clamp(math.min((tailleEcran.X - 20) / UiKit.LARGEUR, (tailleEcran.Y - 60) / UiKit.HAUTEUR), 0.35, 1)
 end
 
 -- Couleur Color3 d'un triplet { r, v, b }

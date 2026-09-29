@@ -128,8 +128,8 @@ U.verifier(#scene.robe:GetChildren() == 0 and scene.dossier:FindFirstChild("Mann
 scene:detruire()
 U.verifier(scene.dossier.Parent == nil, "scène détruite")
 
--- Relecture finale : pendant les postes, l'avatar ne bouge pas (commandes du joueur coupées), et les
--- commandes reviennent en quittant le poste ou en fermant la fenêtre
+-- Tant que la fenêtre de l'atelier est ouverte, l'avatar ne bouge pas (commandes du joueur coupées : au
+-- téléphone, le stick et le saut passeraient sous la fenêtre) ; elles reviennent quand on la ferme
 local appels = {}
 local etat2 = EtatAtelier.nouveau(1000)
 local scene2 = Scene.nouvelle(Workspace, {
@@ -140,7 +140,10 @@ local scene2 = Scene.nouvelle(Workspace, {
 })
 etat2:nouvelleCommande(Random.new(3))
 scene2:synchroniser(etat2)
-U.verifier(#appels == 0 or appels[#appels] == true, "au carnet : l'avatar garde ses commandes")
+U.verifier(appels[#appels] == false, "au carnet, fenêtre ouverte : commandes de l'avatar coupées")
+scene2:ouvrir(false, etat2)
+U.verifier(appels[#appels] == true, "au carnet, fenêtre fermée : l'avatar bouge")
+scene2:ouvrir(true, etat2)
 etat2.etape = "epinglage"
 scene2:synchroniser(etat2)
 U.verifier(appels[#appels] == false, "au poste : commandes de l'avatar coupées")
@@ -148,7 +151,9 @@ scene2:ouvrir(false, etat2)
 U.verifier(appels[#appels] == true, "fenêtre fermée : l'avatar bouge de nouveau")
 scene2:ouvrir(true, etat2)
 U.verifier(appels[#appels] == false, "fenêtre rouverte au poste : commandes coupées")
+local nAppels = #appels
 etat2.etape = "carnet"
 scene2:synchroniser(etat2)
-U.verifier(appels[#appels] == true, "retour au carnet : commandes rendues")
+U.verifier(appels[#appels] == false and #appels == nAppels, "retour au carnet, fenêtre ouverte : commandes toujours coupées, sans appel de trop")
 scene2:detruire()
+U.verifier(appels[#appels] == true, "scène détruite : l'avatar retrouve ses commandes")
