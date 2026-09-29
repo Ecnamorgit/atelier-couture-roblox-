@@ -143,5 +143,16 @@ local sansErreur, indice = pcall(rue.attribuer, rue, malchanceux)
 Boutique.emplacement = vraie
 U.verifier(sansErreur and indice == nil and malchanceux:GetAttribute("Boutique") == 0, "construction en panne : sans erreur, pas de boutique (attribut 0 : le client n'attend pas)")
 U.verifier(monde.Rue:FindFirstChild("Boutique_4") == nil and monde.Vitrines:FindFirstChild("Vitrine_4") == nil, "construction en panne : rien de laissé dans la rue")
-U.verifier(rue:attribuer(joueurNumero("Suivante", 751)) == 4, "l'emplacement resté libre sert au joueur suivant")
+local suivante = joueurNumero("Suivante", 751)
+U.verifier(rue:attribuer(suivante) == 4, "l'emplacement resté libre sert au joueur suivant")
+-- Panne en posant la vitrine, la boutique déjà dans la rue : elle est retirée, l'emplacement reste libre
+rue:liberer(suivante)
+local vitrineVraie = Boutique.VITRINE
+Boutique.VITRINE = nil
+local malchanceuse = joueurNumero("Malchanceuse", 752)
+local sansErreur2, indice2 = pcall(rue.attribuer, rue, malchanceuse)
+Boutique.VITRINE = vitrineVraie
+U.verifier(sansErreur2 and indice2 == nil and malchanceuse:GetAttribute("Boutique") == 0, "panne en posant la vitrine : pas de boutique, sans erreur")
+U.verifier(monde.Rue:FindFirstChild("Boutique_4") == nil and monde.Vitrines:FindFirstChild("Vitrine_4") == nil, "panne après la pose de la boutique : rien de laissé dans la rue")
+U.verifier(rue:attribuer(joueurNumero("Suivante2", 753)) == 4, "l'emplacement sert au joueur suivant")
 monde:Destroy()

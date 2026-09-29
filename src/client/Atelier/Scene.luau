@@ -30,6 +30,7 @@ Scene.CLIENTE = CFrame.lookAt(Vector3.new(4.6, 0, 42), Vector3.new(-1.1, 0, 34.6
 Scene.DUREE_ADIEU = 3 -- secondes avant qu'elle s'en aille, une fois la commande finie
 Scene.PRES_CLIENTE = 3.5 -- studs : la vue qui tourne passe près d'elle, elle s'efface pour ne pas boucher la vue
 Scene.PERIODE_AVATARS = 0.2 -- secondes entre deux regards sur les visiteurs, pendant la caméra du poste
+Scene.ESSAI_PIECE = 3 -- secondes : une pièce ratée faute de mémoire est réessayée, sans attendre une action
 Scene.PAROLES = {
 	carnet = "Bonjour ! J'aurais besoin d'une robe.",
 	photo = "Voyons voir…",
@@ -252,6 +253,7 @@ end
 -- Met la scène d'accord avec l'état de l'atelier (derniere = dernière action réussie de la session).
 -- Peut attendre (création des maillages) : l'appeler dans une tâche à part pour ne pas bloquer l'interface.
 function Scene:synchroniser(etat, derniere)
+	self.etatSuivi, self.derniereSuivie = etat, derniere -- pour réessayer une pièce ratée
 	self:suivreCliente(etat, derniere)
 	if etat.etape ~= "photo" then
 		self:finirPhoto()
@@ -318,12 +320,22 @@ function Scene:synchroniser(etat, derniere)
 					ratee = true -- mémoire des maillages pleine
 				end
 			end
-			-- Pièce ratée : oubliée, pour être reconstruite à la prochaine synchronisation
+			-- Pièce ratée : oubliée, et réessayée quelques secondes plus tard (une synchronisation en attente à
+			-- la fois ; entre-temps, une action du joueur la réessaie aussi)
 			if ratee and self.pieces[p.id] == entree then
 				for _, part in ipairs(entree.parts) do
 					part:Destroy()
 				end
 				self.pieces[p.id] = nil
+				if not self.reessai then
+					self.reessai = true
+					task.delay(Scene.ESSAI_PIECE, function()
+						self.reessai = false
+						if self.dossier.Parent then
+							self:synchroniser(self.etatSuivi, self.derniereSuivie)
+						end
+					end)
+				end
 			end
 		end
 	end

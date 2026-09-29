@@ -145,6 +145,13 @@ function Boutiques:attribuer(joueur)
 			end)
 			if not ok then
 				warn(("[Atelier] %s : boutique %d impossible à construire : %s"):format(joueur.Name, indice, tostring(b)))
+				-- Ce qui a pu être posé avant la panne est retiré : l'emplacement reste propre et libre
+				for _, reste in ipairs({ { self.rue, "Boutique_" }, { self.vitrines, "Vitrine_" } }) do
+					local objet = reste[1]:FindFirstChild(reste[2] .. indice)
+					if objet then
+						objet:Destroy()
+					end
+				end
 				joueur:SetAttribute("Boutique", 0)
 				return nil
 			end
