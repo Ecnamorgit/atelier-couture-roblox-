@@ -68,4 +68,29 @@ function Metrage.conseil(ids)
 	return longueur
 end
 
+-- Tissu à acheter pour un croquis : pieces = ses pièces (dans l'ordre), tissus = { [idPiece] = idTissu }
+-- (les pièces sans tissu ne comptent pas), stock = { [idTissu] = dm }. Renvoie { { tissu, conseil, manque } }
+-- par tissu, dans l'ordre des pièces, et le total manquant (dm).
+function Metrage.aAcheter(pieces, tissus, stock)
+	local ordre, parTissu = {}, {}
+	for _, id in ipairs(pieces) do
+		local t = tissus[id]
+		if t then
+			if not parTissu[t] then
+				parTissu[t] = {}
+				table.insert(ordre, t)
+			end
+			table.insert(parTissu[t], id)
+		end
+	end
+	local liste, total = {}, 0
+	for _, t in ipairs(ordre) do
+		local conseil = Metrage.conseil(parTissu[t])
+		local manque = math.max(0, conseil - (stock[t] or 0))
+		table.insert(liste, { tissu = t, conseil = conseil, manque = manque })
+		total += manque
+	end
+	return liste, total
+end
+
 return Metrage

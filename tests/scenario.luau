@@ -154,6 +154,7 @@ verifier(titre() == "1. Carnet de croquis", "la clochette ouvre le carnet")
 verifierTailles("carnet")
 verifier(texte("La cliente (taille") ~= nil, "la taille de la cliente est affichée")
 verifier(texte("Exigence1") ~= nil and texte("Exigence1").Text ~= "", "les exigences sont affichées")
+verifier(string.find(fenetre.Contenu.Metrage.Text, "Choisis les tissus", 1, true) == 1, "sans tissu : le métrage attend les tissus")
 -- Robe : décolleté en V, manches ballon, col Claudine, jupe trapèze
 for _, v in ipairs({ "corsage_v", "manches_ballon", "col_claudine", "jupe_trapeze" }) do
 	cliquer("Variante_" .. v)
@@ -204,6 +205,20 @@ end
 verifier(nbSoie == 6, "toute la robe en soie rose fleurie")
 local jaugeApres = fenetre.Contenu.Droite.Jauge_romantique.Acquis.Size
 verifier(jaugeApres.X.Scale > jaugeAvant.X.Scale, "la jauge Romantique monte avec la soie")
+-- Métrage et coût en direct : le conseil pour toute la robe (en soie), au prix de la soie
+local Metrage = requireModule(dossier.Metrage)
+local piecesRobe = requireModule(dossier.Patron).piecesDuCroquis({ corsage = "corsage_v", manches = "manches_ballon", col = "col_claudine", jupe = "jupe_trapeze" })
+local dmRobe = Metrage.conseil(piecesRobe)
+local prixRobe = EtatAtelier.prix("soie_rose_fleurs", dmRobe)
+verifier(fenetre.Contenu.Metrage.Text == ("Tissu à acheter : %d dm, %d po (tu as %d po)."):format(dmRobe, prixRobe, argent()), "métrage et coût en direct : " .. fenetre.Contenu.Metrage.Text)
+-- Pas assez d'argent (copie du client appauvrie le temps du test) : la ligne dit ce qui manque, en rouge
+local etatCarnet = requireModule(scriptClient.Session).courante.etat
+local argentVrai = etatCarnet.argent
+etatCarnet.argent = prixRobe - 10
+cliquer("Variante_jupe_trapeze") -- même croquis : le carnet se redessine
+verifier(fenetre.Contenu.Metrage.Text == ("Tissu à acheter : %d dm, %d po — il te manque 10 po."):format(dmRobe, prixRobe) and fenetre.Contenu.Metrage.TextColor3 == requireModule(scriptClient.UiKit).COULEURS.erreur, "pas assez d'argent : ce qui manque, en rouge")
+etatCarnet.argent = argentVrai
+cliquer("Variante_jupe_trapeze")
 cliquer("Valider")
 
 ---------------------------------------------------------------------------

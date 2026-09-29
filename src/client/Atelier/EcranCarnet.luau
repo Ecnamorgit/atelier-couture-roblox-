@@ -1,10 +1,12 @@
--- Écran du carnet de croquis : variantes des 4 familles, tissu de chaque pièce, jauges de style
--- et exigences de la cliente mises à jour en direct.
+-- Écran du carnet de croquis : variantes des 4 familles, tissu de chaque pièce, jauges de style,
+-- exigences de la cliente, métrage et coût du tissu à acheter, mis à jour en direct.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Patron = require(Couture:WaitForChild("Patron"))
 local Notation = require(Couture:WaitForChild("Notation"))
+local Metrage = require(Couture:WaitForChild("Metrage"))
+local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 
 local NOMS_FAMILLES = { corsage = "Corsage", manches = "Manches", col = "Col", jupe = "Jupe" }
@@ -40,6 +42,8 @@ return function(ctx)
 		end
 	end
 	local listePieces = UiKit.creer("Frame", { Name = "Pieces", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 190), Size = UDim2.new(1, 0, 1, -190), Parent = gauche })
+	-- En bas à gauche, à côté de « Valider » : le tissu à acheter pour ce croquis, et son coût
+	local metrage = UiKit.texte({ Name = "Metrage", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, -260, 0, 46), Parent = contenu })
 
 	-- Colonne de droite : commande, exigences, jauges
 	local droite = UiKit.arrondir(UiKit.creer("Frame", { Name = "Droite", BackgroundColor3 = C.panneau, Position = UDim2.new(1, -310, 0, 0), Size = UDim2.new(0, 310, 1, -56), Parent = contenu }), 10)
@@ -195,6 +199,20 @@ return function(ctx)
 			local f = fourchette[style]
 			j.acquis.Size = UDim2.fromScale(f.min / 100, 1)
 			j.plage.Size = UDim2.fromScale(f.max / 100, 1)
+		end
+		-- Tissu à acheter (le stock compte) et son coût
+		local aAcheter, dm = Metrage.aAcheter(pieces, tissus, etat.stock)
+		local prix = 0
+		for _, t in ipairs(aAcheter) do
+			prix += EtatAtelier.prix(t.tissu, t.manque)
+		end
+		if #aAcheter == 0 then
+			metrage.Text, metrage.TextColor3 = "Choisis les tissus : le métrage et le coût s'affichent ici.", C.texteDoux
+		elseif prix > etat.argent then
+			metrage.Text = ("Tissu à acheter : %d dm, %d po — il te manque %d po."):format(dm, prix, prix - etat.argent)
+			metrage.TextColor3 = C.erreur
+		else
+			metrage.Text, metrage.TextColor3 = ("Tissu à acheter : %d dm, %d po (tu as %d po)."):format(dm, prix, etat.argent), C.texte
 		end
 		local SYMBOLES = { ok = "✓", non = "×", ["?"] = "…" }
 		local COULEURS_STATUT = { ok = C.ok, non = C.erreur, ["?"] = C.texteDoux }
