@@ -90,20 +90,21 @@ function UiKit.boutonDoux(props, auClic, calme)
 	return UiKit.bouton(fusionner({ BackgroundColor3 = UiKit.COULEURS.secondaire, TextColor3 = UiKit.COULEURS.texte }, props), auClic, calme)
 end
 
--- Bouton d'une action qu'on ne peut pas annuler (recommencer la robe) : le premier appui demande
+-- Bouton d'une action qu'on ne peut pas annuler (recommencer, livrer la robe) : le premier appui demande
 -- confirmation, un second appui (au moins 0,4 s après, dans les 3 s) agit ; sinon il revient à la normale.
+-- principal (facultatif) : l'allure d'un bouton principal (fond de couleur) au lieu d'un bouton doux.
 UiKit.DELAI_CONFIRMATION = 3
 UiKit.TEXTE_CONFIRMATION = "Vraiment ? Touche encore"
-function UiKit.boutonConfirme(props, auClic)
+function UiKit.boutonConfirme(props, auClic, principal)
 	local b
 	local texte = props.Text
 	local jeton = 0
 	local function normal()
 		b.Text = texte
-		b.BackgroundColor3 = UiKit.COULEURS.secondaire
-		b.TextColor3 = UiKit.COULEURS.texte
+		b.BackgroundColor3 = if principal then UiKit.COULEURS.accent else UiKit.COULEURS.secondaire
+		b.TextColor3 = if principal then Color3.new(1, 1, 1) else UiKit.COULEURS.texte
 	end
-	b = UiKit.boutonDoux(props, function()
+	b = (if principal then UiKit.bouton else UiKit.boutonDoux)(props, function()
 		jeton += 1
 		if b.Text == UiKit.TEXTE_CONFIRMATION then
 			normal()

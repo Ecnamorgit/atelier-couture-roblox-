@@ -553,6 +553,26 @@ M.captureMuette = nil
 verifier(not gui.Atelier.Enabled, "capture en cours : interface cachée")
 M.avancer(ScenePoste.ATTENTE_CAPTURE + 0.1)
 verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA and camera.FieldOfView == 70, "capture sans réponse : l'interface et la vue reviennent")
+-- La réponse tardive d'une prise abandonnée ne termine pas la suivante
+local tardive = M.rappelCapture
+M.captureMuette = true
+cliquer("PrendrePhoto")
+M.captureMuette = nil
+tardive("rbxtemp://tardive")
+verifier(not gui.Atelier.Enabled and not fenetre.Contenu.Apercu.Visible, "réponse tardive d'une prise abandonnée : la prise en cours continue")
+M.rappelCapture("rbxtemp://seconde")
+verifier(gui.Atelier.Enabled and fenetre.Contenu.Apercu.Visible and fenetre.Contenu.Apercu.Image.Image == "rbxtemp://seconde", "la prise en cours se termine avec sa propre photo")
+cliquer("FermerApercu")
+-- Le minuteur d'une prise terminée ne coupe pas la suivante
+cliquer("PrendrePhoto")
+cliquer("FermerApercu")
+M.captureMuette = true
+cliquer("PrendrePhoto")
+M.captureMuette = nil
+M.avancer(1.1) -- le minuteur de la prise précédente (2 s) sonne
+verifier(not gui.Atelier.Enabled, "le minuteur d'une prise terminée ne coupe pas la suivante")
+M.avancer(1)
+verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA, "la prise sans réponse se termine à son propre minuteur")
 -- Prise de vue : sans l'interface, vue centrée sur la robe ; puis aperçu et enregistrement
 local pendant = nil
 M.surCapture = function()
@@ -570,12 +590,28 @@ verifier(apercu ~= nil and apercu.Visible and apercu.Image.Image == "rbxtemp://c
 verifier(apercu:IsA("TextButton") and apercu.Text == "" and not apercu.AutoButtonColor, "l'aperçu arrête les appuis : rien ne passe aux boutons cachés dessous")
 cliquer("EnregistrerPhoto")
 verifier(M.galerie ~= nil and M.galerie[1] == apercu.Image.Image and fenetre.Message.Visible, "photo proposée à la galerie du joueur")
+M.echecGalerie = true
+cliquer("EnregistrerPhoto")
+M.echecGalerie = nil
+verifier(fenetre.Message.Visible and fenetre.Message.Text == "La galerie n'est pas disponible pour le moment.", "galerie indisponible : message, sans erreur")
 cliquer("FermerApercu")
 verifier(not apercu.Visible, "aperçu refermé")
+-- Fenêtre fermée pour se promener : décor, lumière et mannequin du jeu ; rouverte : réglages remis
+cliquer("Fermer")
+verifier(scene:FindFirstChild("Fond") == nil and Lighting.ClockTime == heureDuJeu and scene.Mannequin.Buste.Color ~= ScenePoste.MANNEQUINS.noir, "fenêtre fermée pendant la photo : décor, lumière et mannequin du jeu")
+cliquer("OuvrirAtelier")
+verifier(scene.Fond.Color == ScenePoste.DECORS.bleu and Lighting.ClockTime == ScenePoste.LUMIERES.soir.ClockTime and scene.Mannequin.Buste.Color == ScenePoste.MANNEQUINS.noir, "fenêtre rouverte : les réglages de la photo reviennent")
 cliquer("RetourDecorations")
 verifier(scene:FindFirstChild("Fond") == nil and Lighting.ClockTime == heureDuJeu and scene.Mannequin.Buste.Color ~= ScenePoste.MANNEQUINS.noir, "en quittant la présentation : décor, lumière et mannequin rétablis")
 verifier(titre() == "6. Décorations" and #decorations:GetChildren() == 2 and contenuD.Cout.Text == "Coût : 0 po", "retour aux décorations : déjà payées")
 cliquer("Presenter")
+-- « Livrer la robe » est loin de « Prendre la photo », et demande une confirmation
+local prendre, livrer = boutonNomme("PrendrePhoto"), boutonNomme("Livrer")
+verifier(livrer.Position.Y.Offset - (prendre.Position.Y.Offset + prendre.Size.Y.Offset) >= 16, "« Livrer la robe » à distance de « Prendre la photo »")
+cliquer("Livrer")
+verifier(titre() == "7. Photo et livraison" and livrer.Text == "Vraiment ? Touche encore", "livrer : confirmation demandée")
+livrer.Activated:Fire() -- second appui d'un double clic (moins de 0,4 s) : ignoré
+verifier(titre() == "7. Photo et livraison", "un double clic trop rapide ne livre pas")
 cliquer("Livrer")
 verifier(titre() == "La cliente refuse la robe" and texte("Avec : Croix d'argent") ~= nil, "sans la croix d'argent : robe refusée, exigence ratée affichée")
 verifierTailles("refus")
@@ -585,6 +621,7 @@ cliquer("Deco_croix_argent")
 toucherRobe("Piece_corsage_v_devant_unique", "corsage_v_devant", "unique", 0.5, 0.7)
 cliquer("Presenter")
 local avantLivraison = argent()
+cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe acceptée : payée")
 verifier(texte("La cliente est ravie") ~= nil, "l'accueil annonce la paie")

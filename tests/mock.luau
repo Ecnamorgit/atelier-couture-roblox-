@@ -707,12 +707,14 @@ function methodes.CreateHumanoidModelFromDescriptionAsync(_, description, _rig)
 	return modele
 end
 -- Captures d'écran : M.surCapture() est appelé au moment de la prise (pour vérifier ce qui est affiché) ;
--- M.echecCapture simule un refus de Roblox, M.captureMuette une capture qui ne répond jamais
+-- M.echecCapture simule un refus de Roblox, M.captureMuette une capture qui ne répond pas (son rappel est
+-- gardé dans M.rappelCapture, pour répondre plus tard)
 function methodes.CaptureScreenshot(_, rappel)
 	if M.echecCapture then
 		error("CaptureScreenshot : refus simulé")
 	end
 	if M.captureMuette then
+		M.rappelCapture = rappel
 		return
 	end
 	M.captures = (M.captures or 0) + 1
@@ -721,7 +723,11 @@ function methodes.CaptureScreenshot(_, rappel)
 	end
 	rappel("rbxtemp://capture/" .. M.captures)
 end
+-- M.echecGalerie simule une galerie indisponible
 function methodes.PromptSaveCapturesToGallery(_, captures, rappel)
+	if M.echecGalerie then
+		error("PromptSaveCapturesToGallery : refus simulé")
+	end
 	M.galerie = captures
 	local resultats = {}
 	for _, c in ipairs(captures) do

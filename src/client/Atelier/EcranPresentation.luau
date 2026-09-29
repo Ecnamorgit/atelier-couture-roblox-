@@ -72,23 +72,30 @@ return function(ctx)
 	local apercu = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Apercu", Text = "", AutoButtonColor = false, Visible = false, BackgroundColor3 = C.panneau, Size = UDim2.new(1, 0, 1, 0), ZIndex = 20, Parent = contenu }), 10)
 	local image = UiKit.creer("ImageLabel", { Name = "Image", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Fit, Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 300), ZIndex = 21, Parent = apercu })
 	UiKit.bouton({ Name = "EnregistrerPhoto", Text = "Enregistrer dans la galerie", TextSize = 16, Position = UDim2.fromOffset(0, 312), Size = UDim2.new(1, -6, 0, 42), ZIndex = 21, Parent = apercu }, function()
-		CaptureService:PromptSaveCapturesToGallery({ image.Image }, function(resultats)
-			if resultats and resultats[image.Image] then
-				ctx.message("Photo enregistrée dans ta galerie.", C.ok)
-			end
+		local photo = image.Image
+		local ok = pcall(function()
+			CaptureService:PromptSaveCapturesToGallery({ photo }, function(resultats)
+				if resultats and resultats[photo] then
+					ctx.message("Photo enregistrée dans ta galerie.", C.ok)
+				end
+			end)
 		end)
+		if not ok then
+			ctx.message("La galerie n'est pas disponible pour le moment.", C.erreur)
+		end
 	end, 0.4)
 	UiKit.boutonDoux({ Name = "FermerApercu", Text = "Fermer", TextSize = 14, Position = UDim2.fromOffset(0, 364), Size = UDim2.new(1, -6, 0, 34), ZIndex = 21, Parent = apercu }, function()
 		apercu.Visible = false
 	end)
 
 	-- Prise de vue : l'interface est cachée, la vue centrée sur la robe, le temps de la capture.
-	-- Si Roblox refuse la capture ou ne répond pas, l'interface revient quand même.
+	-- Si Roblox refuse la capture ou ne répond pas, l'interface revient quand même. Chaque prise a son
+	-- numéro : le minuteur ou la réponse tardive d'une prise terminée ne touchent pas à la suivante.
 	local interface = ctx.fenetre.Parent
-	local enCours = false
-	local function retablir()
-		if enCours then
-			enCours = false
+	local prises, enCours = 0, nil -- enCours : numéro de la prise en cours
+	local function retablir(numero)
+		if enCours == numero then
+			enCours = nil
 			interface.Enabled = true
 			scene:cadrerPhoto(false)
 		end
@@ -97,30 +104,36 @@ return function(ctx)
 		if enCours then
 			return
 		end
-		enCours = true
+		prises += 1
+		local numero = prises
+		enCours = numero
 		scene:cadrerPhoto(true)
 		interface.Enabled = false
-		task.delay(scene.ATTENTE_CAPTURE, retablir)
+		task.delay(scene.ATTENTE_CAPTURE, retablir, numero)
 		local ok = pcall(function()
 			CaptureService:CaptureScreenshot(function(capture)
-				retablir()
+				if enCours ~= numero then
+					return -- prise abandonnée (sans réponse à temps)
+				end
+				retablir(numero)
 				image.Image = capture
 				apercu.Visible = true
 			end)
 		end)
 		if not ok then
-			retablir()
+			retablir(numero)
 			ctx.message("La photo n'a pas pu être prise.", C.erreur)
 		end
 	end, 0.4)
 
-	UiKit.bouton({ Name = "Livrer", Text = "Livrer la robe", Position = UDim2.fromOffset(0, 300), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
+	-- Livrer met fin à la commande : loin de « Prendre la photo », et confirmé par un second appui
+	UiKit.boutonConfirme({ Name = "Livrer", Text = "Livrer la robe", Position = UDim2.fromOffset(0, 312), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
 		local r = session:livrer()
 		if not r.ok then
 			ctx.refus(r)
 		end
-	end, 0.4)
-	UiKit.boutonDoux({ Name = "RetourDecorations", Text = "Retour aux décorations", TextSize = 14, Position = UDim2.fromOffset(0, 352), Size = UDim2.new(1, -6, 0, 32), Parent = contenu }, function()
+	end, true)
+	UiKit.boutonDoux({ Name = "RetourDecorations", Text = "Retour aux décorations", TextSize = 14, Position = UDim2.fromOffset(0, 364), Size = UDim2.new(1, -6, 0, 32), Parent = contenu }, function()
 		local r = session:retourDecorations()
 		if not r.ok then
 			ctx.refus(r)
@@ -133,6 +146,16 @@ return function(ctx)
 		end
 	end)
 
+	-- Fenêtre fermée (le joueur se promène) : décor, lumière et mannequin du jeu ; rouverte : réglages remis
+	local connexion = ctx.fenetre:GetPropertyChangedSignal("Visible"):Connect(function()
+		if ctx.fenetre.Visible then
+			rafraichir()
+		else
+			scene:finirPhoto()
+		end
+	end)
 	rafraichir()
-	return function() end
+	return function()
+		connexion:Disconnect()
+	end
 end
