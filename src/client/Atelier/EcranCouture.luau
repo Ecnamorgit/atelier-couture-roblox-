@@ -4,6 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Polygone = require(Couture:WaitForChild("Polygone"))
@@ -16,6 +17,7 @@ local COURSE = 100 -- px de glisser pour corriger à fond (à l'échelle 1)
 local BOIS = Color3.fromRGB(205, 170, 125)
 local FIL = Color3.fromRGB(60, 40, 50)
 local VITESSES = { { "tortue", "Tortue" }, { "normale", "Normale" }, { "lapin", "Lapin" } }
+local ACTION_ESPACE = "AtelierCoudre" -- Espace coud (au lieu de sauter) tant que la machine est affichée
 
 return function(ctx)
 	local UiKit, session, contenu = ctx.UiKit, ctx.session, ctx.contenu
@@ -51,7 +53,7 @@ return function(ctx)
 		lignes[id] = UiKit.texte({ Name = "Ligne" .. i, TextSize = 14, Position = UDim2.fromOffset(0, (i - 1) * 24), Size = UDim2.new(1, 0, 0, 22), Parent = listePieces })
 	end
 	local note = UiKit.texte({ Name = "Note", Font = Enum.Font.GothamBold, TextSize = 18, Position = UDim2.fromOffset(0, 150), Size = UDim2.new(1, 0, 0, 24), Parent = panneau })
-	UiKit.texte({
+	local consigne = UiKit.texte({
 		Text = "Maintiens « Coudre » (ou Espace) et glisse à gauche ou à droite : l'aiguille doit rester sur le pointillé.",
 		TextSize = 14,
 		TextColor3 = C.texteDoux,
@@ -59,6 +61,13 @@ return function(ctx)
 		Size = UDim2.new(1, 0, 0, 52),
 		Parent = panneau,
 	})
+	-- Pièce finie : on peut encore découdre ; elle n'est rendue qu'avec ce bouton (loin de « Coudre »)
+	local rendre
+	local boutonSuivante = UiKit.bouton({ Name = "PieceSuivante", Text = "Pièce suivante", TextSize = 16, Visible = false, Position = UDim2.fromOffset(0, 182), Size = UDim2.new(1, -6, 0, 42), Parent = panneau }, function()
+		if machine and machine:fini() then
+			rendre()
+		end
+	end, 0.4)
 	local boutonsVitesse = {}
 	local rafraichir
 	for k, v in ipairs(VITESSES) do
@@ -184,7 +193,15 @@ return function(ctx)
 			end
 		end
 		local provisoire = machine and machine:noteProvisoire()
-		note.Text = provisoire and ("Couture : %d %%"):format(math.floor(provisoire * 100 + 0.5)) or "Couture : —"
+		local finie = machine ~= nil and machine:fini()
+		if finie then
+			note.Text = ("Pièce finie : %d %%"):format(math.floor(provisoire * 100 + 0.5))
+		else
+			note.Text = provisoire and ("Couture : %d %%"):format(math.floor(provisoire * 100 + 0.5)) or "Couture : —"
+		end
+		boutonSuivante.Visible = finie
+		boutonSuivante.Text = #session.etat:piecesACoudre() <= 1 and "Finir la couture" or "Pièce suivante"
+		consigne.Visible = not finie
 		for nom, b in pairs(boutonsVitesse) do
 			b.BackgroundColor3 = nom == vitesse and C.accent or C.secondaire
 			b.TextColor3 = nom == vitesse and Color3.new(1, 1, 1) or C.texte
@@ -195,8 +212,8 @@ return function(ctx)
 		end
 	end
 
-	-- La pièce est finie : on rend le relevé ; la suivante arrive par l'avis de changement
-	local function rendre()
+	-- On rend le relevé de la pièce finie ; la suivante arrive par l'avis de changement
+	rendre = function()
 		local r = session:rendreCouture(machine.idPiece, machine:releve())
 		if not r.ok then
 			ctx.message(r.erreur, C.erreur)
@@ -217,12 +234,33 @@ return function(ctx)
 			tenu = { entree = input.UserInputType, objet = input, x0 = input.Position.X, x = input.Position.X }
 		end
 	end))
-	table.insert(connexions, UserInputService.InputBegan:Connect(function(input, traite)
-		if not traite and input.KeyCode == Enum.KeyCode.Space and not tenu then
-			local souris = UserInputService:GetMouseLocation()
-			tenu = { entree = "espace", x0 = souris.X, x = souris.X }
+	-- Espace : lié seulement quand la fenêtre est visible ; l'action est absorbée (pas de saut), et la
+	-- saisie dans le chat ne la déclenche pas. Fenêtre fermée : l'appui en cours est oublié.
+	local function lierEspace(actif)
+		if not actif then
+			ContextActionService:UnbindAction(ACTION_ESPACE)
+			return
 		end
-	end))
+		ContextActionService:BindActionAtPriority(ACTION_ESPACE, function(_, etatEntree)
+			if etatEntree == Enum.UserInputState.Begin then
+				if not tenu then
+					local souris = UserInputService:GetMouseLocation()
+					tenu = { entree = "espace", x0 = souris.X, x = souris.X }
+				end
+			elseif tenu and tenu.entree == "espace" then
+				tenu = nil -- relâchée ou annulée
+			end
+			return Enum.ContextActionResult.Sink
+		end, false, Enum.ContextActionPriority.High.Value, Enum.KeyCode.Space)
+	end
+	local function surVisibilite()
+		if not ctx.fenetre.Visible then
+			tenu = nil
+		end
+		lierEspace(ctx.fenetre.Visible)
+	end
+	table.insert(connexions, ctx.fenetre:GetPropertyChangedSignal("Visible"):Connect(surVisibilite))
+	surVisibilite()
 	-- Au doigt, seul le doigt qui tient « Coudre » dirige l'aiguille ; à la souris, ses mouvements
 	table.insert(connexions, UserInputService.InputChanged:Connect(function(input)
 		if not tenu then
@@ -241,7 +279,7 @@ return function(ctx)
 		end
 		local fin
 		if tenu.entree == "espace" then
-			fin = input.KeyCode == Enum.KeyCode.Space
+			fin = false -- Espace est suivi par l'action liée
 		elseif tenu.entree == Enum.UserInputType.Touch then
 			fin = input == tenu.objet
 		else
@@ -252,17 +290,15 @@ return function(ctx)
 		end
 	end))
 	table.insert(connexions, RunService.RenderStepped:Connect(function(dt)
-		if not machine or machine:fini() or not tenu then
+		if not machine or machine:fini() or not tenu or not ctx.fenetre.Visible then
 			return
 		end
 		machine:avancer(dt, direction())
 		ajouterPoints()
 		if machine:fini() then
 			tenu = nil
-			rendre()
-		else
-			rafraichir()
 		end
+		rafraichir()
 	end))
 
 	local desabonner = session:surChangement(function(etat)
@@ -275,6 +311,7 @@ return function(ctx)
 	rafraichir()
 	return function()
 		desabonner()
+		lierEspace(false)
 		for _, c in ipairs(connexions) do
 			c:Disconnect()
 		end

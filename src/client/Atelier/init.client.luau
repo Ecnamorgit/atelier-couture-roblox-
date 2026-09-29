@@ -180,7 +180,7 @@ local function afficher()
 		disposer(EN_PANNEAU[etat.etape] == true)
 		etapeAffichee = etat.etape
 		titre.Text = TITRES[etat.etape] or etat.etape
-		fermerEcran = ECRANS[etat.etape]({ session = session, contenu = contenu, message = afficherMessage, UiKit = UiKit })
+		fermerEcran = ECRANS[etat.etape]({ session = session, contenu = contenu, fenetre = fenetre, message = afficherMessage, UiKit = UiKit })
 	end
 end
 session:surChangement(afficher)

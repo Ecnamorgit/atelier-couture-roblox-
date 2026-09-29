@@ -322,7 +322,30 @@ verifier(panneauC.Note.Text:match("^Couture : %d+ %%$") ~= nil, "la note s'affic
 verifier(#points:GetChildren() > 0, "les points de couture apparaissent sur le tissu")
 cliquer("Decoudre")
 verifier(panneauC.Note.Text == "Couture : —" and #points:GetChildren() == 0, "découdre défait la couture")
+-- Fenêtre fermée pendant qu'on tient « Coudre » : plus rien n'est cousu, Espace rendu au jeu (saut)
+verifier(M.actions.AtelierCoudre ~= nil, "Espace sert à coudre tant que la machine est affichée")
+boutonNomme("Coudre").InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(700, 400, 0) })
+fenetre.Fermer.Activated:Fire()
+verifier(not fenetre.Visible and M.actions.AtelierCoudre == nil, "fenêtre fermée : Espace n'est plus pris par la couture")
+M.avancer(3)
+cliquer("OuvrirAtelier")
+M.avancer(1)
+verifier(panneauC.Note.Text == "Couture : —", "fenêtre fermée : rien n'a été cousu, et l'appui en cours est oublié")
+-- Espace (fenêtre ouverte) : coud, sans faire sauter l'avatar
+local espace = { KeyCode = Enum.KeyCode.Space, UserInputType = Enum.UserInputType.Keyboard, Position = Vector3.new(0, 0, 0) }
+verifier(M.actions.AtelierCoudre.f("AtelierCoudre", Enum.UserInputState.Begin, espace) == Enum.ContextActionResult.Sink, "Espace ne fait pas sauter l'avatar pendant la couture")
+M.avancer(2)
+M.actions.AtelierCoudre.f("AtelierCoudre", Enum.UserInputState.End, espace)
+verifier(panneauC.Note.Text:match("^Couture : %d+ %%$") ~= nil, "Espace coud : " .. panneauC.Note.Text)
+cliquer("Decoudre")
+-- Pièce finie : rien n'est rendu tant qu'on n'a pas dit « Pièce suivante » ; on peut encore découdre
 coudre(60, 400) -- en tirant tout le temps du même côté : couture ratée
+verifier(cousues() == 0 and panneauC.Note.Text:match("^Pièce finie : %d+ %%$") ~= nil, "pièce finie mais pas rendue : " .. panneauC.Note.Text)
+verifier(boutonNomme("PieceSuivante").Text == "Pièce suivante", "bouton « Pièce suivante » affiché")
+cliquer("Decoudre")
+verifier(panneauC.Note.Text:match("^Couture : ") ~= nil and not panneauC.PieceSuivante.Visible, "la dernière couture ratée se défait encore")
+coudre(60, 400)
+cliquer("PieceSuivante")
 verifier(cousues() == 1, "première pièce cousue")
 local ratee = tonumber(panneauC.Pieces.Ligne1.Text:match("(%d+) %%$"))
 cliquer("Vitesse_lapin")
@@ -333,13 +356,16 @@ boutonNomme("Coudre").InputBegan:Fire(doigtCoudre)
 UIS.InputChanged:Fire({ UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(1100, 400, 0) })
 M.avancer(30)
 UIS.InputEnded:Fire(doigtCoudre)
+cliquer("PieceSuivante")
 verifier(cousues() == 2, "deuxième pièce cousue au doigt")
 local auDoigt = tonumber(panneauC.Pieces.Ligne2.Text:match("(%d+) %%$"))
 verifier(auDoigt ~= nil and auDoigt > 30, "un second doigt ne dirige pas l'aiguille : " .. tostring(auDoigt))
 cliquer("Assistance")
 verifier(panneauC.Assistance.Text == "Assistance : oui (85 % au plus)", "assistance activée")
-for _ = 3, 6 do
+for k = 3, 6 do
 	coudre(30)
+	verifier(boutonNomme("PieceSuivante").Text == (k == 6 and "Finir la couture" or "Pièce suivante"), "bouton de fin de pièce " .. k)
+	cliquer("PieceSuivante")
 end
 
 ---------------------------------------------------------------------------

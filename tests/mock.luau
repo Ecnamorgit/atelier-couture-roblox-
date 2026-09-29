@@ -585,6 +585,9 @@ end
 function methodes.UnbindAction(_, nom)
 	M.actions[nom] = nil
 end
+function methodes.GetMouseLocation(_)
+	return M.souris or Vector2.new(0, 0)
+end
 
 -- Copie « réseau » : refuse ce que Roblox ne peut pas transmettre
 function M.transmettre(v, profondeur)
