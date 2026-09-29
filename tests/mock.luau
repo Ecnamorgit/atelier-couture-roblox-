@@ -556,7 +556,39 @@ end
 function methodes.GetPlayers()
 	return table.clone(M.joueurs)
 end
-function methodes.GetDataStore()
+-- DataStore en mémoire (sauvegarde) : UpdateAsync et GetAsync comme Roblox (la fonction de UpdateAsync
+-- renvoie nil pour annuler l'écriture) ; ce qui est rangé passe par une copie aux règles du réseau.
+-- magasin.panne = n : les n prochains appels échouent ; magasin.ecritures compte les écritures.
+function M.nouveauMagasin()
+	local magasin = { donnees = {}, panne = 0, ecritures = 0 }
+	local function tomberEnPanne()
+		if magasin.panne > 0 then
+			magasin.panne -= 1
+			error("DataStore : panne simulée")
+		end
+	end
+	function magasin.GetAsync(_, cle)
+		tomberEnPanne()
+		return M.transmettre(magasin.donnees[cle])
+	end
+	function magasin.UpdateAsync(_, cle, transformer)
+		tomberEnPanne()
+		local nouvelle = transformer(M.transmettre(magasin.donnees[cle]))
+		if nouvelle == nil then
+			return nil
+		end
+		magasin.donnees[cle] = M.transmettre(nouvelle)
+		magasin.ecritures += 1
+		return M.transmettre(nouvelle)
+	end
+	return magasin
+end
+-- Sans M.magasins, le DataStore échoue comme dans Studio sans accès aux API ; avec, M.magasins[nom]
+function methodes.GetDataStore(_, nom)
+	if M.magasins then
+		M.magasins[nom] = M.magasins[nom] or M.nouveauMagasin()
+		return M.magasins[nom]
+	end
 	local store = {}
 	function store.GetAsync()
 		error("Studio access to API services is not allowed")
@@ -768,6 +800,8 @@ function M.initialiser()
 	M.impacts = {}
 	local game = nouvelleInstance("DataModel")
 	rawget(game, "__props").Name = "Game"
+	rawget(game, "__props").PlaceId = 0 -- lieu non publié (Studio)
+	rawget(game, "__props").JobId = ""
 	M.game = game
 	M.services = {}
 	for _, nom in ipairs({

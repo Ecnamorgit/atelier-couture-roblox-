@@ -1,0 +1,243 @@
+-- Sauvegarde (serveur) : la partie de chaque joueur dans le DataStore « AtelierCouture_v2 », une clé par
+-- joueur (spec §6). Écriture par UpdateAsync, avec un verrou de session { jobId, t } : si un autre serveur
+-- tient la partie depuis moins de 90 s, on réessaie toutes les 3 s pendant 15 s au plus, puis on prend la
+-- main. Aucune écriture si la lecture a échoué, ni sur une partie d'une version plus récente du jeu.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DataStoreService = game:GetService("DataStoreService")
+local Couture = ReplicatedStorage:WaitForChild("Couture")
+local Catalogue = require(Couture:WaitForChild("Catalogue"))
+local Recette = require(Couture:WaitForChild("Recette"))
+local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
+
+local Sauvegarde = {}
+Sauvegarde.__index = Sauvegarde
+
+Sauvegarde.VERSION = 2
+Sauvegarde.MAGASIN = "AtelierCouture_v2"
+Sauvegarde.ANCIEN_MAGASIN = "AtelierCouture_v1" -- le prototype : { argent, reputation }
+Sauvegarde.VERROU_VIVANT = 90 -- s : un verrou plus récent appartient à un serveur encore en vie
+Sauvegarde.ESSAI_PAS = 3 -- s entre deux essais quand la partie est tenue ailleurs
+Sauvegarde.ESSAI_MAX = 15 -- s : au-delà, on prend la main
+-- Champs de l'état qui forment la commande en cours (une déconnexion ne perd pas le travail)
+local EN_COURS = { "etape", "commande", "croquis", "tissus", "coupees", "coupons", "epinglees", "coutures", "accessoires" }
+
+local function cle(userId)
+	return "joueur_" .. tostring(userId)
+end
+
+local function nombre(n, defaut)
+	if type(n) ~= "number" or n ~= n or n == math.huge or n == -math.huge then
+		return defaut
+	end
+	return n
+end
+
+local function copie(v)
+	if type(v) ~= "table" then
+		return v
+	end
+	local c = {}
+	for k, x in pairs(v) do
+		c[k] = copie(x)
+	end
+	return c
+end
+
+-- Migrations : MIGRATIONS[v] passe une partie du format v au format v + 1
+Sauvegarde.MIGRATIONS = {
+	-- v1 (prototype) : seul l'argent est repris ; une table vide donne une partie neuve
+	[1] = function(v1)
+		return {
+			version = 2,
+			argent = math.max(0, math.floor(nombre(v1.argent, EtatAtelier.ARGENT_DEPART))),
+			stock = {},
+			debloques = { tissus = {}, variantes = {}, accessoires = {} }, -- (sous-projet 2)
+			recettes = {},
+		}
+	end,
+}
+
+-- La partie au format actuel, ou nil si elle vient d'une version plus récente du jeu (on n'y touche pas)
+function Sauvegarde.migrer(partie)
+	local version = nombre(partie.version, 1) -- la v1 n'avait pas de numéro
+	if version > Sauvegarde.VERSION then
+		return nil
+	end
+	while version < Sauvegarde.VERSION do
+		partie = Sauvegarde.MIGRATIONS[version](partie)
+		version = partie.version
+	end
+	return partie
+end
+
+-- La partie d'un état de l'atelier (debloques : ceux de la partie chargée, gardés tels quels)
+function Sauvegarde.depuisEtat(etat, debloques)
+	local d = etat:exporter()
+	local partie = {
+		version = Sauvegarde.VERSION,
+		argent = d.argent,
+		stock = d.stock,
+		debloques = copie(debloques) or { tissus = {}, variantes = {}, accessoires = {} },
+		recettes = d.robes,
+	}
+	if d.etape ~= "accueil" then
+		partie.enCours = {}
+		for _, champ in ipairs(EN_COURS) do
+			partie.enCours[champ] = d[champ]
+		end
+	end
+	return partie
+end
+
+-- L'état de l'atelier d'une partie. Ce qui est illisible (tissu retiré du catalogue, données abîmées) est
+-- laissé de côté ; une commande en cours illisible est abandonnée, l'argent, le stock et les robes restent.
+function Sauvegarde.versEtat(partie)
+	local base = EtatAtelier.nouveau(math.max(0, nombre(partie.argent, EtatAtelier.ARGENT_DEPART)))
+	for id, dm in pairs(type(partie.stock) == "table" and partie.stock or {}) do
+		if type(id) == "string" and Catalogue.tissu(id) and nombre(dm, -1) >= 0 then
+			base.stock[id] = dm
+		end
+	end
+	for _, r in ipairs(type(partie.recettes) == "table" and partie.recettes or {}) do
+		local lue, valide = pcall(Recette.valider, r)
+		if lue and valide and #base.robes < EtatAtelier.ROBES_GARDEES then
+			table.insert(base.robes, r)
+		end
+	end
+	if type(partie.enCours) ~= "table" then
+		return base
+	end
+	local d = base:exporter()
+	for _, champ in ipairs(EN_COURS) do
+		if partie.enCours[champ] ~= nil then
+			d[champ] = partie.enCours[champ]
+		end
+	end
+	local etat = EtatAtelier.nouveau()
+	local ok, erreur = pcall(function()
+		etat:charger(d)
+		assert(table.find(EtatAtelier.ETAPES, etat.etape), "étape inconnue")
+		assert(etat.etape == "accueil" or etat.commande, "commande manquante")
+		etat:piecesDuCroquis() -- lit le croquis
+		etat:recette() -- lit les pièces coupées, les coutures et les décorations
+	end)
+	if not ok then
+		warn("[Atelier] Commande en cours illisible, abandonnée : " .. tostring(erreur))
+		return base
+	end
+	return etat
+end
+
+function Sauvegarde.nouvelle(options)
+	return setmetatable({
+		magasin = options.magasin,
+		ancien = options.ancien,
+		jobId = options.jobId,
+		horloge = options.horloge or os.time,
+		attendre = options.attendre or task.wait,
+	}, Sauvegarde)
+end
+
+-- Pour le jeu : nil (sans erreur) si le lieu n'est pas publié ou si le DataStore est indisponible
+function Sauvegarde.pourLeJeu()
+	if game.PlaceId == 0 then
+		warn("[Atelier] Lieu non publié : les parties ne sont pas sauvegardées.")
+		return nil
+	end
+	local ok, magasin, ancien = pcall(function()
+		return DataStoreService:GetDataStore(Sauvegarde.MAGASIN), DataStoreService:GetDataStore(Sauvegarde.ANCIEN_MAGASIN)
+	end)
+	if not ok then
+		warn("[Atelier] DataStore indisponible, les parties ne sont pas sauvegardées : " .. tostring(magasin))
+		return nil
+	end
+	return Sauvegarde.nouvelle({ magasin = magasin, ancien = ancien, jobId = game.JobId })
+end
+
+-- Prend la partie d'un joueur et son verrou. Renvoie la partie (sans le verrou) et "ok", ou nil et "echec"
+-- (lecture impossible, partie illisible ou d'une version plus récente) : rien ne sera écrit pour ce joueur.
+function Sauvegarde:charger(userId)
+	local debut = self.horloge()
+	local ancienne = nil -- ancienne sauvegarde (v1), lue une fois pour un joueur sans partie v2
+	while true do
+		local maintenant = self.horloge()
+		local prendre = maintenant - debut >= Sauvegarde.ESSAI_MAX
+		local absente, tenue, illisible, partie
+		local ok = pcall(function()
+			self.magasin:UpdateAsync(cle(userId), function(actuelle)
+				absente, tenue, illisible, partie = false, false, false, nil -- (Roblox peut rappeler cette fonction)
+				if actuelle == nil then
+					if not ancienne then
+						absente = true
+						return nil
+					end
+					actuelle = ancienne
+				end
+				if type(actuelle) ~= "table" then
+					illisible = true
+					return nil
+				end
+				local verrou = actuelle.verrou
+				if not prendre and type(verrou) == "table" and verrou.jobId ~= self.jobId
+					and maintenant - nombre(verrou.t, 0) < Sauvegarde.VERROU_VIVANT then
+					tenue = true
+					return nil
+				end
+				local migree = Sauvegarde.migrer(copie(actuelle))
+				if not migree then
+					illisible = true
+					return nil
+				end
+				migree.verrou = { jobId = self.jobId, t = maintenant }
+				partie = migree
+				return migree
+			end)
+		end)
+		if not ok or illisible then
+			return nil, "echec"
+		end
+		if absente then
+			local lue, v1 = pcall(function()
+				return self.ancien and self.ancien:GetAsync(cle(userId))
+			end)
+			if not lue then
+				return nil, "echec"
+			end
+			ancienne = type(v1) == "table" and v1 or {} -- rien : une partie neuve
+		elseif tenue then
+			self.attendre(Sauvegarde.ESSAI_PAS)
+		else
+			partie.verrou = nil
+			return partie, "ok"
+		end
+	end
+end
+
+-- Écrit la partie d'un joueur et rafraîchit son verrou (ou le rend, si liberer). Renvoie "ok", "echec"
+-- (le DataStore n'a pas répondu : on réessaiera) ou "perdu" (un autre serveur a pris la partie, ou elle
+-- vient d'une version plus récente : ne plus l'écraser depuis ce serveur).
+function Sauvegarde:enregistrer(userId, partie, liberer)
+	local perdu = false
+	local ok = pcall(function()
+		self.magasin:UpdateAsync(cle(userId), function(actuelle)
+			perdu = false
+			if type(actuelle) == "table" then
+				local verrou = actuelle.verrou
+				if (type(verrou) == "table" and verrou.jobId ~= self.jobId) or nombre(actuelle.version, 1) > Sauvegarde.VERSION then
+					perdu = true
+					return nil
+				end
+			end
+			local d = copie(partie)
+			d.version = Sauvegarde.VERSION
+			d.verrou = if liberer then nil else { jobId = self.jobId, t = self.horloge() }
+			return d
+		end)
+	end)
+	if not ok then
+		return "echec"
+	end
+	return perdu and "perdu" or "ok"
+end
+
+return Sauvegarde
