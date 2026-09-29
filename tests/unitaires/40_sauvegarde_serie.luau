@@ -178,4 +178,35 @@ U.verifier(magasin.donnees[cle(arrete)].verrou.t == 0, "écriture régulière pa
 local ecrituresArret = magasin.ecritures
 serveur2:enregistrerTout()
 U.verifier(magasin.ecritures == ecrituresArret, "serveur arrêté : plus de sauvegarde régulière")
+
+---------------------------------------------------------------------------
+-- Retour rapide pendant un départ (qui attend encore une écriture régulière) : la lecture attend le départ
+---------------------------------------------------------------------------
+local serveur3 = Commande.nouvelle({ sauvegarde = sauvegarde, horloge = horloge, attendre = attendre })
+local presse = joueurNumero("Presse", 707)
+serveur3:arrivee(presse)
+serveur3.departs[presse.UserId] = true -- son départ est en cours
+local retourPresse = joueurNumero("Presse", 707)
+local lectures3 = magasin.ecritures
+local luPendantDepart = false
+attentes = 0
+pendant = function()
+	luPendantDepart = luPendantDepart or magasin.ecritures ~= lectures3
+	if attentes == 2 then
+		serveur3.departs[presse.UserId] = nil -- le départ se termine
+	end
+end
+serveur3:arrivee(retourPresse)
+pendant = nil
+U.verifier(not luPendantDepart and attentes == 2 and serveur3:atelier(retourPresse) ~= nil, "retour pendant le départ : la partie n'est lue qu'une fois le départ fini")
+-- Le départ est noté du début à la fin de son écriture
+local notePendant
+local vraieDepuis = Sauvegarde.depuisEtat
+Sauvegarde.depuisEtat = function(...)
+	notePendant = serveur3.departs[retourPresse.UserId]
+	return vraieDepuis(...)
+end
+serveur3:depart(retourPresse)
+Sauvegarde.depuisEtat = vraieDepuis
+U.verifier(notePendant == true and serveur3.departs[retourPresse.UserId] == nil, "départ noté pendant son écriture, puis effacé")
 Commande.courante = courant

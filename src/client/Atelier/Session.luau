@@ -10,7 +10,9 @@ local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Session = {}
 Session.__index = Session
 
-local INJOIGNABLE = "Le serveur ne répond pas. Réessaie."
+-- Réponse perdue : le serveur a peut-être fait l'action ; on ne dit pas de la refaire, on vérifie d'abord
+Session.INJOIGNABLE = "Le serveur n'a pas répondu : on vérifie où en est ton atelier…"
+Session.VERIFICATION = "Un instant : on vérifie où en est ton atelier…" -- actions en attente de l'état
 Session.OCCUPE = "Un instant…" -- une action à la fois : un appui pendant l'attente du serveur est refusé
 Session.PAS_PRETE = "Ta partie n'est pas encore arrivée du serveur : elle apparaîtra à ta prochaine action."
 Session.ESSAIS_ARRIVEE = 60 -- à l'arrivée, un essai par seconde tant que le serveur lit la partie (réessais du
@@ -47,14 +49,14 @@ end
 
 -- Appel au serveur, sans jamais lever d'erreur. L'état joint à la réponse (acceptée ou refusée) est
 -- rechargé. Renvoie la réponse, si l'état a changé, et si la réponse est perdue ou illisible (refus
--- passager : le serveur a pu agir sans que son état arrive).
+-- passager : le serveur a pu agir sans que son état arrive). L'indicateur d'attente ne peut rien bloquer.
 local function appeler(self, nom, ...)
 	if self.attente then
-		self.attente(true)
+		pcall(self.attente, true)
 	end
 	local ok, reponse = pcall(self.remote.InvokeServer, self.remote, nom, ...)
 	if self.attente then
-		self.attente(false)
+		pcall(self.attente, false)
 	end
 	local change = false
 	if ok and type(reponse) == "table" and type(reponse.etat) == "table" then
@@ -62,9 +64,9 @@ local function appeler(self, nom, ...)
 		ok, change = lu, c == true
 	end
 	if not ok or type(reponse) ~= "table" then
-		return { ok = false, erreur = INJOIGNABLE, passager = true }, false, true
+		return { ok = false, erreur = Session.INJOIGNABLE, passager = true }, false, true
 	end
-	return reponse, change, false
+	return reponse, change, reponse.resynchroniser == true
 end
 
 -- Prévient les écrans que l'état a changé
@@ -75,14 +77,18 @@ local function prevenir(self)
 end
 
 -- Une action (ou « etat ») : une à la fois. Les écrans sont prévenus après une action réussie, ou quand
--- l'état joint à une réponse a changé la copie du client. Réponse perdue : l'état est redemandé au
--- serveur un peu plus tard.
+-- l'état joint à une réponse a changé la copie du client. Réponse perdue (ou erreur du serveur, qui a pu
+-- agir) : l'état est redemandé au serveur un peu plus tard, et les actions attendent jusque-là (rien
+-- n'est fait deux fois).
 -- derniere = { action, reponse } de la dernière action réussie (l'accueil affiche la dernière livraison)
 local function agir(self, nom, ...)
 	local reponse, change, perdue
 	if self.remote then
 		if self.enCours then
 			return { ok = false, erreur = Session.OCCUPE, passager = true }
+		end
+		if self.resynchro and nom ~= "etat" then
+			return { ok = false, erreur = Session.VERIFICATION, passager = true }
 		end
 		self.enCours = true
 		reponse, change, perdue = appeler(self, nom, ...)

@@ -264,6 +264,15 @@ local avant = argent()
 cliquer("Acheter")
 verifier(argent() < avant, "l'achat débite l'argent")
 verifier(texte("En stock : " .. quantite .. " dm") ~= nil, "le stock est mis à jour")
+-- L'état change sans achat (réparé par le serveur, par exemple) : les lignes suivent
+local stockServeur = serveur:atelier(joueur).etat.stock
+stockServeur.soie_rose_fleurs = quantite + 7
+M.avancer(0.5)
+requireModule(scriptClient.Session).courante:actualiser()
+verifier(texte("En stock : " .. (quantite + 7) .. " dm") ~= nil, "l'état change sans achat : la ligne suit")
+stockServeur.soie_rose_fleurs = quantite
+M.avancer(0.5)
+requireModule(scriptClient.Session).courante:actualiser()
 cliquer("AllerDecoupe")
 
 ---------------------------------------------------------------------------
@@ -477,7 +486,11 @@ end
 cliquer("PieceSuivante")
 remoteAtelier.OnServerInvoke = brancheServeur
 verifier(cousues() == 0 and panneauC.PieceSuivante.Visible and panneauC.Note.Text:match("^Pièce finie") ~= nil, "serveur injoignable : la pièce reste finie, à rendre de nouveau")
-verifier(fenetre.Message.Visible and fenetre.Message.Text == "Le serveur ne répond pas. Réessaie." and fenetre.Message.TextColor3 == GRIS, "refus passager : message en gris")
+local SessionClient = requireModule(scriptClient.Session)
+verifier(fenetre.Message.Visible and fenetre.Message.Text == SessionClient.INJOIGNABLE and fenetre.Message.TextColor3 == GRIS, "refus passager : message en gris")
+cliquer("PieceSuivante")
+verifier(cousues() == 0 and fenetre.Message.Text == SessionClient.VERIFICATION, "tant que l'atelier vérifie où en est le serveur, la pièce attend")
+M.avancer(SessionClient.RESYNCHRO)
 cliquer("PieceSuivante")
 verifier(cousues() == 1, "première pièce cousue")
 local ratee = tonumber(panneauC.Pieces.Ligne1.Text:match("(%d+) %%$"))

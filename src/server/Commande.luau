@@ -84,6 +84,7 @@ function Commande.nouvelle(options)
 	local self = setmetatable({
 		ateliers = {}, -- [joueur] = { etat = EtatAtelier, rng = Random, sauvable = bool, debloques = table? }
 		ecritures = {}, -- [UserId] = vrai pendant l'écriture de sa partie (une à la fois par joueur)
+		departs = {}, -- [UserId] = vrai pendant son départ (écriture comprise, même quand elle attend)
 		chargements = {}, -- [joueur] = vrai pendant la lecture de sa partie
 		ferme = false, -- vrai une fois le serveur en train de s'arrêter
 		limiteur = Limiteur.nouveau(Commande.APPELS_PAR_SECONDE, 1),
@@ -128,7 +129,7 @@ function Commande:arrivee(joueur)
 		self:exposer(joueur)
 		return
 	end
-	while self.ecritures[joueur.UserId] do
+	while self.ecritures[joueur.UserId] or self.departs[joueur.UserId] do
 		self.attendre(0.5)
 	end
 	self.chargements[joueur] = true
@@ -215,8 +216,11 @@ end
 
 -- Départ du joueur : partie écrite, verrou rendu, atelier libéré
 function Commande:depart(joueur)
-	self:enregistrer(joueur, true, Commande.ESSAIS_ECRITURE)
+	local id = joueur.UserId
+	self.departs[id] = true -- un retour rapide sur ce serveur attend la fin du départ
+	pcall(self.enregistrer, self, joueur, true, Commande.ESSAIS_ECRITURE)
 	self:retirer(joueur)
+	self.departs[id] = nil
 end
 
 -- Atelier libéré, sans écrire
@@ -273,7 +277,8 @@ function Commande:traiter(joueur, action, ...)
 	end, ...)
 	if not ok then
 		warn(("[Atelier] %s : erreur dans « %s » : %s"):format(joueur.Name, action, tostring(reponse)))
-		return refus("Action impossible.")
+		-- L'action a pu être faite avant l'erreur : refus passager, et le client redemandera l'état
+		return { ok = false, erreur = "Action impossible.", passager = true, resynchroniser = true }
 	end
 	if reponse.ok then
 		if action == "etat" and self.sauvegarde and not a.sauvable then

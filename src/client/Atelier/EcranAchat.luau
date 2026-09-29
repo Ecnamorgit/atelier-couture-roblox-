@@ -211,5 +211,14 @@ return function(ctx)
 			ctx.refus(r)
 		end
 	end)
-	return fermerApercu
+	-- L'état peut changer sans achat (réparé par le serveur) : les lignes suivent
+	local desabonner = session:surChangement(function()
+		for idTissu in pairs(lignes) do
+			majLigne(idTissu)
+		end
+	end)
+	return function()
+		desabonner()
+		fermerApercu()
+	end
 end

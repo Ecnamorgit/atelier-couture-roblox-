@@ -60,6 +60,7 @@ end
 local sansErreur, r2 = pcall(serveur.traiter, serveur, joueur, "etat")
 Commande.instantane = vrai
 U.verifier(sansErreur and not r2.ok and r2.erreur == "Action impossible.", "erreur en préparant l'état renvoyé : refus, pas d'erreur")
+U.verifier(r2.passager == true and r2.resynchroniser == true, "l'action a pu être faite : refus passager, le client redemandera l'état")
 -- Une ancienne robe qui se contient elle-même : la copier ne finirait jamais
 local boucle = {}
 boucle.moi = boucle
