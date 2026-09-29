@@ -75,7 +75,7 @@ end
 
 -- Une commande sauvegardée qu'on peut jouer jusqu'au bout : taille et cliente connues (une cliente à mesurer à
 -- l'étape des mesures), mesures lisibles (sauf à l'étape des mesures, où elles ne sont pas encore prises),
--- ajustement entre 50 et 100 %, 1 à 3 exigences lisibles
+-- ajustement entre 50 et 100 %, acompte entier et raisonnable, 1 à 3 exigences lisibles
 local function commandeLisible(c, etape)
 	if type(c) ~= "table" or type(c.taille) ~= "string" or not Catalogue.TAILLES[c.taille] then
 		return false
@@ -87,6 +87,9 @@ local function commandeLisible(c, etape)
 		return false
 	end
 	if c.ajustement ~= nil and not (nombre(c.ajustement, nil) and c.ajustement >= 0.5 and c.ajustement <= 1) then
+		return false
+	end
+	if c.acompte ~= nil and not (nombre(c.acompte, nil) and c.acompte == math.floor(c.acompte) and c.acompte >= 0 and c.acompte <= 1000) then
 		return false
 	end
 	if type(c.exigences) ~= "table" or #c.exigences < 1 or #c.exigences > 3 then

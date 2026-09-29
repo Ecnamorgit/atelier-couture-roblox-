@@ -23,9 +23,10 @@ U.verifier(e.argent == 150 and e.etape == "accueil", "départ : 150 pièces d'or
 local r = U.commander(e, Random.new(3))
 U.verifier(r.ok and e.etape == "carnet" and #r.commande.exigences >= 1, "nouvelle commande : direction le carnet")
 U.verifier(not e:nouvelleCommande(Random.new(4)).ok, "une seule commande à la fois")
+local depart = 150 + e.commande.acompte -- (l'acompte de la cliente)
 local pauvre = EtatAtelier.nouveau(3)
 U.commander(pauvre, Random.new(1))
-U.verifier(pauvre.argent == EtatAtelier.FILET, "filet de sécurité : au moins 20 pièces d'or")
+U.verifier(pauvre.argent == EtatAtelier.FILET + pauvre.commande.acompte, "filet de sécurité : au moins 20 pièces d'or (puis l'acompte)")
 
 -- Carnet
 U.verifier(not e:acheter("coton_blanc", 5).ok, "pas d'achat avant d'avoir validé le croquis")
@@ -49,11 +50,11 @@ for _, mauvais in ipairs({ 0, 1.5, 101, 0 / 0, "a" }) do
 	U.verifier(not e:acheter("coton_blanc", mauvais).ok, "longueur invalide refusée : " .. tostring(mauvais))
 end
 U.verifier(not e:acheter("papier", 5).ok and not e:acheter(nil, 5).ok, "tissu inconnu refusé")
-U.verifier(not e:acheter("soie_rouge", 100).ok, "pas assez d'argent")
+U.verifier(not e:acheter("satin_or_degrade", 100).ok, "pas assez d'argent (180 po)")
 U.verifier(not e:commencerDecoupe().ok, "découpe impossible sans tissu")
 local achat = e:acheter("coton_blanc", 12)
-U.verifier(achat.ok and achat.prix == 5 and e.argent == 145 and e.stock.coton_blanc == 12, "achat : argent débité, stock crédité")
-U.verifier(e:acheter("soie_rouge", 6).ok and e.argent == 145 - 10, "deuxième tissu acheté")
+U.verifier(achat.ok and achat.prix == 5 and e.argent == depart - 5 and e.stock.coton_blanc == 12, "achat : argent débité, stock crédité")
+U.verifier(e:acheter("soie_rouge", 6).ok and e.argent == depart - 5 - 10, "deuxième tissu acheté")
 U.verifier(e:commencerDecoupe().ok, "découpe possible avec du tissu pour chaque pièce")
 U.verifier(e.etape == "decoupe" and e.coupons.coton_blanc.longueur == 12 and e.coupons.soie_rouge.longueur == 6, "un rouleau par tissu, de la longueur en stock")
 
@@ -106,6 +107,7 @@ U.verifier(not EtatAtelier.nouveau():recommencer().ok, "rien à recommencer sans
 -- Filet de sécurité aussi en recommençant : jamais bloqué sans argent ni tissu (spec §3)
 local e4 = EtatAtelier.nouveau(20)
 U.commander(e4, Random.new(7))
+e4.argent = 20 -- (sans l'acompte)
 e4:validerCroquis(CROQUIS, tousEn("soie_rouge"))
 U.verifier(e4:acheter("soie_rouge", 12).ok and e4.argent == 0, "tout l'argent dépensé en soie")
 e4:commencerDecoupe()

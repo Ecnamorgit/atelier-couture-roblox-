@@ -18,6 +18,8 @@ EtatAtelier.__index = EtatAtelier
 
 EtatAtelier.ARGENT_DEPART = 150
 EtatAtelier.FILET = 20 -- argent minimal garanti à chaque nouvelle commande
+EtatAtelier.ACOMPTE = 0.25 -- part de la base versée quand la cliente passe commande
+EtatAtelier.PIECES_ACOMPTE = 4 -- la base de l'acompte est celle de la robe la plus simple (quatre pièces)
 EtatAtelier.ACHAT_MAX = 100 -- dm par achat
 EtatAtelier.TOLERANCE_MESURES = 2 -- mesures de couture en plus ou en moins acceptées (spec §6)
 EtatAtelier.DUREE_MIN = 0.9 -- part de la durée minimale d'une couture (trajet / vitesse maximale)
@@ -177,11 +179,14 @@ function EtatAtelier:nouvelleCommande(rng)
 	fiche.derniere = self.visites
 	self.commande = Commandes.generer(rng, Clientes.get(id), self)
 	self.commande.numero = self.visites -- la reconnaît d'une copie à l'autre (la scène garde la même cliente)
-	self.argent = math.max(self.argent, EtatAtelier.FILET)
+	-- L'acompte : un quart de la base, versé tout de suite, déduit de la paie ; gardé en cas d'abandon
+	local acompte = math.floor(EtatAtelier.ACOMPTE * Notation.base(EtatAtelier.PIECES_ACOMPTE, #self.commande.exigences))
+	self.commande.acompte = acompte
+	self.argent = math.max(self.argent, EtatAtelier.FILET) + acompte
 	self.croquis, self.tissus, self.coupees, self.coupons = nil, {}, {}, {}
 	self.epinglees, self.coutures, self.accessoires = {}, {}, {}
 	self.etape = "mesures"
-	return { ok = true, commande = self.commande, cliente = id, premiereVisite = fiche.vues == 1 }
+	return { ok = true, commande = self.commande, cliente = id, premiereVisite = fiche.vues == 1, acompte = acompte }
 end
 
 -- Mesures prises au ruban (dm) : trois nombres dans les bornes d'une recette, à moins de 1,5 dm des vraies.
@@ -555,7 +560,9 @@ function EtatAtelier:livrer()
 		return { ok = true, reussie = false, ratees = ratees, bilan = bilan }
 	end
 	local paie = Notation.paie(#recette.pieces, #self.commande.exigences, bilan.qualite)
-	self.argent += paie
+	local acompte = self.commande.acompte or 0
+	local verse = math.max(0, paie - acompte) -- l'acompte est déjà dans la caisse
+	self.argent += verse
 	local gainAmitie = amitie(self, true, bilan.qualite)
 	local niveauAvant = Progression.niveauPrestige(self.prestige)
 	local gainPrestige = Progression.prestigeLivraison(paie)
@@ -567,7 +574,7 @@ function EtatAtelier:livrer()
 		self.robes[k] = nil
 	end
 	terminer(self)
-	return { ok = true, reussie = true, paie = paie, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige }
+	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige }
 end
 
 -- Après un refus : retoucher (retour aux décorations) ou abandonner (ni paie ni vitrine)
