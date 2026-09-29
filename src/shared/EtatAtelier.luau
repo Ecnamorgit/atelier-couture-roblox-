@@ -37,7 +37,7 @@ end
 local function fermes(self, genre, ids)
 	for _, id in ipairs(ids) do
 		if not Deblocages.ouvert(self, genre, id) then
-			return refus(("Pas encore ouvert : %s (%s)."):format(Deblocages.nom(genre, id), Deblocages.raison(genre, id)))
+			return refus(Deblocages.message(genre, id))
 		end
 	end
 	return nil
@@ -559,6 +559,10 @@ function EtatAtelier:livrer()
 		self.etape = "refus"
 		return { ok = true, reussie = false, ratees = ratees, bilan = bilan }
 	end
+	local avant = { prestige = self.prestige, clientes = {} } -- pour dire ce que la livraison a ouvert
+	for id, f in pairs(self.clientes) do
+		avant.clientes[id] = { amitie = f.amitie }
+	end
 	local paie = Notation.paie(#recette.pieces, #self.commande.exigences, bilan.qualite)
 	local acompte = self.commande.acompte or 0
 	local verse = math.max(0, paie - acompte) -- l'acompte est déjà dans la caisse
@@ -574,7 +578,8 @@ function EtatAtelier:livrer()
 		self.robes[k] = nil
 	end
 	terminer(self)
-	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige }
+	local nouveaux = Deblocages.nouveaux(avant, self)
+	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige, nouveaux = nouveaux }
 end
 
 -- Après un refus : retoucher (retour aux décorations) ou abandonner (ni paie ni vitrine)

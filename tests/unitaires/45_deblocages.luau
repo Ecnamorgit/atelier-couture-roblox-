@@ -65,6 +65,8 @@ for _, n in ipairs(nouveaux) do
 end
 U.verifier(#nouveaux == 5 and nouveaux[1].genre == "tissus" and nouveaux[5].id == "dentelle_noire", "prestige 3 : quatre satins et la dentelle noire (" .. table.concat(noms, ", ") .. ")")
 U.verifier(#Deblocages.nouveaux(au(50), au(99)) == 0, "rien de neuf sans changer de niveau")
+U.verifier(Deblocages.resume(nouveaux) == "les satins (4), Dentelle noire", "en une ligne : les satins ensemble (" .. Deblocages.resume(nouveaux) .. ")")
+U.verifier(Deblocages.message("tissus", "soie_rouge") == "Pas encore ouvert : Soie rouge (Prestige 5).", "le refus dit ce qu'il faut pour ouvrir")
 local avantAmitie = { prestige = 0, clientes = { colette = { amitie = 6 } } }
 local apresAmitie = { prestige = 0, clientes = { colette = { amitie = 7 } } }
 local n = Deblocages.nouveaux(avantAmitie, apresAmitie)

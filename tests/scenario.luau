@@ -192,6 +192,7 @@ remoteAtelier.OnServerInvoke = brancheServeur
 verifier(M.dernierAppel ~= nil and M.dernierAppel.action == "nouvelleCommande" and serveur:atelier(joueur).etat.etape == "mesures", "la commande passe par le serveur, qui fait foi")
 verifier(pendantAttente ~= nil and pendantAttente.visible and string.find(pendantAttente.texte, "sauvegardée", 1, true) ~= nil, "serveur lent : l'avertissement affiché n'est pas remplacé")
 verifier(sonsDepuis(nSons) == "Atelier_clic,Atelier_clochette", "sons : le clic du bouton, puis la clochette (" .. sonsDepuis(nSons) .. ")")
+verifier(fenetre.Message.Visible and fenetre.Message.Text == ("Colette verse un acompte de %d pièces d'or."):format(serveur:atelier(joueur).etat.commande.acompte), "la cliente verse un acompte")
 
 ---------------------------------------------------------------------------
 -- Les mesures : Colette vient pour la première fois ; les rubans partent courts, on les règle au bord de sa
@@ -251,6 +252,17 @@ verifier(serveur:atelier(joueur).etat.commande.ajustement == 1 and serveur:ateli
 -- Carnet de croquis
 ---------------------------------------------------------------------------
 verifier(titre() == "1. Carnet de croquis", "mesures prises : le carnet")
+-- Déblocages : au départ, ce qui est fermé est grisé, avec ce qu'il faut pour l'ouvrir, et ne se choisit pas
+local jupeAmple = boutonNomme("Variante_jupe_ample")
+verifier(jupeAmple:GetAttribute("Ferme") == true and jupeAmple.TextColor3 == GRIS and boutonNomme("Variante_jupe_droite"):GetAttribute("Ferme") == false, "jupe ample fermée au départ : grisée ; la jupe droite ouverte")
+cliquer("Variante_jupe_ample")
+verifier(fenetre.Message.Visible and fenetre.Message.Text == "Pas encore ouvert : Jupe ample froncée (Amitié de Colette : 2)." and boutonNomme("Variante_jupe_droite").BackgroundColor3 == Color3.fromRGB(214, 76, 128), "toucher une variante fermée : ce qu'il faut pour l'ouvrir, la jupe droite reste choisie")
+cliquer("Tissu_corsage_droit_devant")
+local carteSoie = boutonNomme("Tissu_soie_rose_fleurs")
+verifier(carteSoie:GetAttribute("Ferme") == true and carteSoie.Raison.Text == "Prestige 5" and boutonNomme("Tissu_coton_blanc"):GetAttribute("Ferme") == false, "soie fermée : la carte grisée dit « Prestige 5 » ; le coton est ouvert")
+cliquer("Tissu_soie_rose_fleurs")
+verifier(fenetre.Contenu:FindFirstChild("ChoixTissu") ~= nil and fenetre.Message.Text == "Pas encore ouvert : Soie rose fleurie (Prestige 5).", "toucher un tissu fermé : ce qu'il faut pour l'ouvrir, le choix reste ouvert")
+cliquer("FermerChoix")
 -- Pour la suite, une couturière confirmée : tout le catalogue ouvert (prestige et amitiés au plus haut)
 local etatServeur = serveur:atelier(joueur).etat
 etatServeur.prestige = 530
@@ -260,6 +272,7 @@ for _, c in ipairs(Clientes.LISTE) do
 end
 requireModule(scriptClient.Session).courante:actualiser()
 verifier(requireModule(scriptClient.Session).courante.etat.prestige == 530, "la copie du client suit le serveur")
+verifier(boutonNomme("Variante_jupe_ample"):GetAttribute("Ferme") == false, "prestige et amitiés au plus haut : la jupe ample s'ouvre dans le carnet")
 verifierTailles("carnet")
 verifier(texte("Colette (taille M) veut") ~= nil, "le carnet dit qui commande, et sa taille")
 verifier(M.services.Workspace.AtelierLocal:FindFirstChild("Cliente") == clienteMesuree and clienteMesuree.Parent ~= nil, "mesures validées : la même cliente reste là (pas reconstruite)")
@@ -657,6 +670,9 @@ local auDoigt = tonumber(panneauC.Pieces.Ligne2.Text:match("(%d+) %%$"))
 verifier(auDoigt ~= nil and auDoigt > 30, "un second doigt ne dirige pas l'aiguille : " .. tostring(auDoigt))
 cliquer("Assistance")
 verifier(panneauC.Assistance.Text == "Assistance : oui (85 % au plus)", "assistance activée")
+-- L'amitié d'Inès remise à 0 le temps de voir une décoration fermée (serveur et copie du client)
+serveur:atelier(joueur).etat.clientes.ines.amitie = 0
+requireModule(scriptClient.Session).courante.etat.clientes.ines.amitie = 0
 for k = 3, 6 do
 	coudre(30)
 	verifier(boutonNomme("PieceSuivante").Text == (k == 6 and "Finir la couture" or "Pièce suivante"), "bouton de fin de pièce " .. k)
@@ -685,6 +701,13 @@ local function exigencesTest()
 end
 serveur:atelier(joueur).etat.commande.exigences = exigencesTest()
 etatJeu.commande.exigences = exigencesTest()
+-- Une décoration fermée : grisée, avec ce qu'il faut pour l'ouvrir ; on ne peut pas la choisir
+local croixFermee = boutonNomme("Deco_croix_argent")
+verifier(croixFermee:GetAttribute("Ferme") == true and croixFermee.Text == "Croix d'argent · Amitié d'Inès : 4", "croix d'argent fermée : grisée, avec l'amitié qu'il faut")
+cliquer("Deco_croix_argent")
+verifier(fenetre.Message.Visible and fenetre.Message.Text == "Pas encore ouvert : Croix d'argent (Amitié d'Inès : 4)." and boutonNomme("Deco_croix_argent").BackgroundColor3 ~= ACCENT, "toucher une décoration fermée : ce qu'il faut pour l'ouvrir, rien n'est choisi")
+serveur:atelier(joueur).etat.clientes.ines.amitie = 25
+etatJeu.clientes.ines.amitie = 25
 -- La palette ne montre que des rangées entières (une rangée coupée attirerait les clics à côté)
 local palette = contenuD.Palette
 verifier(palette.Size.Y.Offset % 44 == 0, "palette : rangées entières")
@@ -879,12 +902,20 @@ local etatClient = requireModule(scriptClient.Session).courante.etat
 local idVignette = "corsage_v_devant"
 local tissuVignette, placeVignette = etatClient.tissus[idVignette], table.clone(etatClient.coupees[idVignette])
 local imageAvant = Vignettes.piece(idVignette, tissuVignette, placeVignette, 256)
+-- Prestige 45 avant la livraison : elle fait passer au niveau 3 (les satins et la dentelle noire s'ouvrent)
+serveur:atelier(joueur).etat.prestige = 45
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe acceptée : payée")
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_reussite", "robe acceptée : une petite fanfare")
 verifier(texte("Colette est ravie") ~= nil, "l'accueil annonce la paie")
 verifier(texte("Amitié de Colette : +") ~= nil and texte("Prestige : +") ~= nil, "l'accueil annonce l'amitié et le prestige gagnés")
+verifier(texte("Acompte de ") ~= nil and texte("(niveau 3 !)") ~= nil and texte("Nouveau : les satins (4), Dentelle noire.") ~= nil, "l'accueil rappelle l'acompte, le niveau de prestige atteint et ce qui vient de s'ouvrir")
+local prestigeJoueur = serveur:atelier(joueur).etat.prestige
+verifier(fenetre.Contenu.Prestige.Text == ("Prestige 3 — %d / 100"):format(prestigeJoueur), "jauge de prestige : « Prestige 3 — " .. prestigeJoueur .. " / 100 »")
+verifier(math.abs(fenetre.Contenu.JaugePrestige.Rempli.Size.X.Scale - (prestigeJoueur - 50) / 50) < 1e-6, "la jauge se remplit vers le niveau suivant")
+verifierTailles("accueil")
+serveur:atelier(joueur).etat.prestige = 530 -- (tout reste ouvert pour la suite)
 verifier(imageAvant ~= nil and Vignettes.piece(idVignette, tissuVignette, placeVignette, 256) ~= imageAvant, "commande finie : les images des pièces découpées sont oubliées (mémoire)")
 M.avancer(1)
 verifier(maVitrine:FindFirstChild("Exposition") ~= nil, "le client construit la robe exposée dans la vitrine de la rue")

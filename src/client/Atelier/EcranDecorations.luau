@@ -7,6 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
+local Deblocages = require(Couture:WaitForChild("Deblocages"))
 local Decorateur = require(script.Parent:WaitForChild("Decorateur"))
 local Sons = require(script.Parent:WaitForChild("Sons"))
 
@@ -45,15 +46,21 @@ return function(ctx)
 	local boutons = {}
 	for k, a in ipairs(Catalogue.Accessoires) do
 		local prix = a.genre == "garniture" and ("%d po/dm"):format(a.prix) or ("%d po"):format(a.prix)
+		-- fermé : ce qu'il faut pour l'ouvrir à la place du prix
+		local detail = if Deblocages.ouvert(ctx.session.etat, "accessoires", a.id) then prix else Deblocages.raison("accessoires", a.id)
 		boutons[a.id] = UiKit.boutonDoux({
 			Name = "Deco_" .. a.id,
-			Text = a.nom .. " · " .. prix,
+			Text = a.nom .. " · " .. detail,
 			TextSize = 14,
 			TextWrapped = true,
 			Position = UDim2.new(((k - 1) % 2) * 0.5, 0, 0, ((k - 1) // 2) * LIGNE_PALETTE),
 			Size = UDim2.new(0.5, -10, 0, LIGNE_PALETTE - 4),
 			Parent = palette,
 		}, function()
+			if not Deblocages.ouvert(ctx.session.etat, "accessoires", a.id) then
+				ctx.message(Deblocages.message("accessoires", a.id), C.texteDoux)
+				return
+			end
 			deco:choisir(a.id)
 			rafraichir()
 		end)
@@ -108,6 +115,7 @@ return function(ctx)
 		for id, b in pairs(boutons) do
 			b.BackgroundColor3 = id == deco.choix and C.accent or C.secondaire
 			b.TextColor3 = id == deco.choix and Color3.new(1, 1, 1) or C.texte
+			UiKit.griser(b, not Deblocages.ouvert(ctx.session.etat, "accessoires", id))
 		end
 		finir.Visible = deco.garniture ~= nil
 		scene:montrerDecorations(deco.recette, deco.liste, deco.garniture, deco.selection)

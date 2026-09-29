@@ -95,6 +95,11 @@ function Deblocages.raison(genre, id)
 	return ("Amitié %s : %d"):format(deCliente(c.cliente), c.amitie)
 end
 
+-- Le refus d'un élément fermé : « Pas encore ouvert : Soie rouge (Prestige 5). »
+function Deblocages.message(genre, id)
+	return ("Pas encore ouvert : %s (%s)."):format(Deblocages.nom(genre, id), Deblocages.raison(genre, id))
+end
+
 -- Ce qui est ouvert, par genre : { variantes = { [id] = true }, tissus = …, accessoires = … }
 function Deblocages.ouverts(progres)
 	local out = { variantes = {}, tissus = {}, accessoires = {} }
@@ -135,6 +140,39 @@ function Deblocages.nouveaux(avant, apres)
 		end
 	end
 	return out
+end
+
+local MATIERES = { laine = "les laines", satin = "les satins", velours = "les velours", soie = "les soies" }
+
+-- Ce qui vient de s'ouvrir, en une ligne : les tissus d'une même matière ensemble (« les satins (4), Dentelle
+-- noire »)
+function Deblocages.resume(nouveaux)
+	local parMatiere, ordre, morceaux = {}, {}, {}
+	for _, n in ipairs(nouveaux) do
+		if n.genre == "tissus" then
+			local m = Catalogue.tissu(n.id).matiere
+			if not parMatiere[m] then
+				parMatiere[m] = {}
+				table.insert(ordre, { matiere = m })
+			end
+			table.insert(parMatiere[m], n.nom)
+		end
+	end
+	for _, n in ipairs(nouveaux) do
+		if n.genre == "variantes" then
+			table.insert(morceaux, n.nom)
+		end
+	end
+	for _, o in ipairs(ordre) do
+		local noms = parMatiere[o.matiere]
+		table.insert(morceaux, if #noms > 1 then ("%s (%d)"):format(MATIERES[o.matiere] or o.matiere, #noms) else noms[1])
+	end
+	for _, n in ipairs(nouveaux) do
+		if n.genre == "accessoires" then
+			table.insert(morceaux, n.nom)
+		end
+	end
+	return table.concat(morceaux, ", ")
 end
 
 return Deblocages

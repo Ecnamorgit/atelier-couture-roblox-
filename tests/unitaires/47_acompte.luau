@@ -35,6 +35,16 @@ r = e:livrer()
 U.verifier(r.ok and r.reussie and r.acompte == acompte and r.verse == r.paie - acompte and e.argent == avant + r.paie - acompte, "livrée : paie moins l'acompte (" .. r.paie .. " − " .. acompte .. ")")
 U.verifier(r.prestige.gain == math.floor(r.paie / 10 + 0.5), "le prestige compte toute la paie")
 
+-- Ce que la livraison a ouvert (prestige 3 atteint, amitié de Colette au niveau 2)
+local Deblocages = U.module("Deblocages")
+local ouvre = EtatAtelier.nouveau(100)
+ouvre:nouvelleCommande(Random.new(5))
+ouvre:mesurer(Clientes.get("colette").mesures)
+ouvre.prestige, ouvre.clientes.colette.amitie = 45, 6
+robePrete(ouvre)
+r = ouvre:livrer()
+U.verifier(r.ok and r.reussie and ouvre.prestige >= 50 and Deblocages.resume(r.nouveaux) == "Jupe ample froncée, les satins (4), Dentelle noire", "livrée : ce qui vient de s'ouvrir (" .. Deblocages.resume(r.nouveaux or {}) .. ")")
+
 -- Abandon : l'acompte est gardé
 pauvre:mesurer(Clientes.get("colette").mesures)
 pauvre.etape = "refus"
