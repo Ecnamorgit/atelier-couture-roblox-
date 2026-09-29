@@ -18,7 +18,7 @@ local PLACES = {
 	jupe_droite_dos = { x = 7.5, y = 12, angle = 0 },
 }
 local etat = EtatAtelier.nouveau(1000)
-etat:nouvelleCommande(Random.new(3))
+U.commander(etat, Random.new(3))
 local tissus = {}
 for id in pairs(PLACES) do
 	tissus[id] = "coton_blanc"
@@ -138,7 +138,7 @@ local scene2 = Scene.nouvelle(Workspace, {
 		table.insert(appels, actif)
 	end,
 })
-etat2:nouvelleCommande(Random.new(3))
+U.commander(etat2, Random.new(3))
 scene2:synchroniser(etat2)
 U.verifier(appels[#appels] == false, "au carnet, fenêtre ouverte : commandes de l'avatar coupées")
 scene2:ouvrir(false, etat2)

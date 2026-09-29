@@ -15,7 +15,7 @@ local DISPOSITION = {
 -- Robe coupée, épinglée et cousue parfaitement, en coton blanc ; exigences choisies par le test
 local function jusquAuxDecorations(exigences)
 	local e = EtatAtelier.nouveau()
-	e:nouvelleCommande(Random.new(3))
+	U.commander(e, Random.new(3))
 	e.commande.exigences = exigences
 	local tissus = {}
 	for _, id in ipairs(PIECES) do
@@ -113,7 +113,7 @@ U.verifier(r.ok and r.reussie and r.paie == paie and e.argent == avant - 3 + pai
 U.verifier(e.etape == "accueil" and e.commande == nil, "robe livrée : retour à l'accueil")
 U.verifier(#e.robes == 1 and #e.robes[1].accessoires == 2 and e.robes[1].pieces[1].couture == 1, "la robe livrée part en vitrine (recette gardée)")
 U.verifier(next(e.coupees) == nil and next(e.epinglees) == nil and next(e.coutures) == nil and #e.accessoires == 0, "atelier prêt pour la commande suivante")
-U.verifier(e:nouvelleCommande(Random.new(9)).ok, "nouvelle commande possible")
+U.verifier(U.commander(e, Random.new(9)).ok, "nouvelle commande possible")
 
 -- Abandon après un refus : pas de paie, pas de vitrine
 local e2 = jusquAuxDecorations({ { type = "accessoire", id = "croix_argent" } })
@@ -140,7 +140,7 @@ U.verifier(e4:recommencer().ok and #e4.accessoires == 0 and e4.argent == argent4
 -- Relecture finale : le rouleau ne dépasse jamais la longueur qu'une recette accepte (100 dm)
 local Recette = U.module("Recette")
 local e5 = EtatAtelier.nouveau(1000)
-e5:nouvelleCommande(Random.new(3))
+U.commander(e5, Random.new(3))
 e5.commande.exigences = { { type = "qualite", valeur = 0.5 } }
 local tissus5 = {}
 for _, id in ipairs(PIECES) do

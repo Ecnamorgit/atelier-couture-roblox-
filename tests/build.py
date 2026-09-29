@@ -21,6 +21,16 @@ end
 function U.proche(a, b, tol)
 	return math.abs(a - b) <= (tol or 1e-6)
 end
+-- Passe une commande (état de l'atelier ou session) et prend les mesures exactes de la cliente : la plupart
+-- des tests commencent au carnet
+function U.commander(x, ...)
+	local r = x:nouvelleCommande(...)
+	if r.ok then
+		local etat = x.etat or x
+		x:mesurer(U.module("Clientes").get(etat.commande.cliente).mesures)
+	end
+	return r
+end
 local dossierUnitaires
 function U.module(nomModule)
 	if dossierUnitaires and dossierUnitaires.Parent ~= M.services.ReplicatedStorage then

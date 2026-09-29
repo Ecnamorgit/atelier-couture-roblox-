@@ -36,6 +36,12 @@ local ACTIONS = {
 	nouvelleCommande = function(a)
 		return a.etat:nouvelleCommande(a.rng)
 	end,
+	mesurer = function(a, prises)
+		return a.etat:mesurer(prises)
+	end,
+	reprendreMesures = function(a)
+		return a.etat:reprendreMesures()
+	end,
 	validerCroquis = function(a, croquis, tissus)
 		return a.etat:validerCroquis(croquis, tissus)
 	end,

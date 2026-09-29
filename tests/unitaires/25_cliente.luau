@@ -75,3 +75,20 @@ M.echecAvatar = true
 U.verifier(Cliente.construire(commande, place, Workspace) == nil, "avatar impossible : pas de cliente, sans erreur")
 M.echecAvatar = false
 modele:Destroy()
+
+---------------------------------------------------------------------------
+-- Une cliente qui revient (sous-projet 2) : sa propre tenue, son nom au-dessus de la tête
+---------------------------------------------------------------------------
+local Clientes = U.module("Clientes")
+local ines = Clientes.get("ines")
+local commandeInes = { cliente = "ines", taille = "S", exigences = { { type = "min", style = "gothique", valeur = 30 } } }
+local dInes = Cliente.description(commandeInes)
+U.verifier(dInes.TorsoColor == ines.tenue.haut and dInes.LeftLegColor == ines.tenue.bas and dInes.HeadColor == ines.tenue.peau, "Inès : sa tenue")
+local modeleInes = Cliente.construire(commandeInes, place, Workspace)
+local etiquette = modeleInes.Head:FindFirstChild("Nom")
+U.verifier(etiquette ~= nil and etiquette:IsA("BillboardGui") and etiquette.Texte.Text == "Inès Lebrun" and etiquette.Texte.TextSize >= 14, "son nom au-dessus de la tête")
+U.verifier(modeleInes.Cheveux.Color == ines.tenue.cheveux, "ses cheveux")
+modeleInes:Destroy()
+local anonyme = Cliente.construire(commande, place, Workspace)
+U.verifier(anonyme.Head:FindFirstChild("Nom") == nil, "cliente anonyme (tests) : pas de nom")
+anonyme:Destroy()

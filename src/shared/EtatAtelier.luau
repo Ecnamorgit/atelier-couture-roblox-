@@ -9,6 +9,8 @@ local Coupon = require(dossier:WaitForChild("Coupon"))
 local Commandes = require(dossier:WaitForChild("Commandes"))
 local Notation = require(dossier:WaitForChild("Notation"))
 local Recette = require(dossier:WaitForChild("Recette"))
+local Clientes = require(dossier:WaitForChild("Clientes"))
+local Progression = require(dossier:WaitForChild("Progression"))
 
 local EtatAtelier = {}
 EtatAtelier.__index = EtatAtelier
@@ -18,9 +20,11 @@ EtatAtelier.FILET = 20 -- argent minimal garanti à chaque nouvelle commande
 EtatAtelier.ACHAT_MAX = 100 -- dm par achat
 EtatAtelier.TOLERANCE_MESURES = 2 -- mesures de couture en plus ou en moins acceptées (spec §6)
 EtatAtelier.DUREE_MIN = 0.9 -- part de la durée minimale d'une couture (trajet / vitesse maximale)
+EtatAtelier.ECART_MESURE_MAX = 1.5 -- dm : une mesure plus loin de la vraie est refusée (ruban pas réglé)
+local MESURE_INVALIDE = "Mesure invalide : règle chaque ruban au bord de la silhouette."
 -- Étapes du plan 3b (le plan 3c ajoute la photo et la livraison après les décorations)
 EtatAtelier.ROBES_GARDEES = 10 -- robes livrées gardées, la plus récente en vitrine (spec §6)
-EtatAtelier.ETAPES = { "accueil", "carnet", "achat", "decoupe", "epinglage", "couture", "decorations", "photo", "refus" }
+EtatAtelier.ETAPES = { "accueil", "mesures", "carnet", "achat", "decoupe", "epinglage", "couture", "decorations", "photo", "refus" }
 
 local function refus(message)
 	return { ok = false, erreur = message }
@@ -61,7 +65,7 @@ local function pareil(a, b)
 end
 
 -- Champs de l'état échangés avec le serveur (les rouleaux à part : ce sont des objets Coupon)
-local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes" }
+local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites" }
 
 function EtatAtelier.nouveau(argent)
 	return setmetatable({
@@ -77,6 +81,12 @@ function EtatAtelier.nouveau(argent)
 		coutures = {}, -- [idPiece] = note de couture (0 à 1)
 		accessoires = {}, -- décorations posées, au format de la recette
 		robes = {}, -- recettes des robes livrées, la plus récente en premier
+		-- Sous-projet 2 : fiche de chaque cliente venue ([id] = { amitie, vues, derniere, mesures?, ajustement? }),
+		-- points de prestige, robes livrées, visites (numéro de la dernière, pour savoir qui revient)
+		clientes = {},
+		prestige = 0,
+		livraisons = 0,
+		visites = 0,
 	}, EtatAtelier)
 end
 
@@ -142,16 +152,75 @@ local function consommer(self)
 	self.coupons = {}
 end
 
+-- La clochette : une cliente vient (Clientes.prochaine) avec une commande tirée de ses goûts. On prend
+-- d'abord ses mesures (étape « mesures ») ; une cliente déjà venue peut les reprendre.
 function EtatAtelier:nouvelleCommande(rng)
 	if self.etape ~= "accueil" then
 		return refus("Une commande est déjà en cours.")
 	end
-	self.commande = Commandes.generer(rng)
+	local id = Clientes.prochaine(self.clientes, Progression.niveauPrestige(self.prestige))
+	local fiche = self.clientes[id] or { amitie = 0, vues = 0, derniere = 0 }
+	self.clientes[id] = fiche
+	self.visites += 1
+	fiche.vues += 1
+	fiche.derniere = self.visites
+	self.commande = Commandes.generer(rng, Clientes.get(id))
+	self.commande.numero = self.visites -- la reconnaît d'une copie à l'autre (la scène garde la même cliente)
 	self.argent = math.max(self.argent, EtatAtelier.FILET)
 	self.croquis, self.tissus, self.coupees, self.coupons = nil, {}, {}, {}
 	self.epinglees, self.coutures, self.accessoires = {}, {}, {}
+	self.etape = "mesures"
+	return { ok = true, commande = self.commande, cliente = id, premiereVisite = fiche.vues == 1 }
+end
+
+-- Mesures prises au ruban (dm) : trois nombres dans les bornes d'une recette, à moins de 1,5 dm des vraies.
+-- Le patron et le mannequin suivent les mesures prises ; l'ajustement (Notation) note leur justesse. Elles
+-- sont gardées dans la fiche de la cliente pour sa prochaine visite.
+function EtatAtelier:mesurer(prises)
+	if self.etape ~= "mesures" then
+		return refus("Ce n'est pas le moment de mesurer.")
+	end
+	if type(prises) ~= "table" then
+		return refus(MESURE_INVALIDE)
+	end
+	local cliente = Clientes.get(self.commande.cliente)
+	if not cliente then
+		return refus("Aucune cliente à mesurer.")
+	end
+	local propres = {}
+	for _, cle in ipairs({ "poitrine", "taille", "hanches" }) do
+		local v = prises[cle]
+		if not fini(v) or math.abs(v - cliente.mesures[cle]) > EtatAtelier.ECART_MESURE_MAX then
+			return refus(MESURE_INVALIDE)
+		end
+		propres[cle] = math.round(v * 100) / 100
+	end
+	if propres.poitrine < Recette.POITRINE[1] or propres.poitrine > Recette.POITRINE[2] or propres.taille < Recette.TAILLE[1]
+		or propres.taille > Recette.TAILLE[2] or propres.hanches < Recette.HANCHES[1] or propres.hanches > Recette.HANCHES[2]
+		or propres.taille > propres.poitrine or propres.taille > propres.hanches then
+		return refus(MESURE_INVALIDE)
+	end
+	local ajustement = Notation.ajustement(cliente.mesures, propres)
+	self.commande.mesures, self.commande.ajustement = propres, ajustement
+	local fiche = self.clientes[cliente.id] or { amitie = 0, vues = 1, derniere = self.visites }
+	self.clientes[cliente.id] = fiche
+	fiche.mesures, fiche.ajustement = copie(propres), ajustement
 	self.etape = "carnet"
-	return { ok = true, commande = self.commande }
+	return { ok = true, ajustement = ajustement }
+end
+
+-- Une cliente déjà mesurée : ses mesures de la dernière fois, d'un clic
+function EtatAtelier:reprendreMesures()
+	if self.etape ~= "mesures" then
+		return refus("Ce n'est pas le moment de mesurer.")
+	end
+	local fiche = self.clientes[self.commande.cliente]
+	if not fiche or not fiche.mesures then
+		return refus("Ses mesures n'ont jamais été prises.")
+	end
+	self.commande.mesures, self.commande.ajustement = copie(fiche.mesures), fiche.ajustement or 1
+	self.etape = "carnet"
+	return { ok = true, ajustement = self.commande.ajustement }
 end
 
 -- croquis = { corsage, manches, col, jupe } ; tissus = { [idPiece] = idTissu } pour chaque pièce du croquis
@@ -407,6 +476,27 @@ function EtatAtelier:retourDecorations()
 	return { ok = true }
 end
 
+-- Bilan de la robe en cours (styles, qualité, teinte, accessoires) ; la qualité tient compte de l'ajustement aux
+-- mesures de la cliente
+function EtatAtelier:bilan()
+	local bilan = Notation.bilan(self:recette())
+	bilan.ajustement = self.commande and self.commande.ajustement or 1
+	bilan.qualite *= bilan.ajustement
+	return bilan
+end
+
+-- L'amitié de la cliente de la commande change (robe acceptée ou abandonnée) ; renvoie le détail pour le bilan
+local function amitie(self, reussie, qualite)
+	local id = self.commande and self.commande.cliente
+	local fiche = id and self.clientes[id]
+	if not fiche then
+		return nil
+	end
+	local avant = fiche.amitie
+	fiche.amitie = math.max(0, avant + Progression.gainAmitie(reussie, qualite))
+	return { cliente = id, gain = fiche.amitie - avant, points = fiche.amitie, niveau = Progression.niveauAmitie(fiche.amitie), niveauAvant = Progression.niveauAmitie(avant) }
+end
+
 -- Fin de la commande : l'atelier est prêt pour la suivante
 local function terminer(self)
 	self.commande, self.croquis = nil, nil
@@ -422,7 +512,7 @@ function EtatAtelier:livrer()
 		return refus("Ce n'est pas le moment de livrer.")
 	end
 	local recette = self:recette()
-	local bilan = Notation.bilan(recette)
+	local bilan = self:bilan()
 	local reussie, ratees = Notation.verifierExigences(self.commande.exigences, bilan)
 	if not reussie then
 		self.etape = "refus"
@@ -430,12 +520,18 @@ function EtatAtelier:livrer()
 	end
 	local paie = Notation.paie(#recette.pieces, #self.commande.exigences, bilan.qualite)
 	self.argent += paie
+	local gainAmitie = amitie(self, true, bilan.qualite)
+	local niveauAvant = Progression.niveauPrestige(self.prestige)
+	local gainPrestige = Progression.prestigeLivraison(paie)
+	self.prestige += gainPrestige
+	self.livraisons += 1
+	local prestige = { gain = gainPrestige, points = self.prestige, niveau = Progression.niveauPrestige(self.prestige), niveauAvant = niveauAvant }
 	table.insert(self.robes, 1, recette)
 	for k = #self.robes, EtatAtelier.ROBES_GARDEES + 1, -1 do
 		self.robes[k] = nil
 	end
 	terminer(self)
-	return { ok = true, reussie = true, paie = paie, bilan = bilan, ratees = {} }
+	return { ok = true, reussie = true, paie = paie, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige }
 end
 
 -- Après un refus : retoucher (retour aux décorations) ou abandonner (ni paie ni vitrine)
@@ -451,14 +547,18 @@ function EtatAtelier:abandonner()
 	if self.etape ~= "refus" then
 		return refus("Il n'y a rien à abandonner.")
 	end
+	local perte = amitie(self, false, 0)
 	terminer(self)
-	return { ok = true }
+	return { ok = true, amitie = perte }
 end
 
 -- Abandonne la robe en cours (le tissu déjà coupé est perdu), garde la commande
 function EtatAtelier:recommencer()
 	if self.etape == "accueil" then
 		return refus("Aucune commande en cours.")
+	end
+	if self.etape == "mesures" then
+		return refus("Il n'y a rien à recommencer.")
 	end
 	consommer(self)
 	self.croquis, self.tissus, self.coupees = nil, {}, {}

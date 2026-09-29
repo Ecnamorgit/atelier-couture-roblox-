@@ -49,6 +49,8 @@ end)
 M.avancer(1)
 U.verifier(session:nouvelleCommande().ok, "nouvelle commande")
 U.verifier(#attentes == 2 and attentes[1] == true and attentes[2] == false, "attente signalée : début, puis fin")
+M.avancer(1)
+U.verifier(session:mesurer(U.module("Clientes").get(session.etat.commande.cliente).mesures).ok, "mesures prises")
 
 -- Réponse perdue : refus passager ; l'état est redemandé au serveur un peu plus tard
 local CROQUIS = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
@@ -67,7 +69,7 @@ r = session:validerCroquis(CROQUIS, TISSUS)
 U.verifier(not r.ok and r.passager == true and r.erreur == Session.VERIFICATION and cote().etape == "achat", "pendant la vérification, les actions attendent")
 M.avancer(Session.RESYNCHRO + 0.1)
 U.verifier(session.etat.etape == "achat" and notifications == avant + 1, "l'état est redemandé : la copie est réparée, les écrans prévenus")
-U.verifier(session.derniere.action == "nouvelleCommande", "la dernière action reste celle du joueur")
+U.verifier(session.derniere.action == "mesurer", "la dernière action reste celle du joueur")
 
 -- Réponse illisible : refus passager, sans erreur ; la session n'est pas bloquée
 panne = "illisible"

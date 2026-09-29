@@ -1,4 +1,5 @@
 local Session = U.module("Session")
+local Clientes = U.module("Clientes")
 local Commande = U.module("Commande")
 local EtatAtelier = U.module("EtatAtelier")
 
@@ -39,9 +40,11 @@ local objet = session.etat
 M.avancer(1)
 local r = session:nouvelleCommande()
 U.verifier(r.ok and notifications == 1, "nouvelle commande acceptée, l'interface prévenue une fois")
-U.verifier(session.etat == objet and session.etat.etape == "carnet", "même objet d'état (les écrans le gardent), à jour")
+U.verifier(session.etat == objet and session.etat.etape == "mesures", "même objet d'état (les écrans le gardent), à jour")
 U.verifier(session.etat.commande ~= nil and session.etat.commande.taille == cote().commande.taille, "la commande est celle du serveur")
 U.verifier(session.derniere.action == "nouvelleCommande" and session.derniere.reponse.ok, "dernière action retenue (accueil, cliente)")
+M.avancer(1)
+U.verifier(session:mesurer(Clientes.get(session.etat.commande.cliente).mesures).ok and session.etat.etape == "carnet", "mesures prises : au carnet")
 local commande = session.etat.commande
 M.avancer(1)
 session:validerCroquis({ corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }, {

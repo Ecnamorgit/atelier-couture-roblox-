@@ -2,6 +2,8 @@
 -- externe : la tenue est faite des couleurs du corps (peau, haut, bas) et d'une coiffure simple, tirée
 -- d'après la commande ; la silhouette suit sa taille (S, M, L). Elle parle par une bulle.
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Clientes = require(ReplicatedStorage:WaitForChild("Couture"):WaitForChild("Clientes"))
 
 local Cliente = {}
 
@@ -33,8 +35,14 @@ function Cliente.choisir(commande)
 	return h % #Cliente.TENUES + 1
 end
 
+-- La tenue d'une commande : celle de la cliente qui revient (sous-projet 2), sinon tirée d'après la commande
+function Cliente.tenue(commande)
+	local fiche = commande.cliente and Clientes.get(commande.cliente)
+	return fiche and fiche.tenue or Cliente.TENUES[Cliente.choisir(commande)]
+end
+
 function Cliente.description(commande)
-	local t = Cliente.TENUES[Cliente.choisir(commande)]
+	local t = Cliente.tenue(commande)
 	local d = Instance.new("HumanoidDescription")
 	d.HeadColor, d.LeftArmColor, d.RightArmColor = t.peau, t.peau, t.peau
 	d.TorsoColor = t.haut
@@ -79,7 +87,7 @@ function Cliente.construire(commande, cadre, parent)
 		cheveux.Name = "Cheveux"
 		cheveux.Shape = Enum.PartType.Ball
 		cheveux.Size = tete.Size * 1.3 -- la tête R15 dépasse sa taille déclarée
-		cheveux.Color = Cliente.TENUES[Cliente.choisir(commande)].cheveux
+		cheveux.Color = Cliente.tenue(commande).cheveux
 		cheveux.Material = Enum.Material.SmoothPlastic
 		cheveux.CanCollide = false
 		cheveux.CanQuery = false
@@ -90,6 +98,26 @@ function Cliente.construire(commande, cadre, parent)
 		soudure.Part0, soudure.Part1 = tete, cheveux
 		soudure.Parent = cheveux
 		cheveux.Parent = modele
+		-- Son nom au-dessus de la tête (une cliente qui revient)
+		local fiche = commande.cliente and Clientes.get(commande.cliente)
+		if fiche then
+			local etiquette = Instance.new("BillboardGui")
+			etiquette.Name = "Nom"
+			etiquette.Size = UDim2.fromOffset(200, 26)
+			etiquette.StudsOffset = Vector3.new(0, 1.3, 0)
+			etiquette.MaxDistance = 40
+			local texte = Instance.new("TextLabel")
+			texte.Name = "Texte"
+			texte.BackgroundTransparency = 1
+			texte.Size = UDim2.fromScale(1, 1)
+			texte.Font = Enum.Font.GothamBold
+			texte.TextSize = 16
+			texte.TextColor3 = Color3.fromRGB(255, 255, 255)
+			texte.TextStrokeTransparency = 0.4
+			texte.Text = fiche.nom
+			texte.Parent = etiquette
+			etiquette.Parent = tete
+		end
 	end
 	modele:ScaleTo(Cliente.ECHELLE)
 	-- Après ScaleTo, Roblox ne recalcule les articulations qu'une fois l'avatar dans le jeu (les pieds

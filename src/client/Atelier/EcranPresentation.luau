@@ -5,7 +5,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CaptureService = game:GetService("CaptureService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
-local Notation = require(Couture:WaitForChild("Notation"))
 local Sons = require(script.Parent:WaitForChild("Sons"))
 
 local CHOIX = {
@@ -18,13 +17,13 @@ return function(ctx)
 	local UiKit, session, contenu, scene = ctx.UiKit, ctx.session, ctx.contenu, ctx.scene
 	local C = UiKit.COULEURS
 	local etat = session.etat
-	local bilan = Notation.bilan(etat:recette())
+	local bilan = etat:bilan() -- (la qualité tient compte de l'ajustement aux mesures de la cliente)
 	local reglages = { decor = "creme", lumiere = "jour", mannequin = "creme" }
 
 	UiKit.texte({ Text = "La cliente examine ta robe.", TextSize = 16, Size = UDim2.new(1, 0, 0, 24), Parent = contenu })
 	UiKit.texte({
 		Name = "Qualite",
-		Text = ("Qualité de la robe : %d %%"):format(math.floor(bilan.qualite * 100 + 0.5)),
+		Text = ("Qualité de la robe : %d %% (ajustement %d %%)"):format(math.floor(bilan.qualite * 100 + 0.5), math.floor(bilan.ajustement * 100 + 0.5)),
 		Font = Enum.Font.GothamBold,
 		TextSize = 18,
 		Position = UDim2.fromOffset(0, 28),

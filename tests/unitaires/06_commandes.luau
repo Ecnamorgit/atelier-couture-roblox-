@@ -33,3 +33,19 @@ end
 for _, g in ipairs({ "min", "max", "qualite", "teinte", "accessoire" }) do
 	U.verifier(genres[g] == true, "le générateur produit des exigences « " .. g .. " »")
 end
+
+-- Commandes d'une cliente (sous-projet 2) : toujours réalisables, tirées de ses goûts ; ses mesures seront prises
+local Clientes = U.module("Clientes")
+for _, cliente in ipairs(Clientes.LISTE) do
+	local rngCliente = Random.new(7)
+	for n = 1, 40 do
+		local c = Commandes.generer(rngCliente, cliente)
+		U.verifier(c.cliente == cliente.id and c.taille == cliente.taille and c.mesures == nil, cliente.id .. " : sa commande, sans mesures (elles seront prises)")
+		U.verifier(Commandes.realisable(c.exigences) and #c.exigences >= 1 and #c.exigences <= 3, cliente.id .. " : commande " .. n .. " réalisable")
+		U.verifier(c.exigences[1].type == "min" and table.find(cliente.styles, c.exigences[1].style) ~= nil, cliente.id .. " : elle demande un de ses styles")
+		for _, e in ipairs(c.exigences) do
+			U.verifier(e.type ~= "max" or table.find(cliente.styles, e.style) == nil, cliente.id .. " : jamais « au plus » dans ses styles")
+			U.verifier(e.type ~= "teinte" or e.teinte == cliente.teinte, cliente.id .. " : sa teinte")
+		end
+	end
+end

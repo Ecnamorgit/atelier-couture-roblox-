@@ -51,7 +51,7 @@ for _, id in ipairs(ORDRE) do
 	tissus[id] = "coton_blanc"
 end
 local etat = EtatAtelier.nouveau(1000)
-etat:nouvelleCommande(Random.new(2))
+U.commander(etat, Random.new(2))
 etat:validerCroquis(CROQUIS, tissus)
 etat:acheter("coton_blanc", 24)
 etat:commencerDecoupe()
@@ -68,7 +68,7 @@ end
 etat:decorer({})
 etat.commande.exigences = { { type = "qualite", valeur = 0.1 } }
 U.verifier(etat:livrer().reussie, "une robe livrée (mise en place du test)")
-etat:nouvelleCommande(Random.new(3))
+U.commander(etat, Random.new(3))
 etat:validerCroquis(CROQUIS, tissus)
 etat:commencerDecoupe()
 etat:couper(ORDRE[1], PLACES[ORDRE[1]])
@@ -169,7 +169,7 @@ abandonnee(etat, function(c)
 	c.coupons.tissu_retire, c.coupons.coton_blanc = c.coupons.coton_blanc, nil
 end, "rouleau d'un tissu retiré du catalogue")
 local coupee = EtatAtelier.nouveau(1000)
-coupee:nouvelleCommande(Random.new(4))
+U.commander(coupee, Random.new(4))
 coupee:validerCroquis(CROQUIS, tissus)
 coupee:acheter("coton_blanc", 24)
 coupee:commencerDecoupe()

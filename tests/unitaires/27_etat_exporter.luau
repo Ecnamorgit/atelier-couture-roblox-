@@ -19,7 +19,7 @@ end
 -- Pendant la découpe : rouleaux, pièces coupées, stock
 ---------------------------------------------------------------------------
 local etat = EtatAtelier.nouveau(1000)
-etat:nouvelleCommande(Random.new(3))
+U.commander(etat, Random.new(3))
 local tissus = {}
 for id in pairs(PLACES) do
 	tissus[id] = "coton_blanc"
@@ -79,7 +79,7 @@ U.verifier(#apres.robes == 1 and Recette.encoder(apres.robes[1]) == Recette.enco
 ---------------------------------------------------------------------------
 local client = EtatAtelier.nouveau()
 local serveur = EtatAtelier.nouveau(500)
-serveur:nouvelleCommande(Random.new(8))
+U.commander(serveur, Random.new(8))
 client:charger(serveur:exporter())
 local objet, commande = client, client.commande
 serveur:validerCroquis(CROQUIS, tissus)
@@ -89,7 +89,7 @@ U.verifier(client.commande == commande, "même commande : même table (la scène
 U.verifier(client.etape == "achat" and client.argent == serveur.argent and client.stock.coton_blanc == 10, "le reste est à jour")
 serveur.etape = "refus"
 serveur:abandonner()
-serveur:nouvelleCommande(Random.new(9))
+U.commander(serveur, Random.new(9))
 client:charger(serveur:exporter())
 U.verifier(client.commande ~= commande and client.commande.taille == serveur.commande.taille, "nouvelle commande : nouvelle table")
 client.commande.taille = "XXL"

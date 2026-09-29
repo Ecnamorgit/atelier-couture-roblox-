@@ -1,6 +1,7 @@
 local Commande = U.module("Commande")
 local EtatAtelier = U.module("EtatAtelier")
 local Patron = U.module("Patron")
+local Clientes = U.module("Clientes")
 
 local serveur = Commande.nouvelle()
 U.verifier(Commande.courante == serveur, "le serveur en cours est connu (scénario, débogage)")
@@ -41,7 +42,12 @@ U.verifier(etatDe(joueur).argent == EtatAtelier.ARGENT_DEPART and etatDe(joueur)
 -- Une commande menée par le serveur ; chaque réponse emporte l'état
 ---------------------------------------------------------------------------
 r = appeler(joueur, "nouvelleCommande", { NextInteger = "tricherie" })
-U.verifier(r.ok and r.etat.etape == "carnet" and r.etat.commande ~= nil, "nouvelle commande tirée par le serveur (l'argument du client est ignoré)")
+U.verifier(r.ok and r.etat.etape == "mesures" and r.etat.commande ~= nil and r.etat.commande.cliente == "colette", "nouvelle commande tirée par le serveur (l'argument du client est ignoré) : Colette, à mesurer")
+for _, prises in ipairs({ "tout", { poitrine = 99, taille = 7.1, hanches = 9.5 }, { poitrine = 8.9, taille = 7.1, hanches = 0 / 0 } }) do
+	r = appeler(joueur, "mesurer", prises)
+	U.verifier(not r.ok and r.erreur == "Mesure invalide : règle chaque ruban au bord de la silhouette." and etatDe(joueur).etape == "mesures", "mesures farfelues refusées par le serveur")
+end
+U.verifier(appeler(joueur, "mesurer", Clientes.get("colette").mesures).ok and etatDe(joueur).etape == "carnet", "mesures prises : au carnet")
 local CROQUIS = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
 local ORDRE = { "corsage_droit_devant", "corsage_droit_dos", "jupe_droite_devant", "jupe_droite_dos" }
 local PLACES = {

@@ -9,11 +9,12 @@ local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Recette = require(Couture:WaitForChild("Recette"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
+local Clientes = require(Couture:WaitForChild("Clientes"))
 
 local Sauvegarde = {}
 Sauvegarde.__index = Sauvegarde
 
-Sauvegarde.VERSION = 2
+Sauvegarde.VERSION = 3
 Sauvegarde.MAGASIN = "AtelierCouture_v2"
 Sauvegarde.ANCIEN_MAGASIN = "AtelierCouture_v1" -- le prototype : { argent, reputation }
 Sauvegarde.VERROU_VIVANT = 90 -- s : un verrou plus récent appartient à un serveur encore en vie
@@ -62,17 +63,30 @@ local function exigenceLisible(e)
 	return false
 end
 
--- Une commande sauvegardée qu'on peut jouer jusqu'au bout : taille connue, mesures dans les bornes d'une
--- recette, 1 à 3 exigences lisibles
-local function commandeLisible(c)
-	if type(c) ~= "table" or type(c.taille) ~= "string" or not Catalogue.TAILLES[c.taille] then
-		return false
-	end
-	local m = c.mesures
+-- Des mesures (dm) dans les bornes d'une recette, la taille pas plus large que la poitrine ni les hanches
+-- (comme les exigent la prise de mesures et la recette)
+local function mesuresLisibles(m)
 	local function borne(v, bornes)
 		return nombre(v, nil) ~= nil and v >= bornes[1] and v <= bornes[2]
 	end
-	if type(m) ~= "table" or not borne(m.poitrine, Recette.POITRINE) or not borne(m.taille, Recette.TAILLE) or not borne(m.hanches, Recette.HANCHES) then
+	return type(m) == "table" and borne(m.poitrine, Recette.POITRINE) and borne(m.taille, Recette.TAILLE) and borne(m.hanches, Recette.HANCHES)
+		and m.taille <= m.poitrine and m.taille <= m.hanches
+end
+
+-- Une commande sauvegardée qu'on peut jouer jusqu'au bout : taille et cliente connues (une cliente à mesurer à
+-- l'étape des mesures), mesures lisibles (sauf à l'étape des mesures, où elles ne sont pas encore prises),
+-- ajustement entre 50 et 100 %, 1 à 3 exigences lisibles
+local function commandeLisible(c, etape)
+	if type(c) ~= "table" or type(c.taille) ~= "string" or not Catalogue.TAILLES[c.taille] then
+		return false
+	end
+	if (c.cliente ~= nil or etape == "mesures") and not Clientes.get(c.cliente) then
+		return false
+	end
+	if not (etape == "mesures" and c.mesures == nil) and not mesuresLisibles(c.mesures) then
+		return false
+	end
+	if c.ajustement ~= nil and not (nombre(c.ajustement, nil) and c.ajustement >= 0.5 and c.ajustement <= 1) then
 		return false
 	end
 	if type(c.exigences) ~= "table" or #c.exigences < 1 or #c.exigences > 3 then
@@ -97,6 +111,16 @@ Sauvegarde.MIGRATIONS = {
 			debloques = { tissus = {}, variantes = {}, accessoires = {} }, -- (sous-projet 2)
 			recettes = {},
 		}
+	end,
+	-- v2 → v3 (sous-projet 2) : fiches des clientes, prestige ; le travail passé compte (20 points par robe gardée)
+	[2] = function(v2)
+		local robes = type(v2.recettes) == "table" and #v2.recettes or 0
+		v2.version = 3
+		v2.prestige = 20 * robes
+		v2.livraisons = robes
+		v2.visites = 0
+		v2.clientes = {}
+		return v2
 	end,
 }
 
@@ -128,6 +152,10 @@ function Sauvegarde.depuisEtat(etat, debloques)
 		stock = d.stock,
 		debloques = copie(debloques) or { tissus = {}, variantes = {}, accessoires = {} },
 		recettes = d.robes,
+		clientes = d.clientes,
+		prestige = d.prestige,
+		livraisons = d.livraisons,
+		visites = d.visites,
 	}
 	if d.etape ~= "accueil" then
 		partie.enCours = {}
@@ -157,6 +185,23 @@ end
 -- laissé de côté ; une commande en cours illisible est abandonnée, l'argent, le stock et les robes restent.
 function Sauvegarde.versEtat(partie)
 	local base = EtatAtelier.nouveau(math.max(0, nombre(partie.argent, EtatAtelier.ARGENT_DEPART)))
+	local function entier(v)
+		return math.max(0, math.floor(nombre(v, 0)))
+	end
+	base.prestige, base.livraisons, base.visites = entier(partie.prestige), entier(partie.livraisons), entier(partie.visites)
+	-- Fiches des clientes : clientes connues seulement ; des mesures impossibles sont oubliées (on remesurera)
+	for id, f in pairs(type(partie.clientes) == "table" and partie.clientes or {}) do
+		if type(id) == "string" and Clientes.get(id) and type(f) == "table" then
+			local mesures = mesuresLisibles(f.mesures) and copie(f.mesures) or nil
+			base.clientes[id] = {
+				amitie = entier(f.amitie),
+				vues = entier(f.vues),
+				derniere = entier(f.derniere),
+				mesures = mesures,
+				ajustement = mesures and math.clamp(nombre(f.ajustement, 1), 0.5, 1) or nil,
+			}
+		end
+	end
 	for id, dm in pairs(type(partie.stock) == "table" and partie.stock or {}) do
 		if type(id) == "string" and Catalogue.tissu(id) and nombre(dm, -1) >= 0 then
 			base.stock[id] = dm
@@ -181,7 +226,12 @@ function Sauvegarde.versEtat(partie)
 	local ok, erreur = pcall(function()
 		etat:charger(d)
 		assert(table.find(EtatAtelier.ETAPES, etat.etape), "étape inconnue")
-		assert(etat.etape == "accueil" or commandeLisible(etat.commande), "commande illisible")
+		assert(etat.etape == "accueil" or commandeLisible(etat.commande, etat.etape), "commande illisible")
+		-- La fiche de la cliente de la commande, si elle a été perdue : recréée (sa visite en cours compte)
+		local id = etat.commande and etat.commande.cliente
+		if id and not etat.clientes[id] then
+			etat.clientes[id] = { amitie = 0, vues = 1, derniere = etat.visites }
+		end
 		etat:piecesDuCroquis() -- lit le croquis
 		for _, idTissu in pairs(etat.tissus) do
 			assert(Catalogue.tissu(idTissu), "tissu inconnu")

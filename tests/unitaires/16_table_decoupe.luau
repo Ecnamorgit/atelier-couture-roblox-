@@ -3,7 +3,7 @@ local TableDecoupe = U.module("TableDecoupe")
 
 -- Robe en deux tissus : corsage en soie (avec manches ballon pliées), jupe évasée en biais en coton
 local session = Session.nouvelle(11)
-session:nouvelleCommande()
+U.commander(session)
 local croquis = { corsage = "corsage_droit", manches = "manches_ballon", col = "col_sans", jupe = "jupe_evasee" }
 local tissus = {
 	corsage_droit_devant = "soie_rouge",
@@ -55,7 +55,7 @@ U.verifier(session.etat.coupees.jupe_evasee_devant.angle == 45, "jupe en biais c
 
 -- Place proposée : la première place libre en haut du rouleau, à côté des pièces déjà coupées
 local s2 = Session.nouvelle(12)
-s2:nouvelleCommande()
+U.commander(s2)
 s2:validerCroquis({ corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }, {
 	corsage_droit_devant = "lin_bleu",
 	corsage_droit_dos = "lin_bleu",
@@ -78,7 +78,7 @@ U.verifier(t2:couper(s2).ok and s2.etat.etape == "epinglage", "toute la robe tie
 
 -- Une pièce pliée est proposée contre le pli (son symétrique de l'autre côté), pas contre le bord
 local s3 = Session.nouvelle(13)
-s3:nouvelleCommande()
+U.commander(s3)
 s3:validerCroquis({ corsage = "corsage_droit", manches = "manches_ballon", col = "col_sans", jupe = "jupe_droite" }, {
 	corsage_droit_devant = "lin_bleu",
 	corsage_droit_dos = "lin_bleu",
@@ -101,7 +101,7 @@ local Metrage = U.module("Metrage")
 local Catalogue = U.module("Catalogue")
 local function suivrePropositions(croquisEssai, tissusEssai)
 	local e = EtatAtelier.nouveau(100000)
-	e:nouvelleCommande(Random.new(1))
+	U.commander(e, Random.new(1))
 	if not e:validerCroquis(croquisEssai, tissusEssai).ok then
 		return false, "croquis refusé"
 	end

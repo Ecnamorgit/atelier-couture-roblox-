@@ -56,7 +56,7 @@ scene:synchroniser(etat)
 U.verifier(scene.dossier:FindFirstChild("Mannequin") == nil, "pas de mannequin sans commande")
 U.verifier(camera.CameraType == Enum.CameraType.Custom, "à l'accueil, la caméra suit le joueur")
 
-etat:nouvelleCommande(Random.new(3))
+U.commander(etat, Random.new(3))
 etat.commande.mesures = table.clone(Catalogue.TAILLES.S)
 local tissus = {}
 for _, id in ipairs(PIECES) do
@@ -106,7 +106,7 @@ U.verifier(U.proche((grand.Buste.Size - Mannequin.formes(Catalogue.TAILLES.L)[1]
 
 -- Mémoire des maillages pleine : la pièce n'apparaît pas, sans erreur
 local etat2 = EtatAtelier.nouveau()
-etat2:nouvelleCommande(Random.new(3))
+U.commander(etat2, Random.new(3))
 etat2:validerCroquis(CROQUIS, tissus)
 etat2:acheter("coton_blanc", 12)
 etat2:commencerDecoupe()
