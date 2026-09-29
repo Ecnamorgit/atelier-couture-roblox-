@@ -112,10 +112,47 @@ local function construire(indice, joueur, parent)
 		-- la matière « tissu » de Roblox assombrit trop les couleurs
 		rouleau.CFrame = rouleau.CFrame * CFrame.Angles(0, math.rad(90), 0)
 	end
-	-- Table de découpe et machine à coudre, au fond
-	bloc(modele, origine, "TableDecoupe", Vector3.new(-6, 1.5, 51), Vector3.new(6, 3, 4), BOIS_CLAIR, { matiere = Enum.Material.Wood })
-	bloc(modele, origine, "Machine", Vector3.new(7, 1.5, 51), Vector3.new(4, 3, 2.5), BOIS, { matiere = Enum.Material.Wood })
-	bloc(modele, origine, "CorpsMachine", Vector3.new(7, 3.6, 51), Vector3.new(1.6, 1.2, 0.8), rgb(60, 60, 70), { matiere = Enum.Material.Metal, decor = true })
+	-- Table de découpe, au fond à gauche : plateau sur quatre pieds, tapis de coupe quadrillé, un rouleau de
+	-- tissu et une paire de ciseaux
+	local TX, TZ = -6, 51
+	local LIGNE = rgb(230, 240, 230)
+	bloc(modele, origine, "TableDecoupe", Vector3.new(TX, 2.85, TZ), Vector3.new(6, 0.3, 4), BOIS_CLAIR, { matiere = Enum.Material.Wood })
+	for k, c in ipairs({ { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } }) do
+		bloc(modele, origine, "PiedTable_" .. k, Vector3.new(TX + c[1] * 2.7, 1.35, TZ + c[2] * 1.7), Vector3.new(0.3, 2.7, 0.3), BOIS_CLAIR, { matiere = Enum.Material.Wood })
+	end
+	bloc(modele, origine, "TapisDecoupe", Vector3.new(TX, 3.025, TZ), Vector3.new(5.4, 0.05, 3.4), rgb(70, 130, 100), { decor = true })
+	for k = 1, 5 do -- lignes du tapis, dans la longueur
+		bloc(modele, origine, "LigneTapis_" .. k, Vector3.new(TX, 3.055, TZ - 1.7 + k * 3.4 / 6), Vector3.new(5.4, 0.01, 0.03), LIGNE, { decor = true })
+	end
+	for k = 1, 8 do -- puis en travers
+		bloc(modele, origine, "LigneTapis_" .. (5 + k), Vector3.new(TX - 2.7 + k * 0.6, 3.055, TZ), Vector3.new(0.03, 0.01, 3.4), LIGNE, { decor = true })
+	end
+	bloc(modele, origine, "RouleauTable", Vector3.new(TX - 0.6, 3.35, TZ + 1.2), Vector3.new(3.6, 0.6, 0.6), rgb(232, 170, 190), { forme = Enum.PartType.Cylinder, decor = true })
+	for k, angle in ipairs({ 15, -15 }) do -- ciseaux : deux lames croisées…
+		local lame = bloc(modele, origine, "Ciseaux_Lame" .. k, Vector3.new(TX + 1.6, 3.07, TZ - 0.8), Vector3.new(1, 0.04, 0.1), rgb(200, 200, 210), { matiere = Enum.Material.Metal, decor = true })
+		lame.CFrame = lame.CFrame * CFrame.Angles(0, math.rad(angle), 0)
+	end
+	for k, dz in ipairs({ -0.15, 0.15 }) do -- … et deux anneaux, à plat sur le tapis
+		local anneau = bloc(modele, origine, "Ciseaux_Anneau" .. k, Vector3.new(TX + 2.25, 3.07, TZ - 0.8 + dz), Vector3.new(0.05, 0.28, 0.28), rgb(200, 60, 80), { forme = Enum.PartType.Cylinder, decor = true })
+		anneau.CFrame = anneau.CFrame * CFrame.Angles(0, 0, math.rad(90))
+	end
+	-- Machine à coudre, au fond à droite, sur son meuble : socle, colonne, bras, tête et aiguille (émail crème),
+	-- volant sur le côté, bobine de fil sur le bras
+	local MX, MZ = 7, 51
+	local EMAIL = rgb(240, 236, 228)
+	bloc(modele, origine, "Machine", Vector3.new(MX, 2.85, MZ), Vector3.new(4, 0.3, 2.5), BOIS, { matiere = Enum.Material.Wood })
+	for k, c in ipairs({ { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } }) do
+		bloc(modele, origine, "PiedMachine_" .. k, Vector3.new(MX + c[1] * 1.7, 1.35, MZ + c[2] * 1), Vector3.new(0.3, 2.7, 0.3), BOIS, { matiere = Enum.Material.Wood })
+	end
+	bloc(modele, origine, "SocleMachine", Vector3.new(MX, 3.175, MZ), Vector3.new(2.4, 0.35, 1.1), EMAIL, { decor = true })
+	bloc(modele, origine, "ColonneMachine", Vector3.new(MX + 0.85, 3.95, MZ), Vector3.new(0.55, 1.2, 0.8), EMAIL, { decor = true })
+	bloc(modele, origine, "BrasMachine", Vector3.new(MX + 0.05, 4.7, MZ), Vector3.new(2.2, 0.45, 0.8), EMAIL, { decor = true })
+	bloc(modele, origine, "TeteMachine", Vector3.new(MX - 0.85, 4.2, MZ), Vector3.new(0.5, 0.75, 0.8), EMAIL, { decor = true })
+	local aiguille = bloc(modele, origine, "Aiguille", Vector3.new(MX - 0.85, 3.6, MZ - 0.2), Vector3.new(0.5, 0.05, 0.05), rgb(200, 200, 210), { forme = Enum.PartType.Cylinder, matiere = Enum.Material.Metal, decor = true })
+	aiguille.CFrame = aiguille.CFrame * CFrame.Angles(0, 0, math.rad(90)) -- debout
+	bloc(modele, origine, "Volant", Vector3.new(MX + 1.2, 4.35, MZ), Vector3.new(0.15, 0.9, 0.9), rgb(90, 90, 100), { forme = Enum.PartType.Cylinder, matiere = Enum.Material.Metal, decor = true })
+	local bobine = bloc(modele, origine, "Bobine", Vector3.new(MX + 0.4, 5.1, MZ), Vector3.new(0.35, 0.25, 0.25), rgb(210, 50, 90), { forme = Enum.PartType.Cylinder, decor = true })
+	bobine.CFrame = bobine.CFrame * CFrame.Angles(0, 0, math.rad(90)) -- debout sur le bras
 	modele.Parent = parent
 	return modele
 end

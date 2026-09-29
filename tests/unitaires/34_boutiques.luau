@@ -64,6 +64,33 @@ end
 U.verifier(rouleaux >= 6, "des rouleaux de tissu sur l'étagère (" .. rouleaux .. ")")
 local unRouleau = b3:FindFirstChild("Rouleau_" .. Catalogue.Tissus[1].id)
 U.verifier(unRouleau.Shape == Enum.PartType.Cylinder and unRouleau.Size.X >= 1.5 and unRouleau.Material ~= Enum.Material.Fabric, "rouleaux assez longs (un cylindre s'allonge selon X), en matière lisse (la matière tissu assombrit trop)")
+-- La table de découpe et la machine à coudre ressemblent à de vrais meubles : plateau sur pieds, tapis de coupe
+-- quadrillé, rouleau et ciseaux ; machine sur son meuble, avec socle, colonne, bras, tête, aiguille, volant, bobine
+local manquants = {}
+for _, nom in ipairs({ "PiedTable_1", "PiedTable_4", "TapisDecoupe", "RouleauTable", "Ciseaux_Lame1", "Ciseaux_Lame2", "Ciseaux_Anneau1", "PiedMachine_1", "PiedMachine_4", "SocleMachine", "ColonneMachine", "BrasMachine", "TeteMachine", "Aiguille", "Volant", "Bobine" }) do
+	if not b3:FindFirstChild(nom) then
+		table.insert(manquants, nom)
+	end
+end
+U.verifier(#manquants == 0, "table et machine détaillées ; manquent : " .. table.concat(manquants, ", "))
+local lignesTapis = 0
+for _, p in ipairs(b3:GetChildren()) do
+	if p.Name:sub(1, 11) == "LigneTapis_" then
+		lignesTapis += 1
+	end
+end
+U.verifier(lignesTapis >= 8, "le tapis de coupe est quadrillé (" .. lignesTapis .. " lignes)")
+U.verifier(not b3.Aiguille.CanCollide and not b3.Ciseaux_Lame1.CanCollide and not b3.Bobine.CanCollide and not b3.TapisDecoupe.CanCollide, "les petits objets ne gênent pas les déplacements")
+U.verifier(b3.Volant.Shape == Enum.PartType.Cylinder and b3.Bobine.Shape == Enum.PartType.Cylinder and b3.Aiguille.Shape == Enum.PartType.Cylinder, "volant, bobine et aiguille sont ronds")
+local hautTable = Boutique.emplacement(3):PointToObjectSpace(b3.TableDecoupe.CFrame.Position).Y + b3.TableDecoupe.Size.Y / 2
+U.verifier(hautTable > 2.5 and hautTable < 3.5 and b3.TableDecoupe.Size.Y <= 0.5, "un plateau de table (pas un bloc), à hauteur de travail : " .. hautTable)
+local parties = 0
+for _, p in ipairs(b3:GetDescendants()) do
+	if p:IsA("BasePart") then
+		parties += 1
+	end
+end
+U.verifier(parties <= 100, "une boutique reste légère (8 dans la rue) : " .. parties .. " pièces")
 
 -- Rien ne gêne l'atelier : caméra du poste (même quand elle tourne), photo, cliente, entrée par la porte
 local o = Boutique.emplacement(3)
