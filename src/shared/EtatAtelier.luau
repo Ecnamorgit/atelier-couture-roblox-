@@ -171,7 +171,13 @@ function EtatAtelier:validerCroquis(croquis, tissus)
 		end
 		choix[id] = t
 	end
-	self.croquis = table.clone(croquis)
+	-- Seules les quatre familles sont gardées : un champ en trop envoyé par le client ne reste pas sur le
+	-- serveur (ni dans chaque réponse, ni plus tard dans la sauvegarde)
+	local propre = {}
+	for _, famille in ipairs(Catalogue.FAMILLES) do
+		propre[famille] = croquis[famille]
+	end
+	self.croquis = propre
 	self.tissus = choix
 	self.etape = "achat"
 	return { ok = true }

@@ -54,6 +54,11 @@ local tissus = {}
 for _, id in ipairs(ORDRE) do
 	tissus[id] = "coton_blanc"
 end
+-- Un croquis avec un champ en trop : seules les quatre familles sont gardées sur le serveur (et renvoyées)
+local bourre = table.clone(CROQUIS)
+bourre.bourrage = string.rep("x", 1000)
+r = appeler(joueur, "validerCroquis", bourre, tissus)
+U.verifier(r.ok and etatDe(joueur).croquis.bourrage == nil and r.etat.croquis.bourrage == nil and etatDe(joueur).croquis.jupe == CROQUIS.jupe, "croquis : les champs en trop ne sont pas gardés")
 U.verifier(appeler(joueur, "validerCroquis", CROQUIS, tissus).ok, "croquis validé")
 -- Achats refusés : longueur farfelue, argent insuffisant
 for _, dm in ipairs({ 0, -5, 2.5, 1e9, "10" }) do
