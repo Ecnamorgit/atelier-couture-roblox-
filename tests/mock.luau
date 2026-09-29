@@ -148,6 +148,18 @@ CF.__index = function(c, k)
 	end
 	error("CFrame : membre inconnu " .. tostring(k))
 end
+-- Égalité par valeur, comme dans Roblox (position et rotation exactement égales)
+CF.__eq = function(a, b)
+	if a.p ~= b.p then
+		return false
+	end
+	for i = 1, 9 do
+		if a.r[i] ~= b.r[i] then
+			return false
+		end
+	end
+	return true
+end
 CF.__mul = function(a, b)
 	assert(typeDe(a) == "CFrame", "CFrame * : opérande gauche invalide")
 	if typeDe(b) == "CFrame" then

@@ -1,8 +1,8 @@
--- Scene : le coin de l'atelier en 3D, côté client. La cliente en personne, le mannequin à ses mesures,
--- les pièces épinglées dessus (le vrai tissu découpé), l'aperçu des décorations, les réglages de la photo,
--- la vitrine de la dernière robe livrée, et la caméra fixe des postes autour du mannequin (qui peut
--- tourner pendant les décorations).
--- Au plan 4, la boutique construite par le serveur donnera l'emplacement du mannequin et de la vitrine.
+-- Scene : l'atelier en 3D, côté client, dans la boutique du joueur. La cliente en personne, le mannequin à
+-- ses mesures, les pièces épinglées dessus (le vrai tissu découpé), l'aperçu des décorations, les réglages
+-- de la photo, et la caméra fixe des postes autour du mannequin (qui peut tourner pendant les décorations).
+-- Les positions ci-dessous sont dans le repère de la boutique (module Boutique) ; la scène les place à
+-- l'origine de la boutique du joueur. Les vitrines de la rue sont posées par le serveur.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
@@ -11,22 +11,19 @@ local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Patron = require(Couture:WaitForChild("Patron"))
 local Mannequin = require(Couture:WaitForChild("Mannequin"))
 local ConstructeurRobe = require(Couture:WaitForChild("ConstructeurRobe"))
-local Recette = require(Couture:WaitForChild("Recette"))
-local Vitrines = require(Couture:WaitForChild("Vitrines"))
+local Boutique = require(Couture:WaitForChild("Boutique"))
 local Lighting = game:GetService("Lighting")
 local Cliente = require(script.Parent:WaitForChild("Cliente"))
 
 local Scene = {}
 Scene.__index = Scene
 
--- Taille du mannequin dans le monde (studs) ; le devant du corps regarde vers −Z
-Scene.CADRE = CFrame.new(0, Mannequin.HAUTEUR_TAILLE * Catalogue.STUDS_PAR_DM, 40)
+-- Taille du mannequin (repère de la boutique, studs) ; le devant du corps regarde vers −Z
+Scene.CADRE = Boutique.MANNEQUIN
 -- Caméra face au mannequin, décalée pour le laisser à gauche de l'écran (le panneau est à droite)
 Scene.CAMERA = CFrame.lookAt(Vector3.new(-1.1, 2.6, 34.6), Vector3.new(-1.1, 2.2, 40))
 -- Étapes où la caméra montre le mannequin
 Scene.POSTES = { epinglage = true, couture = true, decorations = true, photo = true, refus = true }
--- Socle de la vitrine (la dernière robe livrée), en retrait du mannequin de travail
-Scene.VITRINE = CFrame.new(7, 0.5, 52)
 -- La cliente attend en retrait à côté du mannequin (à gauche à l'écran), tournée vers la caméra ; pieds au sol
 Scene.CLIENTE = CFrame.lookAt(Vector3.new(4.6, 0, 42), Vector3.new(-1.1, 0, 34.6))
 Scene.DUREE_ADIEU = 3 -- secondes avant qu'elle s'en aille, une fois la commande finie
@@ -77,9 +74,11 @@ local function controlesDuJoueur(actif)
 	end
 end
 
--- options : { etaler = bool } pour la construction de la vitrine (défaut vrai),
+-- options : { origine = CFrame } l'origine de la boutique du joueur (défaut : l'origine du monde),
+-- { etaler = bool } pour la construction des pièces (défaut vrai),
 -- { controles = function(actif) } pour remplacer la coupure des commandes de l'avatar (tests)
 function Scene.nouvelle(parent, options)
+	local origine = options and options.origine or CFrame.new()
 	local dossier = Instance.new("Folder")
 	dossier.Name = "AtelierLocal"
 	local robe = Instance.new("Model")
@@ -88,23 +87,13 @@ function Scene.nouvelle(parent, options)
 	local decorations = Instance.new("Folder")
 	decorations.Name = "Decorations"
 	decorations.Parent = dossier
-	local vitrines = Instance.new("Folder")
-	vitrines.Name = "Vitrines"
-	vitrines.Parent = dossier
-	local socle = Instance.new("Part")
-	socle.Name = "Socle"
-	socle.Anchored = true
-	socle.Size = Vector3.new(4, 1, 4)
-	socle.CFrame = Scene.VITRINE
-	socle.Material = Enum.Material.Wood
-	socle.Color = Color3.fromRGB(120, 84, 56)
-	socle.Parent = vitrines
 	dossier.Parent = parent or Workspace
 	local self = setmetatable({
 		dossier = dossier,
 		robe = robe,
 		decorations = decorations,
-		socle = socle,
+		origine = origine,
+		cadre = origine * Scene.CADRE, -- le cadre de la robe, dans le monde
 		mesures = nil,
 		mannequin = nil,
 		recette = nil,
@@ -120,10 +109,6 @@ function Scene.nouvelle(parent, options)
 		champOrigine = nil, -- champ de la caméra, gardé le temps de la prise de vue
 		controles = options and options.controles or controlesDuJoueur,
 	}, Scene)
-	self.vitrines = Vitrines.nouveau(vitrines, function()
-		local camera = Workspace.CurrentCamera
-		return camera and camera.CFrame.Position or Scene.VITRINE.Position
-	end, { etaler = not options or options.etaler ~= false })
 	return self
 end
 
@@ -145,7 +130,7 @@ function Scene:suivreCliente(etat, derniere)
 			self.partante:Destroy() -- la précédente part tout de suite
 			self.partante = nil
 		end
-		local modele = Cliente.construire(commande, Scene.CLIENTE, self.dossier)
+		local modele = Cliente.construire(commande, self.origine * Scene.CLIENTE, self.dossier)
 		if self.clienteCommande ~= commande then
 			-- La commande a pris fin (ou changé) pendant la construction
 			if modele then
@@ -191,7 +176,7 @@ function Scene:photo(reglages)
 		fond.CanTouch = false
 		fond.Material = Enum.Material.SmoothPlastic
 		fond.Size = Vector3.new(16, 12, 0.4)
-		fond.CFrame = CFrame.new(Scene.CADRE.Position.X, 5, Scene.CADRE.Position.Z + 3.5)
+		fond.CFrame = self.origine * CFrame.new(Scene.CADRE.Position.X, 5, Scene.CADRE.Position.Z + 3.5)
 		fond.Parent = self.dossier
 	end
 	fond.Color = Scene.DECORS[reglages.decor] or Scene.DECORS.creme
@@ -220,7 +205,7 @@ function Scene:cadrerPhoto(actif)
 	if actif and camera then
 		self.champOrigine = self.champOrigine or camera.FieldOfView
 		camera.CameraType = Enum.CameraType.Scriptable
-		camera.CFrame = Scene.CAMERA_PHOTO
+		camera.CFrame = self.origine * Scene.CAMERA_PHOTO
 		camera.FieldOfView = Scene.CHAMP_PHOTO
 	else
 		if camera and self.champOrigine then
@@ -268,14 +253,8 @@ function Scene:synchroniser(etat, derniere)
 		end
 		self.mesures = mesures and table.clone(mesures)
 		if mesures then
-			self.mannequin = Mannequin.construire(mesures, Scene.CADRE, self.dossier)
+			self.mannequin = Mannequin.construire(mesures, self.cadre, self.dossier)
 		end
-	end
-	-- Vitrine : la dernière robe livrée
-	local derniere = etat.robes and etat.robes[1]
-	local texte = derniere and Recette.encoder(derniere) or nil
-	if self.socle:GetAttribute("Recette") ~= texte then
-		self.socle:SetAttribute("Recette", texte)
 	end
 	-- Pièces épinglées
 	local recette = etat:recette()
@@ -314,7 +293,7 @@ function Scene:synchroniser(etat, derniere)
 			local entree = { parts = {}, mesures = self.mesures }
 			self.pieces[p.id] = entree
 			for _, copie in ipairs(Patron.copies(p.id)) do
-				local part = ConstructeurRobe.piece(p, copie, recette.mesures, Scene.CADRE, "robe")
+				local part = ConstructeurRobe.piece(p, copie, recette.mesures, self.cadre, "robe")
 				if part and self.pieces[p.id] == entree and self.dossier.Parent then
 					part.CanQuery = true -- touchée par les rayons des décorations
 					part.Parent = self.robe
@@ -338,7 +317,7 @@ function Scene:montrerDecorations(recette, liste, garniture, selection)
 	local r = table.clone(recette)
 	r.accessoires = liste
 	local function poser(a, indice)
-		local groupe = ConstructeurRobe.accessoire(r, a, Scene.CADRE, self.decorations)
+		local groupe = ConstructeurRobe.accessoire(r, a, self.cadre, self.decorations)
 		groupe:SetAttribute("Indice", indice)
 		if indice ~= nil and indice == selection then
 			local surlignage = Instance.new("Highlight")
@@ -385,7 +364,7 @@ function Scene:toucher(origine, direction)
 	end
 	for k, p in ipairs(self.recette.pieces) do
 		if p.id == id then
-			local point = Scene.CADRE:PointToObjectSpace(impact.Position) / Catalogue.STUDS_PAR_DM
+			local point = self.cadre:PointToObjectSpace(impact.Position) / Catalogue.STUDS_PAR_DM
 			local u, v = Patron.versUV(id, copie, point, self.recette.mesures)
 			return { genre = "piece", indicePiece = k, copie = copie, u = u, v = v }
 		end
@@ -415,12 +394,13 @@ function Scene:regarder(actif)
 	end
 	if actif then
 		camera.CameraType = Enum.CameraType.Scriptable
+		local vue = self.origine * Scene.CAMERA
 		if self.orbite == 0 then
-			camera.CFrame = Scene.CAMERA
+			camera.CFrame = vue
 		else
 			-- Même vue, tournée autour de l'axe vertical du mannequin
-			local axe = CFrame.new(Scene.CADRE.Position)
-			camera.CFrame = axe * CFrame.Angles(0, math.rad(self.orbite), 0) * axe:Inverse() * Scene.CAMERA
+			local axe = CFrame.new(self.cadre.Position)
+			camera.CFrame = axe * CFrame.Angles(0, math.rad(self.orbite), 0) * axe:Inverse() * vue
 		end
 		self.cameraFixe = true
 		self.controles(false)
@@ -452,7 +432,6 @@ end
 function Scene:detruire()
 	self:finirPhoto()
 	self:regarder(false)
-	self.vitrines.arreter()
 	self.pieces = {}
 	self.dossier:Destroy()
 end

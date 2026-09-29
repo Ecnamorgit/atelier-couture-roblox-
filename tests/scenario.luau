@@ -122,6 +122,8 @@ local maBoutique = M.services.Workspace.Rue:FindFirstChild("Boutique_" .. tostri
 verifier(numeroBoutique == 1 and maBoutique ~= nil and maBoutique:GetAttribute("Proprietaire") == joueur.UserId, "le serveur a construit la boutique du joueur dans la rue")
 local maVitrine = M.services.Workspace.Vitrines:FindFirstChild("Vitrine_" .. numeroBoutique)
 verifier(maVitrine ~= nil and maVitrine:GetAttribute("Recette") == nil, "sa vitrine, sur la rue, est vide")
+-- L'atelier du client est dans sa boutique : les vues attendues sont dans le repère de la boutique
+local origineBoutique = requireModule(dossier.Boutique).emplacement(numeroBoutique)
 verifier(fenetre.Message.Visible and string.find(fenetre.Message.Text, "sauvegardée", 1, true) ~= nil, "le joueur est prévenu que sa partie ne sera pas sauvegardée")
 verifierTailles("accueil")
 cliquer("Fermer")
@@ -429,7 +431,7 @@ verifier(palette.Size.Y.Offset % 44 == 0, "palette : rangées entières")
 local function point3D(id, copie, u, v)
 	local b = PolygoneModule.boite(Catalogue.piece(id).contour)
 	local pos = PatronModule.point(id, copie, b.minX + u * (b.maxX - b.minX), b.minY + v * (b.maxY - b.minY), etatJeu.commande.mesures)
-	return ScenePoste.CADRE * (pos * Catalogue.STUDS_PAR_DM)
+	return origineBoutique * ScenePoste.CADRE * (pos * Catalogue.STUDS_PAR_DM)
 end
 -- Toucher la scène : le rayon du faux Roblox renvoie l'impact préparé
 local function toucherScene(impact)
@@ -487,7 +489,7 @@ local glisse = { UserInputType = Enum.UserInputType.MouseButton1, Position = Vec
 UIS.InputBegan:Fire(glisse, false)
 UIS.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(220, 300, 0) }, false)
 UIS.InputEnded:Fire(glisse, false)
-verifier(camera.CFrame ~= ScenePoste.CAMERA and #decorations:GetChildren() == 2, "glisser fait tourner la vue, sans rien poser")
+verifier(camera.CFrame ~= origineBoutique * ScenePoste.CAMERA and #decorations:GetChildren() == 2, "glisser fait tourner la vue, sans rien poser")
 
 ---------------------------------------------------------------------------
 -- Présentation, refus, retouche, livraison
@@ -495,7 +497,7 @@ verifier(camera.CFrame ~= ScenePoste.CAMERA and #decorations:GetChildren() == 2,
 local avantDeco = argent()
 cliquer("Presenter")
 verifier(titre() == "7. Photo et livraison" and argent() == avantDeco - coutRuban, "présenter : décorations payées")
-verifier(camera.CFrame == ScenePoste.CAMERA, "la cliente voit la robe de face")
+verifier(camera.CFrame == origineBoutique * ScenePoste.CAMERA, "la cliente voit la robe de face")
 verifier(texte("Au moins 1 en Romantique (actuel :") ~= nil, "le score actuel est affiché à côté d'une exigence de style")
 verifier(#decorations:GetChildren() == 2, "la robe est présentée avec ses décorations")
 verifierTailles("présentation")
@@ -514,7 +516,7 @@ verifier(boutonNomme("Decor_bleu").BackgroundColor3 == ACCENT, "le décor choisi
 M.echecCapture = true
 cliquer("PrendrePhoto")
 M.echecCapture = nil
-verifier(gui.Atelier.Enabled and camera.CFrame == ScenePoste.CAMERA and fenetre.Message.Visible and fenetre.Message.Text == "La photo n'a pas pu être prise.", "capture refusée : interface rétablie, message")
+verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA and fenetre.Message.Visible and fenetre.Message.Text == "La photo n'a pas pu être prise.", "capture refusée : interface rétablie, message")
 verifier(not fenetre.Contenu.Apercu.Visible, "capture refusée : pas d'aperçu")
 -- Capture qui ne répond pas : l'interface revient au bout d'un moment
 M.captureMuette = true
@@ -522,7 +524,7 @@ cliquer("PrendrePhoto")
 M.captureMuette = nil
 verifier(not gui.Atelier.Enabled, "capture en cours : interface cachée")
 M.avancer(ScenePoste.ATTENTE_CAPTURE + 0.1)
-verifier(gui.Atelier.Enabled and camera.CFrame == ScenePoste.CAMERA and camera.FieldOfView == 70, "capture sans réponse : l'interface et la vue reviennent")
+verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA and camera.FieldOfView == 70, "capture sans réponse : l'interface et la vue reviennent")
 -- Prise de vue : sans l'interface, vue centrée sur la robe ; puis aperçu et enregistrement
 local pendant = nil
 M.surCapture = function()
@@ -530,9 +532,9 @@ M.surCapture = function()
 end
 cliquer("PrendrePhoto")
 M.surCapture = nil
-verifier(pendant ~= nil and pendant.interface == false and pendant.vue == ScenePoste.CAMERA_PHOTO and pendant.bulle == false, "photo prise sans l'interface ni la bulle, vue centrée sur la robe")
+verifier(pendant ~= nil and pendant.interface == false and pendant.vue == origineBoutique * ScenePoste.CAMERA_PHOTO and pendant.bulle == false, "photo prise sans l'interface ni la bulle, vue centrée sur la robe")
 verifier(pendant.champ == ScenePoste.CHAMP_PHOTO and ScenePoste.CHAMP_PHOTO < 70, "champ resserré sur la robe pendant la prise")
-verifier(gui.Atelier.Enabled and camera.CFrame == ScenePoste.CAMERA and laCliente.Head.Bulle.Enabled and camera.FieldOfView == 70, "après la photo : interface, vue, champ et bulle rétablis")
+verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA and laCliente.Head.Bulle.Enabled and camera.FieldOfView == 70, "après la photo : interface, vue, champ et bulle rétablis")
 local apercu = fenetre.Contenu:FindFirstChild("Apercu")
 verifier(apercu ~= nil and apercu.Visible and apercu.Image.Image == "rbxtemp://capture/" .. M.captures, "aperçu de la photo")
 -- Dans Roblox, un simple cadre (même Active) laisse passer l'appui aux boutons cachés dessous (Livrer…) ;
@@ -558,7 +560,8 @@ local avantLivraison = argent()
 cliquer("Livrer")
 verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe acceptée : payée")
 verifier(texte("La cliente est ravie") ~= nil, "l'accueil annonce la paie")
-verifier(scene.Vitrines.Socle:GetAttribute("Recette") ~= nil, "la robe livrée part en vitrine")
+M.avancer(1)
+verifier(maVitrine:FindFirstChild("Exposition") ~= nil, "le client construit la robe exposée dans la vitrine de la rue")
 verifier(maVitrine:GetAttribute("Recette") == requireModule(dossier.Recette).encoder(serveur:atelier(joueur).etat.robes[1]), "la robe livrée part dans la vitrine de la boutique, sur la rue")
 verifier(#robe:GetChildren() == 0 and #decorations:GetChildren() == 0 and camera.CameraType == Enum.CameraType.Custom, "atelier libéré, caméra rendue au joueur")
 verifier(laCliente.Parent ~= nil and laCliente.Head.Bulle.Texte.Text == ScenePoste.PAROLES.merci, "la cliente remercie")

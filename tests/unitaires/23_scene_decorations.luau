@@ -2,7 +2,6 @@ local Scene = U.module("Scene")
 local EtatAtelier = U.module("EtatAtelier")
 local Catalogue = U.module("Catalogue")
 local Patron = U.module("Patron")
-local Recette = U.module("Recette")
 
 local Workspace = M.services.Workspace
 local camera = Workspace.CurrentCamera
@@ -120,16 +119,12 @@ scene:synchroniser(etat)
 U.verifier(camera.CFrame == Scene.CAMERA, "en quittant les décorations, la caméra revient de face")
 
 ---------------------------------------------------------------------------
--- Vitrine : la dernière robe livrée
+-- Livraison : le mannequin de travail est libéré (la vitrine est posée par le serveur, dans la rue)
 ---------------------------------------------------------------------------
-U.verifier(scene.socle ~= nil and scene.socle:GetAttribute("Recette") == nil, "vitrine vide avant la première livraison")
 etat.commande.exigences = { { type = "qualite", valeur = 0.5 } }
 U.verifier(etat:livrer().reussie, "robe livrée")
 scene:synchroniser(etat)
-U.verifier(scene.socle:GetAttribute("Recette") == Recette.encoder(etat.robes[1]), "la robe livrée part en vitrine")
 U.verifier(#scene.robe:GetChildren() == 0 and scene.dossier:FindFirstChild("Mannequin") == nil, "le mannequin de travail est libéré pour la cliente suivante")
-M.avancer(1)
-U.verifier(scene.socle:FindFirstChild("Exposition") ~= nil, "la vitrine se construit quand on est près")
 scene:detruire()
 U.verifier(scene.dossier.Parent == nil, "scène détruite")
 

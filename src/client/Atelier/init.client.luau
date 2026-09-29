@@ -2,6 +2,10 @@
 -- qui correspond à l'étape de la commande en cours et tient la scène 3D (mannequin, robe) à jour.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local Couture = ReplicatedStorage:WaitForChild("Couture")
+local Boutique = require(Couture:WaitForChild("Boutique"))
+local Vitrines = require(Couture:WaitForChild("Vitrines"))
 
 local UiKit = require(script:WaitForChild("UiKit"))
 local Session = require(script:WaitForChild("Session"))
@@ -39,7 +43,19 @@ local joueur = Players.LocalPlayer
 game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 -- Chaque action passe par le serveur, qui fait foi (attend sa RemoteFunction, puis l'état du joueur)
 local session = Session.distante(ReplicatedStorage:WaitForChild("Atelier"))
-local scene = Scene.nouvelle()
+-- L'atelier est dans la boutique du joueur (numéro posé par le serveur à son arrivée ; 0 : rue pleine)
+local numero = joueur:GetAttribute("Boutique")
+while numero == nil do
+	joueur:GetAttributeChangedSignal("Boutique"):Wait()
+	numero = joueur:GetAttribute("Boutique")
+end
+local origine = if numero > 0 then Boutique.emplacement(numero) else CFrame.new()
+local scene = Scene.nouvelle(Workspace, { origine = origine })
+-- Les vitrines de la rue (la sienne et celles des voisins) : chaque robe est construite près de la caméra
+Vitrines.nouveau(Workspace:WaitForChild("Vitrines"), function()
+	local camera = Workspace.CurrentCamera
+	return camera and camera.CFrame.Position or origine.Position
+end)
 
 local gui = UiKit.creer("ScreenGui", {
 	Name = "Atelier",
