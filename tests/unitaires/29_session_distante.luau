@@ -90,7 +90,7 @@ M.avancer(1)
 r = session:acheter("coton_blanc", 2)
 brancher()
 U.verifier(r.ok and appelsServeur == 1, "le premier achat passe, un seul appel au serveur")
-U.verifier(pendant ~= nil and not pendant.ok and pendant.erreur == "Un instant…", "le second appui attend : « Un instant… »")
+U.verifier(pendant ~= nil and not pendant.ok and pendant.erreur == "Un instant…" and pendant.passager == true, "le second appui attend : « Un instant… » (refus passager)")
 U.verifier(session.etat.stock.coton_blanc == 12, "un seul achat compté")
 
 ---------------------------------------------------------------------------
@@ -100,7 +100,7 @@ remote.OnServerInvoke = function()
 	error("coupure simulée")
 end
 r = session:acheter("coton_blanc", 1)
-U.verifier(not r.ok and r.erreur == "Le serveur ne répond pas. Réessaie.", "serveur injoignable : message")
+U.verifier(not r.ok and r.erreur == "Le serveur ne répond pas. Réessaie." and r.passager == true, "serveur injoignable : message (refus passager)")
 brancher()
 M.avancer(1)
 U.verifier(session:acheter("coton_blanc", 1).ok, "la session repart quand le serveur répond")
@@ -112,4 +112,5 @@ local autre = Session.distante((function()
 	return muet
 end)())
 U.verifier(autre.etat.etape == "accueil" and autre.etat.argent == EtatAtelier.ARGENT_DEPART, "serveur injoignable à l'arrivée : état de départ, sans erreur")
+U.verifier(autre.avertissement == Session.PAS_PRETE, "serveur injoignable à l'arrivée : le joueur est prévenu")
 Session.courante = session

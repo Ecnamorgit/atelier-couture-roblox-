@@ -11,8 +11,11 @@ local Session = {}
 Session.__index = Session
 
 local INJOIGNABLE = "Le serveur ne répond pas. Réessaie."
+Session.OCCUPE = "Un instant…" -- une action à la fois : un appui pendant l'attente du serveur est refusé
+Session.PAS_PRETE = "Ta partie n'est pas encore arrivée du serveur : elle apparaîtra à ta prochaine action."
 Session.ESSAIS_ARRIVEE = 60 -- à l'arrivée, un essai par seconde tant que le serveur lit la partie (réessais du
 -- DataStore et verrou tenu ailleurs compris)
+Session.RESYNCHRO = 2 -- s : après une réponse perdue, l'état est redemandé au serveur
 
 -- Session locale ; graine : pour des commandes reproductibles (tests) ; sinon aléatoire
 function Session.nouvelle(graine)
@@ -23,7 +26,8 @@ end
 
 -- Session distante (le jeu) : remote = la RemoteFunction « Atelier » du serveur. Attend l'état du serveur,
 -- le temps qu'il lise la partie du joueur (jusqu'à 15 s si un autre serveur la tenait). avertissement : un
--- message du serveur pour le joueur (sauvegarde impossible), ou nil. attendre (tests) : remplace task.wait.
+-- message pour le joueur (sauvegarde impossible, partie pas encore arrivée), ou nil. attendre (tests) :
+-- remplace task.wait.
 -- rng ne sert qu'au client (mouvement du tissu à la machine à coudre) : le serveur tire ses commandes.
 function Session.distante(remote, attendre)
 	local self = setmetatable({ etat = EtatAtelier.nouveau(), remote = remote, rng = Random.new(), ecouteurs = {}, derniere = nil, enCours = false }, Session)
@@ -35,28 +39,86 @@ function Session.distante(remote, attendre)
 		essais += 1
 		reponse = self:actualiser()
 	end
-	self.avertissement = reponse.ok and reponse.avertissement or nil
+	-- Partie pas encore là (serveur injoignable ou trop long) : état de départ en attendant ; la première
+	-- réponse du serveur, acceptée ou refusée, apportera la vraie partie
+	self.avertissement = if reponse.ok then reponse.avertissement else Session.PAS_PRETE
 	return self
 end
 
--- Appel au serveur, sans jamais lever d'erreur
+-- Appel au serveur, sans jamais lever d'erreur. L'état joint à la réponse (acceptée ou refusée) est
+-- rechargé. Renvoie la réponse, si l'état a changé, et si la réponse est perdue ou illisible (refus
+-- passager : le serveur a pu agir sans que son état arrive).
 local function appeler(self, nom, ...)
-	local ok, reponse = pcall(self.remote.InvokeServer, self.remote, nom, ...)
-	if not ok or type(reponse) ~= "table" then
-		return { ok = false, erreur = INJOIGNABLE }
+	if self.attente then
+		self.attente(true)
 	end
-	if reponse.ok and type(reponse.etat) == "table" then
-		self.etat:charger(reponse.etat)
+	local ok, reponse = pcall(self.remote.InvokeServer, self.remote, nom, ...)
+	if self.attente then
+		self.attente(false)
+	end
+	local change = false
+	if ok and type(reponse) == "table" and type(reponse.etat) == "table" then
+		local lu, _, c = pcall(self.etat.charger, self.etat, reponse.etat)
+		ok, change = lu, c == true
+	end
+	if not ok or type(reponse) ~= "table" then
+		return { ok = false, erreur = INJOIGNABLE, passager = true }, false, true
+	end
+	return reponse, change, false
+end
+
+-- Prévient les écrans que l'état a changé
+local function prevenir(self)
+	for _, f in ipairs(table.clone(self.ecouteurs)) do
+		f(self.etat)
+	end
+end
+
+-- Une action (ou « etat ») : une à la fois. Les écrans sont prévenus après une action réussie, ou quand
+-- l'état joint à une réponse a changé la copie du client. Réponse perdue : l'état est redemandé au
+-- serveur un peu plus tard.
+-- derniere = { action, reponse } de la dernière action réussie (l'accueil affiche la dernière livraison)
+local function agir(self, nom, ...)
+	local reponse, change, perdue
+	if self.remote then
+		if self.enCours then
+			return { ok = false, erreur = Session.OCCUPE, passager = true }
+		end
+		self.enCours = true
+		reponse, change, perdue = appeler(self, nom, ...)
+		self.enCours = false
+	else
+		reponse = self.etat[nom](self.etat, ...)
+	end
+	local action = reponse.ok and nom ~= "etat"
+	if action then
+		self.derniere = { action = nom, reponse = reponse }
+	end
+	if action or change then
+		prevenir(self)
+	end
+	if perdue and nom ~= "etat" and not self.resynchro then
+		self.resynchro = true
+		task.delay(Session.RESYNCHRO, function()
+			self.resynchro = false
+			self:actualiser()
+		end)
 	end
 	return reponse
 end
 
--- Reprend l'état du serveur (à l'arrivée, ou pour réparer une copie abîmée)
+-- Reprend l'état du serveur (à l'arrivée, ou pour réparer une copie abîmée) ; prévient les écrans s'il a
+-- changé
 function Session:actualiser()
 	if self.remote then
-		return appeler(self, "etat")
+		return agir(self, "etat")
 	end
 	return { ok = true }
+end
+
+-- attente(actif) est appelée au début (vrai) et à la fin (faux) de chaque appel au serveur (indicateur)
+function Session:surAttente(f)
+	self.attente = f
 end
 
 -- Appelle f(etat) après chaque action réussie ; renvoie une fonction pour se désabonner
@@ -68,28 +130,6 @@ function Session:surChangement(f)
 			table.remove(self.ecouteurs, i)
 		end
 	end
-end
-
--- derniere = { action, reponse } de la dernière action réussie (l'accueil affiche la dernière livraison)
-local function agir(self, nom, ...)
-	local reponse
-	if self.remote then
-		if self.enCours then
-			return { ok = false, erreur = "Un instant…" } -- une action à la fois (second appui pendant l'attente)
-		end
-		self.enCours = true
-		reponse = appeler(self, nom, ...)
-		self.enCours = false
-	else
-		reponse = self.etat[nom](self.etat, ...)
-	end
-	if reponse.ok then
-		self.derniere = { action = nom, reponse = reponse }
-		for _, f in ipairs(table.clone(self.ecouteurs)) do
-			f(self.etat)
-		end
-	end
-	return reponse
 end
 
 function Session:nouvelleCommande()

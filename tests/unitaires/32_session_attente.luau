@@ -25,7 +25,8 @@ U.verifier(session.avertissement == AVERTISSEMENT, "l'avertissement du serveur e
 -- Un serveur qui ne finit jamais de se préparer : abandon après Session.ESSAIS_ARRIVEE essais, sans erreur
 appels, pret = 0, math.huge
 local lasse = Session.distante(remote, function() end)
-U.verifier(appels == Session.ESSAIS_ARRIVEE and lasse.etat.etape == "accueil" and lasse.avertissement == nil, "serveur jamais prêt : abandon après " .. tostring(Session.ESSAIS_ARRIVEE) .. " essais, état de départ")
+U.verifier(appels == Session.ESSAIS_ARRIVEE and lasse.etat.etape == "accueil", "serveur jamais prêt : abandon après " .. tostring(Session.ESSAIS_ARRIVEE) .. " essais, état de départ")
+U.verifier(lasse.avertissement == Session.PAS_PRETE and string.find(Session.PAS_PRETE, "pas encore", 1, true) ~= nil, "serveur jamais prêt : le joueur est prévenu que sa partie n'est pas encore là")
 
 -- Un autre refus n'est pas une attente : pas de nouvel essai
 appels = 0

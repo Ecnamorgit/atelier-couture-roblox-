@@ -496,13 +496,17 @@ end
 
 -- Remplace l'état par un état exporté, sur place : les écrans gardent le même objet. Ce qui n'a pas
 -- changé garde sa table (la scène reconnaît ainsi la même commande d'une action à l'autre).
+-- Renvoie l'état et si quelque chose a changé.
 function EtatAtelier:charger(d)
+	local change = false
 	for _, cle in ipairs(CHAMPS) do
 		if not pareil(self[cle], d[cle]) then
 			self[cle] = copie(d[cle])
+			change = true
 		end
 	end
 	if not pareil(rouleauxExportes(self.coupons), d.coupons) then
+		change = true
 		self.coupons = {}
 		for idTissu, r in pairs(d.coupons) do
 			local coupon = Coupon.nouveau(r.longueur)
@@ -512,7 +516,7 @@ function EtatAtelier:charger(d)
 			self.coupons[idTissu] = coupon
 		end
 	end
-	return self
+	return self, change
 end
 
 return EtatAtelier
