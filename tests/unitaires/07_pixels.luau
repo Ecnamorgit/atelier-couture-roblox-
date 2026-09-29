@@ -72,3 +72,20 @@ for k = 0, 160 * 192 - 1, 37 do
 	end
 end
 U.verifier(differents > 50, "la rotation de la pièce change l'image découpée")
+
+-- Silhouette du patron (table de découpe)
+local function alpha(buf, largeur, i, j)
+	return math.floor(buffer.readu32(buf, (j * largeur + i) * 4) / 16777216)
+end
+local sil, ls, hs = Pixels.silhouette("jupe_trapeze_devant")
+local lt, ht = Pixels.taillePiece("jupe_trapeze_devant")
+U.verifier(ls == lt and hs == ht, "silhouette de la même taille que l'image de la pièce")
+U.verifier(alpha(sil, ls, 2, 2) == 0, "hors de la pièce (coin coupé du trapèze) : transparent")
+U.verifier(alpha(sil, ls, math.floor(ls * 0.25), math.floor(hs * 0.5)) == 170, "dans la pièce : papier translucide")
+U.verifier(alpha(sil, ls, math.floor(ls / 2), math.floor(hs / 2)) == 255, "flèche de droit-fil au centre")
+U.verifier(alpha(sil, ls, 1, hs - 2) == 255, "contour foncé au bord")
+-- Pièce en biais : flèche en diagonale, pas de trait vertical au-dessus du centre
+local silB, lb, hb = Pixels.silhouette("jupe_evasee_devant")
+local cxB, cyB = math.floor(lb / 2), math.floor(hb / 2)
+U.verifier(alpha(silB, lb, cxB + 20, cyB + 20) == 255, "pièce en biais : flèche en diagonale")
+U.verifier(alpha(silB, lb, cxB, cyB - 40) == 170, "pièce en biais : pas de flèche verticale")

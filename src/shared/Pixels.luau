@@ -141,4 +141,66 @@ function Pixels.imagePiece(motif, idPiece, placement, copie, plafond)
 	return buf, largeur, hauteur
 end
 
+
+---------------------------------------------------------------------------
+-- Silhouette d'un patron en papier (table de découpe) : papier translucide, contour foncé
+-- et flèche de droit-fil (en diagonale pour une pièce à couper dans le biais). Hors de la pièce : transparent.
+---------------------------------------------------------------------------
+local PAPIER = { 255, 248, 222, 170 }
+local TRAIT = { 70, 50, 60, 255 }
+
+local function empaqueterAlpha(r, g, b, a)
+	return r + g * 256 + b * 65536 + a * 16777216
+end
+
+local function distanceSegment(px, py, a, b)
+	local dx, dy = b.x - a.x, b.y - a.y
+	local l2 = dx * dx + dy * dy
+	local t = l2 > 0 and math.clamp(((px - a.x) * dx + (py - a.y) * dy) / l2, 0, 1) or 0
+	local qx, qy = a.x + t * dx - px, a.y + t * dy - py
+	return math.sqrt(qx * qx + qy * qy)
+end
+
+-- Retourne buffer, largeur, hauteur (même taille et même repère que imagePiece)
+function Pixels.silhouette(idPiece, plafond)
+	local def = Catalogue.piece(idPiece)
+	local largeur, hauteur, b = Pixels.taillePiece(idPiece, plafond)
+	local l, h = b.maxX - b.minX, b.maxY - b.minY
+	local dmParPx = l / largeur
+	local contour = def.contour
+	-- Flèche de droit-fil : direction dans le patron qui doit suivre la chaîne du tissu
+	local fx, fy = 0, 1
+	if def.biais then
+		fx, fy = math.sin(math.rad(45)), math.cos(math.rad(45))
+	end
+	local cx, cy = (b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2
+	local demi = math.min(l, h) * 0.35
+	local fleche0 = { x = cx - fx * demi, y = cy - fy * demi }
+	local fleche1 = { x = cx + fx * demi, y = cy + fy * demi }
+	local pointe = demi * 0.25
+	local aile1 = { x = fleche1.x - (fx * 0.7 - fy * 0.7) * pointe, y = fleche1.y - (fy * 0.7 + fx * 0.7) * pointe }
+	local aile2 = { x = fleche1.x - (fx * 0.7 + fy * 0.7) * pointe, y = fleche1.y - (fy * 0.7 - fx * 0.7) * pointe }
+	local epaisseur = 1.5 * dmParPx
+	local buf = buffer.create(largeur * hauteur * 4)
+	for j = 0, hauteur - 1 do
+		local y = b.minY + (j + 0.5) / hauteur * h
+		for i = 0, largeur - 1 do
+			local x = b.minX + (i + 0.5) / largeur * l
+			local valeur = 0
+			if Polygone.contient(contour, x, y) then
+				local bord = math.huge
+				for k, a in ipairs(contour) do
+					bord = math.min(bord, distanceSegment(x, y, a, contour[k % #contour + 1]))
+				end
+				local fleche = math.min(distanceSegment(x, y, fleche0, fleche1), distanceSegment(x, y, fleche1, aile1),
+					distanceSegment(x, y, fleche1, aile2))
+				local c = (bord <= epaisseur or fleche <= epaisseur * 0.8) and TRAIT or PAPIER
+				valeur = empaqueterAlpha(c[1], c[2], c[3], c[4])
+			end
+			buffer.writeu32(buf, (j * largeur + i) * 4, valeur)
+		end
+	end
+	return buf, largeur, hauteur
+end
+
 return Pixels
