@@ -3,7 +3,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
-local Notation = require(Couture:WaitForChild("Notation"))
 
 return function(ctx)
 	local UiKit, session, contenu = ctx.UiKit, ctx.session, ctx.contenu
@@ -11,7 +10,7 @@ return function(ctx)
 	local etat = session.etat
 	local derniere = session.derniere
 	local ratees = derniere and derniere.action == "livrer" and derniere.reponse.ratees or {}
-	local styles = Notation.bilan(etat:recette()).styles
+	local styles = etat:bilan().styles
 
 	UiKit.texte({ Text = "Ce n'est pas ce qu'elle voulait :", TextSize = 16, Size = UDim2.new(1, 0, 0, 24), Parent = contenu })
 	for k, i in ipairs(ratees) do

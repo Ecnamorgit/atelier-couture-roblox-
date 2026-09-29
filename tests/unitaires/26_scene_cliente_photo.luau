@@ -1,6 +1,7 @@
 local Scene = U.module("Scene")
 local EtatAtelier = U.module("EtatAtelier")
 local Patron = U.module("Patron")
+local Clientes = U.module("Clientes")
 
 local Workspace = M.services.Workspace
 local Lighting = M.services.Lighting
@@ -69,7 +70,8 @@ scene:synchroniser(etat, nil)
 local cliente = scene.dossier:FindFirstChild("Cliente")
 U.verifier(cliente ~= nil, "la clochette fait entrer la cliente")
 U.verifier(math.abs(pieds(cliente) - Scene.CLIENTE.Position.Y) < 1e-6, "elle a les pieds au sol")
-U.verifier(bulle(cliente) == Scene.PAROLES.carnet, "au carnet, elle dit ce qu'elle veut")
+local colette = Clientes.get(etat.commande.cliente)
+U.verifier(colette.id == "colette" and bulle(cliente) == colette.repliques.arrivee, "au carnet, Colette dit ce qu'elle veut, avec ses mots")
 etat.etape = "achat"
 scene:synchroniser(etat, nil)
 U.verifier(scene.dossier:FindFirstChild("Cliente") == cliente and bulle(cliente) == nil, "pendant le travail : la même cliente, silencieuse")
@@ -82,13 +84,13 @@ U.verifier(etat.etape == "photo" and bulle(cliente) == Scene.PAROLES.photo, "à 
 etat.commande.exigences = { { type = "accessoire", id = "croix_argent" } }
 local r = etat:livrer()
 scene:synchroniser(etat, { action = "livrer", reponse = r })
-U.verifier(bulle(cliente) == Scene.PAROLES.refus, "robe refusée : elle le dit")
+U.verifier(bulle(cliente) == colette.repliques.deception, "robe refusée : elle le dit, avec ses mots")
 etat:retoucher()
 etat.commande.exigences = { { type = "qualite", valeur = 0.5 } }
 etat:decorer({})
 r = etat:livrer()
 scene:synchroniser(etat, { action = "livrer", reponse = r })
-U.verifier(r.reussie and bulle(cliente) == Scene.PAROLES.merci and cliente.Parent ~= nil, "robe acceptée : elle remercie")
+U.verifier(r.reussie and bulle(cliente) == colette.repliques.merci and cliente.Parent ~= nil, "robe acceptée : elle remercie, avec ses mots")
 M.avancer(Scene.DUREE_ADIEU + 0.5)
 U.verifier(cliente.Parent == nil and scene.dossier:FindFirstChild("Cliente") == nil, "puis elle s'en va")
 
@@ -97,6 +99,12 @@ U.commander(etat, Random.new(4))
 scene:synchroniser(etat, nil)
 local deuxieme = scene.dossier:FindFirstChild("Cliente")
 U.verifier(deuxieme ~= nil and deuxieme ~= cliente, "nouvelle commande : nouvelle cliente")
+etat.etape = "mesures"
+scene:synchroniser(etat, nil)
+U.verifier(bulle(deuxieme) == Clientes.get(etat.commande.cliente).repliques.presentation, "première visite : aux mesures, elle se présente")
+etat.clientes[etat.commande.cliente].vues = 2
+scene:synchroniser(etat, nil)
+U.verifier(bulle(deuxieme) == Clientes.get(etat.commande.cliente).repliques.arrivee, "elle revient : aux mesures, elle dit ce qu'elle veut")
 etat.etape = "refus"
 etat:abandonner()
 scene:synchroniser(etat, { action = "abandonner", reponse = { ok = true } })

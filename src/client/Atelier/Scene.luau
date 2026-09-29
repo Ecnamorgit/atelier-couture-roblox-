@@ -13,6 +13,7 @@ local Patron = require(Couture:WaitForChild("Patron"))
 local Mannequin = require(Couture:WaitForChild("Mannequin"))
 local ConstructeurRobe = require(Couture:WaitForChild("ConstructeurRobe"))
 local Boutique = require(Couture:WaitForChild("Boutique"))
+local Clientes = require(Couture:WaitForChild("Clientes"))
 local Lighting = game:GetService("Lighting")
 local Cliente = require(script.Parent:WaitForChild("Cliente"))
 
@@ -130,6 +131,24 @@ local function memesMesures(a, b)
 	return a and b and a.poitrine == b.poitrine and a.taille == b.taille and a.hanches == b.hanches
 end
 
+-- Ce que dit la cliente de la commande à cette étape : une cliente qui revient a ses propres répliques
+-- (présentation à sa première visite, puis son arrivée ; sa déception au refus)
+local function replique(etat)
+	local fiche = etat.commande.cliente and Clientes.get(etat.commande.cliente)
+	if not fiche then
+		return Scene.PAROLES[etat.etape]
+	end
+	if etat.etape == "mesures" then
+		local visite = etat.clientes[fiche.id]
+		return if visite and visite.vues > 1 then fiche.repliques.arrivee else fiche.repliques.presentation
+	elseif etat.etape == "carnet" then
+		return fiche.repliques.arrivee
+	elseif etat.etape == "refus" then
+		return fiche.repliques.deception
+	end
+	return Scene.PAROLES[etat.etape]
+end
+
 -- La cliente en personne : elle entre avec la commande, parle selon l'étape, salue puis s'en va
 function Scene:suivreCliente(etat, derniere)
 	local commande = etat.commande
@@ -153,12 +172,15 @@ function Scene:suivreCliente(etat, derniere)
 			return
 		end
 		self.cliente = modele
+		self.clienteId = commande.cliente
 	end
 	if commande then
-		Cliente.dire(self.cliente, Scene.PAROLES[etat.etape])
+		Cliente.dire(self.cliente, replique(etat))
 	elseif self.cliente then
 		local reussie = derniere and derniere.action == "livrer" and derniere.reponse.reussie
-		Cliente.dire(self.cliente, reussie and Scene.PAROLES.merci or Scene.PAROLES.abandon)
+		local fiche = self.clienteId and Clientes.get(self.clienteId)
+		local merci = fiche and fiche.repliques.merci or Scene.PAROLES.merci
+		Cliente.dire(self.cliente, reussie and merci or Scene.PAROLES.abandon)
 		local partante = self.cliente
 		self.partante, self.cliente, self.clienteCommande = partante, nil, nil
 		task.delay(Scene.DUREE_ADIEU, function()

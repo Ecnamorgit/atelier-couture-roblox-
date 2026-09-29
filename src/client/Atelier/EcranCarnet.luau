@@ -7,6 +7,7 @@ local Patron = require(Couture:WaitForChild("Patron"))
 local Notation = require(Couture:WaitForChild("Notation"))
 local Metrage = require(Couture:WaitForChild("Metrage"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
+local Clientes = require(Couture:WaitForChild("Clientes"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 
 local NOMS_FAMILLES = { corsage = "Corsage", manches = "Manches", col = "Col", jupe = "Jupe" }
@@ -45,7 +46,9 @@ return function(ctx)
 
 	-- Colonne de droite : commande, exigences, jauges
 	local droite = UiKit.arrondir(UiKit.creer("Frame", { Name = "Droite", BackgroundColor3 = C.panneau, Position = UDim2.new(1, -310, 0, 0), Size = UDim2.new(0, 310, 1, -56), Parent = contenu }), 10)
-	UiKit.texte({ Text = ("La cliente (taille %s) veut :"):format(etat.commande.taille), Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 22), Parent = droite })
+	local fiche = etat.commande.cliente and Clientes.get(etat.commande.cliente)
+	local qui = fiche and fiche.nom:match("^(%S+)") or "La cliente"
+	UiKit.texte({ Text = ("%s (taille %s) veut :"):format(qui, etat.commande.taille), Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 22), Parent = droite })
 	local lignesExigences = {}
 	for i, e in ipairs(etat.commande.exigences) do
 		lignesExigences[i] = UiKit.texte({ Name = "Exigence" .. i, TextSize = 14, Position = UDim2.fromOffset(12, 10 + i * 22), Size = UDim2.new(1, -24, 0, 20), Parent = droite })

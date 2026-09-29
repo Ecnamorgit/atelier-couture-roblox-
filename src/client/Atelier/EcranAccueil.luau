@@ -1,6 +1,19 @@
 -- Écran d'accueil : la clochette du comptoir (bouton, ou touche E) fait entrer une cliente et crée la
 -- commande. Après une livraison, il annonce ce qu'a pensé la cliente précédente.
 local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Clientes = require(ReplicatedStorage:WaitForChild("Couture"):WaitForChild("Clientes"))
+
+-- « Amitié de Colette : +3 (niveau 2 !) » ; nil sans cliente
+local function ligneAmitie(amitie)
+	local fiche = amitie and Clientes.get(amitie.cliente)
+	if not fiche then
+		return nil
+	end
+	local prenom = fiche.nom:match("^(%S+)")
+	local niveau = if amitie.niveau > amitie.niveauAvant then (" (niveau %d !)"):format(amitie.niveau) else ""
+	return ("Amitié de %s : %s%d%s"):format(prenom, amitie.gain >= 0 and "+" or "", amitie.gain, niveau)
+end
 
 return function(ctx)
 	local UiKit = ctx.UiKit
@@ -9,12 +22,27 @@ return function(ctx)
 	local derniere = ctx.session.derniere
 	local annonce, couleur = nil, C.ok
 	if derniere and derniere.action == "livrer" and derniere.reponse.reussie then
-		annonce = ("La cliente est ravie ! +%d pièces d'or (qualité %d %%). Sa robe est en vitrine."):format(
-			derniere.reponse.paie,
-			math.floor(derniere.reponse.bilan.qualite * 100 + 0.5)
+		local r = derniere.reponse
+		local fiche = r.amitie and Clientes.get(r.amitie.cliente)
+		annonce = ("%s est ravie ! +%d pièces d'or (qualité %d %%). Sa robe est en vitrine."):format(
+			fiche and fiche.nom:match("^(%S+)") or "La cliente",
+			r.paie,
+			math.floor(r.bilan.qualite * 100 + 0.5)
 		)
+		local suite = {}
+		table.insert(suite, ligneAmitie(r.amitie))
+		if r.prestige then
+			table.insert(suite, ("Prestige : +%d%s"):format(r.prestige.gain, if r.prestige.niveau > r.prestige.niveauAvant then (" (niveau %d !)"):format(r.prestige.niveau) else ""))
+		end
+		if #suite > 0 then
+			annonce ..= "\n" .. table.concat(suite, " · ")
+		end
 	elseif derniere and derniere.action == "abandonner" then
 		annonce, couleur = "Commande abandonnée : pas de paie cette fois.", C.alerte
+		local perte = ligneAmitie(derniere.reponse.amitie)
+		if perte then
+			annonce ..= "\n" .. perte
+		end
 	end
 	if annonce then
 		UiKit.texte({ Name = "Annonce", Text = annonce, Font = Enum.Font.GothamBold, TextSize = 18, TextColor3 = couleur, Size = UDim2.new(1, 0, 0, 50), Parent = ctx.contenu })
