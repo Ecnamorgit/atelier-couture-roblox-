@@ -11,6 +11,7 @@ local Session = {}
 Session.__index = Session
 
 local INJOIGNABLE = "Le serveur ne répond pas. Réessaie."
+Session.ESSAIS_ARRIVEE = 30 -- à l'arrivée, un essai par seconde tant que le serveur lit la partie
 
 -- Session locale ; graine : pour des commandes reproductibles (tests) ; sinon aléatoire
 function Session.nouvelle(graine)
@@ -19,12 +20,21 @@ function Session.nouvelle(graine)
 	return self
 end
 
--- Session distante (le jeu) : remote = la RemoteFunction « Atelier » du serveur. Attend l'état du serveur.
+-- Session distante (le jeu) : remote = la RemoteFunction « Atelier » du serveur. Attend l'état du serveur,
+-- le temps qu'il lise la partie du joueur (jusqu'à 15 s si un autre serveur la tenait). avertissement : un
+-- message du serveur pour le joueur (sauvegarde impossible), ou nil. attendre (tests) : remplace task.wait.
 -- rng ne sert qu'au client (mouvement du tissu à la machine à coudre) : le serveur tire ses commandes.
-function Session.distante(remote)
+function Session.distante(remote, attendre)
 	local self = setmetatable({ etat = EtatAtelier.nouveau(), remote = remote, rng = Random.new(), ecouteurs = {}, derniere = nil, enCours = false }, Session)
 	Session.courante = self
-	self:actualiser()
+	local reponse = self:actualiser()
+	local essais = 1
+	while not reponse.ok and reponse.attente and essais < Session.ESSAIS_ARRIVEE do
+		(attendre or task.wait)(1)
+		essais += 1
+		reponse = self:actualiser()
+	end
+	self.avertissement = reponse.ok and reponse.avertissement or nil
 	return self
 end
 

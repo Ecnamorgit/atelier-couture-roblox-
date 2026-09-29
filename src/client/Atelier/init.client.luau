@@ -121,13 +121,14 @@ local message = UiKit.texte({
 	Parent = fenetre,
 })
 local jeton = 0
-local function afficherMessage(texte, couleur)
+-- Message sous la fenêtre (duree : secondes, 3 par défaut)
+local function afficherMessage(texte, couleur, duree)
 	jeton += 1
 	local moi = jeton
 	message.Text = texte
 	message.TextColor3 = couleur or C.texte
 	message.Visible = true
-	task.delay(3, function()
+	task.delay(duree or 3, function()
 		if moi == jeton then
 			message.Visible = false
 		end
@@ -191,3 +192,7 @@ local function afficher()
 end
 session:surChangement(afficher)
 afficher()
+-- Partie illisible sur le serveur : le joueur est prévenu que ses progrès ne seront pas sauvegardés
+if session.avertissement then
+	afficherMessage(session.avertissement, C.erreur, 10)
+end

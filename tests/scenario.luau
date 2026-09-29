@@ -116,6 +116,7 @@ verifier(argent() == 150, "150 pièces d'or au départ")
 local parties = M.magasins.AtelierCouture_v2
 local cleJoueur = "joueur_" .. joueur.UserId
 verifier(parties.donnees[cleJoueur] == nil and serveur:atelier(joueur) ~= nil and not serveur:atelier(joueur).sauvable, "lecture ratée : le joueur joue sans sauvegarde")
+verifier(fenetre.Message.Visible and string.find(fenetre.Message.Text, "sauvegardée", 1, true) ~= nil, "le joueur est prévenu que sa partie ne sera pas sauvegardée")
 verifierTailles("accueil")
 cliquer("Fermer")
 verifier(not fenetre.Visible, "la croix ferme la fenêtre")
