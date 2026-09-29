@@ -7,7 +7,7 @@ et le tissu découpé se voit tel quel sur la robe en 3D.
 Le jeu est en cours de refonte, sous-projet par sous-projet
 (spec : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`, plans : `docs/superpowers/plans/`).
 
-## État actuel (plan 4d-2)
+## État actuel (sous-projet 1 terminé, plan 4d-3)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -40,7 +40,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    la robe (styles, qualité, couleur dominante, accessoires). Acceptée : paie = base × (0,5 + qualité), et la
    robe part en vitrine ; la cliente remercie et s'en va. Refusée : les exigences ratées s'affichent (avec le
    score actuel pour les styles) ; on retouche les décorations ou on abandonne.
-9. La suite : sons, réglages mobiles, équilibrage, mobilier (plan 4d-3).
+9. La suite : sous-projet 2, clientes et progression (prise de mesures, clientes qui reviennent, déblocages,
+   équilibrage des prix).
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
@@ -51,6 +52,15 @@ rien : une pièce cousue reste finie, on la rend de nouveau. Une réponse perdue
 rattrapée : le client redemande l'état au serveur, et les actions attendent le temps de cette vérification
 (rien n'est fait deux fois). Chaque refus des règles emporte l'état du serveur, qui répare la copie du
 client. Si la partie n'est pas encore arrivée au bout d'une minute, le joueur en est prévenu.
+
+**Sons** : une musique d'ambiance, un petit clic à chaque bouton, la clochette, la caisse, les ciseaux, la
+machine à coudre (tant qu'on coud, au rythme de la vitesse), le tissu qu'on découd, les décorations, le
+déclic de la photo et la réaction de la cliente. Tout vient de la bibliothèque libre de Roblox (sons de
+l'interface de Roblox, Pro Sound Effects, APM Music) ; le bouton « Son », sous « Atelier », coupe tout.
+
+**Téléphone et clavier** : tant que la fenêtre de l'atelier est ouverte, l'avatar ne bouge pas (le stick et
+le bouton de saut ne passent pas sous la fenêtre) ; on la ferme pour se promener dans la rue. La fenêtre se
+réduit pour tenir dans l'écran.
 
 ## Installation
 
@@ -94,7 +104,8 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   cours de lecture sont attendues ; une partie trop lourde (plus de 3,5 millions de caractères) perd ses
   plus anciennes robes.
   `Boutiques` construit la rue : une boutique par joueur (murs, porte et fenêtre, enseigne à son nom,
-  comptoir et clochette, étagère de tissus, table, machine), et le socle de sa vitrine, qui porte la
+  comptoir et clochette, étagère de tissus, table de découpe sur pieds avec son tapis quadrillé, son rouleau
+  et ses ciseaux, machine à coudre sur son meuble, avec son volant et sa bobine), et le socle de sa vitrine, qui porte la
   recette de sa dernière robe livrée (attribut `Recette`) ; chaque client construit les robes proches.
   Une boutique impossible à construire n'empêche pas de jouer : l'atelier est alors hors de la rue.
 - `src/client/Atelier/` (LocalScript `Atelier` et ses modules) : l'interface.
@@ -103,8 +114,8 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   perdue. `TableDecoupe` et `MachineCoudre` sont la logique pure de la table
   de découpe, de la machine à coudre et de l'éditeur de décorations (`Decorateur`) ; `Cliente` construit
   l'avatar de la cliente et sa bulle ; `Scene` tient, dans la boutique du joueur, la cliente, le mannequin,
-  la robe épinglée, l'aperçu des décorations, les réglages de la photo et la caméra du poste ;
-  un module `Ecran…` par étape.
+  la robe épinglée, l'aperçu des décorations, les réglages de la photo et la caméra du poste ; `Sons` joue
+  les bruits et la musique ; un module `Ecran…` par étape.
 
 **Tester la sauvegarde** : un lieu non publié (fichier local, `game.PlaceId == 0`) ne sauvegarde pas.
 Publier un lieu de test privé et activer « Autoriser l'accès de Studio aux services d'API » (paramètres du
