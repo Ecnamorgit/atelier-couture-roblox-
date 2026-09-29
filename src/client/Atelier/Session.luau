@@ -53,6 +53,12 @@ end
 function Session:couper(idPiece, placement)
 	return agir(self, "couper", idPiece, placement)
 end
+function Session:epingler(idPiece)
+	return agir(self, "epingler", idPiece)
+end
+function Session:rendreCouture(idPiece, ecarts, duree, assistance)
+	return agir(self, "rendreCouture", idPiece, ecarts, duree, assistance)
+end
 function Session:recommencer()
 	return agir(self, "recommencer")
 end

@@ -13,6 +13,8 @@ Catalogue.VALEUR_COUTURE = 0.15 -- décalage du trajet de couture vers l'intéri
 Catalogue.PAS_MESURE_COUTURE = 0.1 -- une mesure d'écart tous les 0,1 dm de trajet
 Catalogue.K = { pieces = 1, tissu = 2, accessoires = 0.5 } -- poids des jauges de style
 Catalogue.PLAFOND_ASSISTANCE = 0.85
+Catalogue.VITESSE_COUTURE_MAX = 1.5 -- dm de trajet par seconde (vitesse « lapin »)
+Catalogue.ECART_MAX_COUTURE = 2 -- dm : l'aiguille ne s'écarte jamais plus du pointillé
 Catalogue.STUDS_PAR_DM = 0.3 -- échelle du rendu 3D : 1 dm de patron = 0,3 stud
 
 Catalogue.STYLES = { "elegant", "mignon", "romantique", "gothique", "chic", "decontracte" }

@@ -7,6 +7,8 @@ local Catalogue = require(dossier:WaitForChild("Catalogue"))
 local Patron = require(dossier:WaitForChild("Patron"))
 local Coupon = require(dossier:WaitForChild("Coupon"))
 local Commandes = require(dossier:WaitForChild("Commandes"))
+local Notation = require(dossier:WaitForChild("Notation"))
+local Recette = require(dossier:WaitForChild("Recette"))
 
 local EtatAtelier = {}
 EtatAtelier.__index = EtatAtelier
@@ -14,8 +16,10 @@ EtatAtelier.__index = EtatAtelier
 EtatAtelier.ARGENT_DEPART = 150
 EtatAtelier.FILET = 20 -- argent minimal garanti à chaque nouvelle commande
 EtatAtelier.ACHAT_MAX = 100 -- dm par achat
--- Étapes du plan 3a (le plan 3b ajoute épinglage, couture, décorations et livraison)
-EtatAtelier.ETAPES = { "accueil", "carnet", "achat", "decoupe", "epinglage" }
+EtatAtelier.TOLERANCE_MESURES = 2 -- mesures de couture en plus ou en moins acceptées (spec §6)
+EtatAtelier.DUREE_MIN = 0.9 -- part de la durée minimale d'une couture (trajet / vitesse maximale)
+-- Étapes du plan 3b (le plan 3c ajoute la photo et la livraison après les décorations)
+EtatAtelier.ETAPES = { "accueil", "carnet", "achat", "decoupe", "epinglage", "couture", "decorations" }
 
 local function refus(message)
 	return { ok = false, erreur = message }
@@ -35,6 +39,8 @@ function EtatAtelier.nouveau(argent)
 		tissus = {}, -- [idPiece] = idTissu
 		coupons = {}, -- [idTissu] = Coupon (pendant la découpe)
 		coupees = {}, -- [idPiece] = { x, y, angle }
+		epinglees = {}, -- [idPiece] = true
+		coutures = {}, -- [idPiece] = note de couture (0 à 1)
 	}, EtatAtelier)
 end
 
@@ -51,6 +57,28 @@ function EtatAtelier:piecesAPoser()
 	local out = {}
 	for _, id in ipairs(self:piecesDuCroquis()) do
 		if not self.coupees[id] then
+			table.insert(out, id)
+		end
+	end
+	return out
+end
+
+-- Pièces du croquis pas encore épinglées, dans l'ordre du croquis
+function EtatAtelier:piecesAEpingler()
+	local out = {}
+	for _, id in ipairs(self:piecesDuCroquis()) do
+		if not self.epinglees[id] then
+			table.insert(out, id)
+		end
+	end
+	return out
+end
+
+-- Pièces du croquis pas encore cousues, dans l'ordre du croquis
+function EtatAtelier:piecesACoudre()
+	local out = {}
+	for _, id in ipairs(self:piecesDuCroquis()) do
+		if self.coutures[id] == nil then
 			table.insert(out, id)
 		end
 	end
@@ -85,6 +113,7 @@ function EtatAtelier:nouvelleCommande(rng)
 	self.commande = Commandes.generer(rng)
 	self.argent = math.max(self.argent, EtatAtelier.FILET)
 	self.croquis, self.tissus, self.coupees, self.coupons = nil, {}, {}, {}
+	self.epinglees, self.coutures = {}, {}
 	self.etape = "carnet"
 	return { ok = true, commande = self.commande }
 end
@@ -184,6 +213,83 @@ function EtatAtelier:couper(idPiece, placement)
 	return { ok = true, reste = #self:piecesAPoser() }
 end
 
+-- Épingle une pièce coupée sur le mannequin ; la dernière mène à la couture
+function EtatAtelier:epingler(idPiece)
+	if self.etape ~= "epinglage" then
+		return refus("Ce n'est pas le moment d'épingler.")
+	end
+	if type(idPiece) ~= "string" or not table.find(self:piecesDuCroquis(), idPiece) then
+		return refus("Cette pièce n'est pas dans le croquis.")
+	end
+	if self.epinglees[idPiece] then
+		return refus("Cette pièce est déjà épinglée.")
+	end
+	self.epinglees[idPiece] = true
+	local reste = #self:piecesAEpingler()
+	if reste == 0 then
+		self.etape = "couture"
+	end
+	return { ok = true, reste = reste }
+end
+
+-- Relevé de couture d'une pièce : ecarts = écarts (dm) de l'aiguille au pointillé, un tous les
+-- 0,1 dm de trajet ; duree = secondes passées à coudre ; assistance = vrai si elle a servi.
+-- Rien ne prouve qu'un relevé est honnête (limite assumée, spec §6) : on vérifie qu'il est vraisemblable.
+function EtatAtelier:rendreCouture(idPiece, ecarts, duree, assistance)
+	if self.etape ~= "couture" then
+		return refus("Ce n'est pas le moment de coudre.")
+	end
+	if type(idPiece) ~= "string" or not table.find(self:piecesDuCroquis(), idPiece) then
+		return refus("Cette pièce n'est pas dans le croquis.")
+	end
+	if self.coutures[idPiece] ~= nil then
+		return refus("Cette pièce est déjà cousue.")
+	end
+	if type(ecarts) ~= "table" or (assistance ~= nil and type(assistance) ~= "boolean") then
+		return refus("Relevé de couture invalide.")
+	end
+	local _, longueur = Patron.trajetCouture(idPiece)
+	local n = #ecarts
+	if math.abs(n - math.round(longueur / Catalogue.PAS_MESURE_COUTURE)) > EtatAtelier.TOLERANCE_MESURES then
+		return refus("Relevé de couture incomplet.")
+	end
+	for i = 1, n do
+		if not fini(ecarts[i]) or math.abs(ecarts[i]) > Catalogue.ECART_MAX_COUTURE then
+			return refus("Relevé de couture invalide.")
+		end
+	end
+	if not fini(duree) or duree < EtatAtelier.DUREE_MIN * longueur / Catalogue.VITESSE_COUTURE_MAX then
+		return refus("Couture trop rapide.")
+	end
+	local note = Notation.noteCouture(ecarts, assistance == true)
+	self.coutures[idPiece] = note
+	local reste = #self:piecesACoudre()
+	if reste == 0 then
+		self.etape = "decorations"
+	end
+	return { ok = true, note = note, reste = reste }
+end
+
+-- Recette de la robe en cours (position des pièces sur le rouleau, notes de couture ; les accessoires
+-- arrivent au plan 3c), ou nil tant que toutes les pièces ne sont pas coupées
+function EtatAtelier:recette()
+	if not self.commande or not self.croquis or #self:piecesAPoser() > 0 then
+		return nil
+	end
+	local pieces = {}
+	for _, id in ipairs(self:piecesDuCroquis()) do
+		local p = self.coupees[id]
+		table.insert(pieces, { id = id, tissu = self.tissus[id], x = p.x, y = p.y, angle = p.angle, couture = self.coutures[id] or 0 })
+	end
+	return {
+		version = Recette.VERSION,
+		mesures = table.clone(self.commande.mesures),
+		croquis = table.clone(self.croquis),
+		pieces = pieces,
+		accessoires = {},
+	}
+end
+
 -- Abandonne la robe en cours (le tissu déjà coupé est perdu), garde la commande
 function EtatAtelier:recommencer()
 	if self.etape == "accueil" then
@@ -191,6 +297,7 @@ function EtatAtelier:recommencer()
 	end
 	consommer(self)
 	self.croquis, self.tissus, self.coupees = nil, {}, {}
+	self.epinglees, self.coutures = {}, {}
 	self.argent = math.max(self.argent, EtatAtelier.FILET) -- jamais bloqué sans argent ni tissu
 	self.etape = "carnet"
 	return { ok = true }
