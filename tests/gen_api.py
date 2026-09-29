@@ -4,7 +4,8 @@ lines = open(S + "/globalTypes.d.luau", encoding="utf-8").read().split("\n")
 classes = {}; enums = {}
 cur = None
 for ln in lines:
-    m = re.match(r"^declare class (\w+)(?: extends (\w+))?(.*)$", ln)
+    # Deux formats : « declare class X extends Y » (luau-lsp 1.5x) et « declare extern type X extends Y with » (1.6x et plus)
+    m = re.match(r"^declare (?:class|extern type) (\w+)(?: extends (\w+))?(?: with)?(.*)$", ln)
     if m:
         name, parent, rest = m.group(1), m.group(2), m.group(3)
         cur = {"parent": parent, "props": {}, "methods": set()}
@@ -17,7 +18,7 @@ for ln in lines:
         continue
     if cur is None: continue
     if ln.startswith("end"): cur = None; continue
-    m = re.match(r"^\t(?:function (\w+)\(.*|(\w+): (.+))$", ln)
+    m = re.match(r"^\t+(?:function (\w+)\(.*|(\w+): (.+))$", ln)
     if m:
         if m.group(1): cur["methods"].add(m.group(1))
         else: cur["props"][m.group(2)] = m.group(3).strip()
@@ -37,7 +38,7 @@ print("ENUM CHECK:", "OK" if not bad else bad, file=sys.stderr)
 needed = set(re.findall(r'Instance\.new\("(\w+)"', src_all)) | set(re.findall(r'creer\(\s*"(\w+)"', src_all))
 needed |= {"Workspace","Players","ReplicatedStorage","DataStoreService","UserInputService","RunService",
            "ContextActionService","ProximityPromptService","Player","Model","Folder","ModuleScript","Script",
-           "LocalScript","Camera","Humanoid","Part","MeshPart","PlayerGui","DataModel","IntValue","RemoteFunction","ServerScriptService","StarterPlayer","StarterPlayerScripts","SpawnLocation"}
+           "LocalScript","Camera","Humanoid","Part","MeshPart","AssetService","PlayerGui","DataModel","IntValue","RemoteFunction","ServerScriptService","StarterPlayer","StarterPlayerScripts","SpawnLocation","StarterGui","Lighting","CaptureService"}
 def anc(c):
     out = []
     while c:

@@ -1,5 +1,5 @@
 {
-  "name": "atelier-couture",
+  "name": "spike-rendu-editable",
   "tree": {
     "$className": "DataModel",
     "Workspace": {
@@ -7,15 +7,14 @@
         "$className": "Part",
         "$properties": {
           "Anchored": true,
-          "Locked": true,
           "Size": [
-            256,
-            16,
-            256
+            128,
+            2,
+            128
           ],
           "CFrame": [
             0,
-            -8,
+            -1,
             0,
             1,
             0,
@@ -39,9 +38,9 @@
         "$properties": {
           "Anchored": true,
           "Size": [
-            12,
+            6,
             1,
-            12
+            6
           ],
           "CFrame": [
             0,
@@ -60,21 +59,16 @@
         }
       }
     },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Spike": {
+          "$path": "Spike.client.luau"
+        }
+      }
+    },
     "TextChatService": {
       "$properties": {
         "ChatVersion": "TextChatService"
-      }
-    },
-    "ReplicatedStorage": {
-      "Couture": {
-        "$path": "src/shared"
-      }
-    },
-    "StarterPlayer": {
-      "StarterPlayerScripts": {
-        "Atelier": {
-          "$path": "src/client/Atelier"
-        }
       }
     }
   }

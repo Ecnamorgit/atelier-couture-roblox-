@@ -125,6 +125,9 @@ end
 function CFM.PointToWorldSpace(c, v)
 	return c * v
 end
+function CFM.PointToObjectSpace(c, v)
+	return CFM.Inverse(c) * v
+end
 CF.__index = function(c, k)
 	if CFM[k] then
 		return CFM[k]
@@ -403,6 +406,18 @@ INST.__index = function(self, k)
 			return CFrame.new()
 		elseif k == "Size" and estUn(classe, "BasePart") then
 			return v3(4, 1, 2)
+		elseif k == "AbsoluteSize" and estUn(classe, "GuiObject") then
+			-- Pas de moteur de mise en page : on approche par les décalages en pixels (échelles ignorées)
+			local taille = props.Size
+			return Vector2.new(taille and taille.X.Offset or 0, taille and taille.Y.Offset or 0)
+		elseif k == "AbsolutePosition" and estUn(classe, "GuiObject") then
+			local x, y, i = 0, 0, self
+			while i and estUn(rawget(i, "__classe"), "GuiObject") do
+				local p = rawget(i, "__props").Position
+				x, y = x + (p and p.X.Offset or 0), y + (p and p.Y.Offset or 0)
+				i = rawget(i, "__props").Parent
+			end
+			return Vector2.new(x, y)
 		end
 		return DEFAUTS[k]
 	end
@@ -532,6 +547,9 @@ end
 function methodes.GetService(_, nom)
 	return M.services[nom] or error("Service non simulé : " .. nom)
 end
+function methodes.SetCoreGuiEnabled(_, genre, actif)
+	M.coreGui[genre] = actif
+end
 function methodes.BindToClose(_, f)
 	M.fermeture = f
 end
@@ -569,6 +587,106 @@ function methodes.BindActionAtPriority(_, nom, f, bouton, priorite, ...)
 end
 function methodes.UnbindAction(_, nom)
 	M.actions[nom] = nil
+end
+-- Rayons : aucune géométrie simulée. Un test range les impacts voulus dans M.impacts (une file) ;
+-- Workspace:Raycast renvoie le premier (ou nil) et garde le rayon et ses paramètres dans M.dernierRayon.
+function methodes.Raycast(_, origine, direction, params)
+	assert(typeDe(origine) == "Vector3" and typeDe(direction) == "Vector3", "Raycast : Vector3 attendus")
+	M.dernierRayon = { origine = origine, direction = direction, params = params }
+	return table.remove(M.impacts, 1)
+end
+function methodes.ViewportPointToRay(_, x, y)
+	return { Origin = Vector3.new(x, y, 0), Direction = Vector3.new(0, 0, 1) }
+end
+function methodes.ScreenPointToRay(_, x, y)
+	return { Origin = Vector3.new(x, y, 0), Direction = Vector3.new(0, 0, 1) }
+end
+-- Pivot d'un modèle : sa PrimaryPart, sinon le dernier pivot posé
+function methodes.GetPivot(self)
+	local principale = rawget(self, "__props").PrimaryPart
+	if principale then
+		return principale.CFrame
+	end
+	return rawget(self, "__pivot") or CFrame.new()
+end
+function methodes.PivotTo(self, cf)
+	local ancien = methodes.GetPivot(self)
+	for _, d in ipairs(self:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.CFrame = cf * (ancien:Inverse() * d.CFrame)
+		end
+	end
+	rawset(self, "__pivot", cf)
+end
+-- Échelle d'un modèle : tailles et positions des pièces autour du pivot
+function methodes.GetScale(self)
+	return rawget(self, "__echelle") or 1
+end
+function methodes.ScaleTo(self, echelle)
+	local facteur = echelle / methodes.GetScale(self)
+	local pivot = methodes.GetPivot(self)
+	for _, d in ipairs(self:GetDescendants()) do
+		if d:IsA("BasePart") then
+			local local_ = pivot:Inverse() * d.CFrame
+			d.Size = d.Size * facteur
+			d.CFrame = pivot * CFrame.new(local_.Position * facteur) * (CFrame.new(local_.Position):Inverse() * local_)
+		end
+	end
+	rawset(self, "__echelle", echelle)
+end
+-- Avatar R15 simplifié (racine, torse, tête, Humanoid) ; M.echecAvatar simule une panne de Roblox ;
+-- M.pendantAvatar() est appelé une fois pendant la construction (ce qui se passe pendant l'attente)
+function methodes.CreateHumanoidModelFromDescriptionAsync(_, description, _rig)
+	if M.echecAvatar then
+		error("CreateHumanoidModelFromDescriptionAsync : panne simulée")
+	end
+	local pendant = M.pendantAvatar
+	if pendant then
+		M.pendantAvatar = nil
+		pendant()
+	end
+	M.derniereDescription = description
+	local modele = nouvelleInstance("Model")
+	local function partie(nom, taille, y)
+		local p = nouvelleInstance("Part")
+		p.Name = nom
+		p.Size = taille
+		p.CFrame = CFrame.new(0, y, 0)
+		p.Parent = modele
+		return p
+	end
+	local racine = partie("HumanoidRootPart", Vector3.new(2, 2, 1), 3)
+	partie("UpperTorso", Vector3.new(2, 1.6, 1), 3.4)
+	partie("Head", Vector3.new(1.2, 1.2, 1.2), 4.8)
+	nouvelleInstance("Humanoid").Parent = modele
+	modele.PrimaryPart = racine
+	return modele
+end
+-- Captures d'écran : M.surCapture() est appelé au moment de la prise (pour vérifier ce qui est affiché) ;
+-- M.echecCapture simule un refus de Roblox, M.captureMuette une capture qui ne répond jamais
+function methodes.CaptureScreenshot(_, rappel)
+	if M.echecCapture then
+		error("CaptureScreenshot : refus simulé")
+	end
+	if M.captureMuette then
+		return
+	end
+	M.captures = (M.captures or 0) + 1
+	if M.surCapture then
+		M.surCapture()
+	end
+	rappel("rbxtemp://capture/" .. M.captures)
+end
+function methodes.PromptSaveCapturesToGallery(_, captures, rappel)
+	M.galerie = captures
+	local resultats = {}
+	for _, c in ipairs(captures) do
+		resultats[c] = true
+	end
+	rappel(resultats)
+end
+function methodes.GetMouseLocation(_)
+	return M.souris or Vector2.new(0, 0)
 end
 
 -- Copie « réseau » : refuse ce que Roblox ne peut pas transmettre
@@ -646,6 +764,8 @@ M.os = setmetatable({
 function M.initialiser()
 	M.joueurs = {}
 	M.actions = {}
+	M.coreGui = {} -- [Enum.CoreGuiType] = activé (StarterGui:SetCoreGuiEnabled)
+	M.impacts = {}
 	local game = nouvelleInstance("DataModel")
 	rawget(game, "__props").Name = "Game"
 	M.game = game
@@ -660,13 +780,21 @@ function M.initialiser()
 		"ContextActionService",
 		"ProximityPromptService",
 		"ServerScriptService",
+		"AssetService",
+		"StarterGui",
+		"Lighting",
+		"CaptureService",
 	}) do
 		local s = nouvelleInstance(nom)
 		s.Parent = game
 		M.services[nom] = s
 	end
+	local lumiere = rawget(M.services.Lighting, "__props")
+	lumiere.Ambient, lumiere.OutdoorAmbient = Color3.fromRGB(70, 70, 70), Color3.fromRGB(128, 128, 128)
+	lumiere.Brightness, lumiere.ClockTime, lumiere.ExposureCompensation = 2, 14, 0
 	local camera = nouvelleInstance("Camera")
 	rawget(camera, "__props").ViewportSize = Vector2.new(1280, 720)
+	rawget(camera, "__props").FieldOfView = 70
 	camera.Parent = M.services.Workspace
 	M.services.Workspace.CurrentCamera = camera
 	return game
@@ -724,6 +852,141 @@ function M.nouveauJoueur(nom)
 	return joueur
 end
 
+---------------------------------------------------------------------------
+-- API modifiables (EditableImage, EditableMesh) et contenu statique, comme mesuré par le spike :
+-- - CreateEditableImage / CreateEditableMesh renvoient nil quand le budget est atteint ;
+-- - CreateDataModelContentAsync renvoie deux valeurs : Enum.CreateContentResult, puis le Content ;
+-- - un MeshPart créé depuis un EditableMesh (sans conversion) perd sa forme quand celui-ci est détruit.
+---------------------------------------------------------------------------
+M.budget = { images = 64, maillages = 7 }
+M.editables = { images = 0, maillages = 0, maxImages = 0, maxMaillages = 0 }
+
+local CONTENU = { __type = "Content" }
+CONTENU.__index = CONTENU
+local Content = {}
+function Content.fromObject(objet)
+	assert(type(objet) == "table" and rawget(objet, "__editable"), "Content.fromObject attend un objet modifiable")
+	assert(not objet.__detruit, "Content.fromObject : objet détruit")
+	return setmetatable({ objet = objet }, CONTENU)
+end
+Content.none = setmetatable({ vide = true }, CONTENU)
+M.Content = Content
+
+local function compter(genre, delta)
+	local e = M.editables
+	e[genre] += delta
+	if genre == "images" then
+		e.maxImages = math.max(e.maxImages, e.images)
+	else
+		e.maxMaillages = math.max(e.maxMaillages, e.maillages)
+	end
+end
+
+local IMAGE = { __type = "Object" }
+IMAGE.__index = IMAGE
+function IMAGE:WritePixelsBuffer(position, taille, buf)
+	assert(not self.__detruit, "EditableImage détruite")
+	assert(typeDe(position) == "Vector2" and typeDe(taille) == "Vector2", "WritePixelsBuffer : Vector2 attendus")
+	assert(type(buf) == "buffer" and buffer.len(buf) == taille.X * taille.Y * 4, "WritePixelsBuffer : taille du buffer incorrecte")
+	assert(taille.X <= self.Size.X and taille.Y <= self.Size.Y, "WritePixelsBuffer : dépasse l'image")
+	self.pixels = buf
+end
+function IMAGE:Destroy()
+	if not self.__detruit then
+		self.__detruit = true
+		compter("images", -1)
+	end
+end
+
+local MAILLAGE = { __type = "Object" }
+MAILLAGE.__index = MAILLAGE
+local function ajouterA(liste, valeur)
+	table.insert(liste, valeur)
+	return #liste
+end
+function MAILLAGE:AddVertex(p)
+	assert(not self.__detruit and typeDe(p) == "Vector3", "AddVertex : Vector3 attendu")
+	return ajouterA(self.sommets, p)
+end
+function MAILLAGE:AddUV(uv)
+	assert(not self.__detruit and typeDe(uv) == "Vector2", "AddUV : Vector2 attendu")
+	return ajouterA(self.uvs, uv)
+end
+function MAILLAGE:AddNormal(n)
+	assert(not self.__detruit and typeDe(n) == "Vector3", "AddNormal : Vector3 attendu")
+	return ajouterA(self.normales, n)
+end
+function MAILLAGE:AddTriangle(a, b, c)
+	for _, k in ipairs({ a, b, c }) do
+		assert(self.sommets[k], "AddTriangle : sommet inconnu")
+	end
+	return ajouterA(self.faces, { a, b, c })
+end
+function MAILLAGE:SetFaceUVs(f, ids)
+	assert(self.faces[f] and #ids == 3, "SetFaceUVs : face ou identifiants invalides")
+	for _, k in ipairs(ids) do
+		assert(self.uvs[k], "SetFaceUVs : UV inconnu")
+	end
+	self.uvsFaces[f] = ids
+end
+function MAILLAGE:SetFaceNormals(f, ids)
+	assert(self.faces[f] and #ids == 3, "SetFaceNormals : face ou identifiants invalides")
+	for _, k in ipairs(ids) do
+		assert(self.normales[k], "SetFaceNormals : normale inconnue")
+	end
+	self.normalesFaces[f] = ids
+end
+function MAILLAGE:Destroy()
+	if not self.__detruit then
+		self.__detruit = true
+		compter("maillages", -1)
+	end
+end
+
+function methodes.CreateEditableImage(_, options)
+	local taille = options and options.Size
+	assert(typeDe(taille) == "Vector2" and taille.X >= 1 and taille.Y >= 1 and taille.X <= 1024 and taille.Y <= 1024,
+		"CreateEditableImage : Size invalide")
+	if M.editables.images >= M.budget.images then
+		return nil
+	end
+	compter("images", 1)
+	return setmetatable({ __editable = "image", Size = taille }, IMAGE)
+end
+function methodes.CreateEditableMesh(_, _options)
+	if M.editables.maillages >= M.budget.maillages then
+		return nil
+	end
+	compter("maillages", 1)
+	return setmetatable({ __editable = "maillage", sommets = {}, uvs = {}, normales = {}, faces = {}, uvsFaces = {}, normalesFaces = {} }, MAILLAGE)
+end
+function methodes.CreateDataModelContentAsync(_, contenu, _options)
+	assert(typeDe(contenu) == "Content" and contenu.objet and not contenu.objet.__detruit, "CreateDataModelContentAsync : objet invalide")
+	local o = contenu.objet
+	local cliche = { genre = o.__editable }
+	if o.__editable == "image" then
+		cliche.taille, cliche.pixels = o.Size, o.pixels
+	else
+		cliche.sommets, cliche.faces = table.clone(o.sommets), table.clone(o.faces)
+		cliche.uvsFaces, cliche.normalesFaces = table.clone(o.uvsFaces), table.clone(o.normalesFaces)
+	end
+	return Enum.CreateContentResult.Success, setmetatable({ statique = true, cliche = cliche }, CONTENU)
+end
+function methodes.CreateMeshPartAsync(_, contenu, _options)
+	assert(typeDe(contenu) == "Content", "CreateMeshPartAsync : Content attendu")
+	local sommets = contenu.statique and contenu.cliche.sommets or (contenu.objet and contenu.objet.sommets)
+	assert(sommets and #sommets > 0, "CreateMeshPartAsync : maillage vide")
+	local mn, mx = v3(math.huge, math.huge, math.huge), v3(-math.huge, -math.huge, -math.huge)
+	for _, p in ipairs(sommets) do
+		mn = v3(math.min(mn.X, p.X), math.min(mn.Y, p.Y), math.min(mn.Z, p.Z))
+		mx = v3(math.max(mx.X, p.X), math.max(mx.Y, p.Y), math.max(mx.Z, p.Z))
+	end
+	local part = nouvelleInstance("MeshPart")
+	rawget(part, "__props").Size = mx - mn
+	rawset(part, "__contenu", contenu) -- les tests vérifient que la forme vient d'un contenu statique
+	return part
+end
+
 M.env = {
 	Vector3 = Vector3,
 	Vector2 = Vector2,
@@ -736,6 +999,12 @@ M.env = {
 	Instance = { new = nouvelleInstance },
 	typeof = typeDe,
 	task = task,
+	Content = Content,
+	RaycastParams = {
+		new = function()
+			return { FilterType = Enum.RaycastFilterType.Exclude, FilterDescendantsInstances = {} }
+		end,
+	},
 }
 
 return M
