@@ -7,10 +7,11 @@ et le tissu découpé se voit tel quel sur la robe en 3D.
 Le jeu est en cours de refonte, sous-projet par sous-projet
 (spec : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`, plans : `docs/superpowers/plans/`).
 
-## État actuel (plan 4a)
+## État actuel (plan 4b)
 
-Jouable dans Studio, en solo, sans sauvegarde. Le serveur tient l'atelier de chaque joueur et valide chaque
-action (il fait foi) ; le client n'affiche qu'une copie de l'état :
+Jouable dans Studio, en solo. Le serveur tient l'atelier de chaque joueur et valide chaque action (il fait
+foi) ; le client n'affiche qu'une copie de l'état. Dans un jeu publié, la partie est sauvegardée (argent,
+stock de tissu, dix dernières robes et commande en cours : une déconnexion ne perd pas le travail) :
 
 1. **Commande** : la clochette fait entrer la cliente en personne (un avatar construit en code, taille S, M ou L)
    avec 1 à 3 exigences de style, de couleur, de qualité ou d'accessoire. Elle parle par une bulle.
@@ -33,8 +34,7 @@ action (il fait foi) ; le client n'affiche qu'une copie de l'état :
    la robe (styles, qualité, couleur dominante, accessoires). Acceptée : paie = base × (0,5 + qualité), et la
    robe part en vitrine ; la cliente remercie et s'en va. Refusée : les exigences ratées s'affichent (avec le
    score actuel pour les styles) ; on retouche les décorations ou on abandonne.
-9. La suite : sauvegarde (plan 4b), boutiques de la rue et vitrines visibles par tous (plan 4c),
-   finition (plan 4d).
+9. La suite : boutiques de la rue et vitrines visibles par tous (plan 4c), finition (plan 4d).
 
 « Recommencer la robe » demande une confirmation (deuxième appui) : le tissu coupé et les décorations
 posées sont perdus.
@@ -68,13 +68,20 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   `Commande` tient l'atelier de chaque joueur (un `EtatAtelier`) derrière la RemoteFunction `Atelier` :
   actions permises seulement, 5 appels par seconde au plus (sauf les relevés de couture, bornés par leur
   vraisemblance), toute erreur devient un refus ; chaque réponse acceptée emporte l'état. `Limiteur` compte
-  les appels.
+  les appels. `Sauvegarde` range la partie de chaque joueur dans le DataStore `AtelierCouture_v2` (une clé
+  par joueur, écriture par `UpdateAsync` avec un verrou de session, migrations, reprise de l'argent de
+  l'ancienne clé `AtelierCouture_v1`) : lue à l'arrivée, écrite toutes les 60 s, au départ et à l'arrêt du
+  serveur. Rien n'est écrit si la lecture a échoué (le joueur est prévenu), ni sur un lieu non publié.
 - `src/client/Atelier/` (LocalScript `Atelier` et ses modules) : l'interface.
   `Session` envoie chaque action au serveur et recharge sur place la copie de l'état qu'il renvoie ; `TableDecoupe` et `MachineCoudre` sont la logique pure de la table
   de découpe, de la machine à coudre et de l'éditeur de décorations (`Decorateur`) ; `Cliente` construit
   l'avatar de la cliente et sa bulle ; `Scene` tient la cliente, le mannequin, la robe épinglée, l'aperçu des
   décorations, les réglages de la photo, la vitrine et la caméra du poste ;
   un module `Ecran…` par étape.
+
+**Tester la sauvegarde** : un lieu non publié (fichier local, `game.PlaceId == 0`) ne sauvegarde pas.
+Publier un lieu de test privé et activer « Autoriser l'accès de Studio aux services d'API » (paramètres du
+jeu, Sécurité) ; la logique (verrou, migrations, protections) est vérifiée par la simulation.
 
 **Limite assumée (couture)** : le relevé de l'aiguille vient du client. `EtatAtelier` vérifie qu'il est
 vraisemblable (une mesure tous les 0,1 dm de trajet à 2 près, écarts d'au plus 2 dm, durée compatible avec
