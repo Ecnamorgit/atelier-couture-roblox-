@@ -24,6 +24,12 @@ end
 local joueur = M.nouveauJoueur("Testeur")
 rawget(M.services.Players, "__props").LocalPlayer = joueur
 M.joueurLocal = joueur
+-- Lieu publié : les parties sont sauvegardées (DataStores en mémoire du faux Roblox). La première lecture
+-- de la partie du joueur échoue : il joue sans sauvegarde, et sa vraie partie n'est jamais écrasée.
+rawget(game, "__props").PlaceId = 4242
+rawget(game, "__props").JobId = "serveur-scenario"
+M.magasins = { AtelierCouture_v2 = M.nouveauMagasin() }
+M.magasins.AtelierCouture_v2.panne = 1
 -- Serveur (il fait foi) : démarré avant le client, qui attend sa RemoteFunction « Atelier »
 local scriptServeur = M.nouvelleInstance("Script")
 scriptServeur.Name = "Atelier"
@@ -107,6 +113,9 @@ end
 verifier(fenetre.Visible, "la fenêtre s'ouvre au démarrage")
 verifier(titre() == "Atelier de couture", "écran d'accueil")
 verifier(argent() == 150, "150 pièces d'or au départ")
+local parties = M.magasins.AtelierCouture_v2
+local cleJoueur = "joueur_" .. joueur.UserId
+verifier(parties.donnees[cleJoueur] == nil and serveur:atelier(joueur) ~= nil and not serveur:atelier(joueur).sauvable, "lecture ratée : le joueur joue sans sauvegarde")
 verifierTailles("accueil")
 cliquer("Fermer")
 verifier(not fenetre.Visible, "la croix ferme la fenêtre")
@@ -632,5 +641,25 @@ etatServeur.argent, etatServeur.stock = argentServeur, stockServeur
 M.avancer(1.1)
 SessionModule.courante:actualiser()
 verifier(etatJeu.argent == argentServeur and titre() == "3. Table de découpe", "la copie du client revient à l'état du serveur")
+
+---------------------------------------------------------------------------
+-- Sauvegarde : la partie illisible n'est jamais écrite ; au retour, la partie est lue, puis écrite
+-- régulièrement, au départ et à l'arrêt du serveur, et la commande reprend au retour suivant
+---------------------------------------------------------------------------
+M.avancer(serveur.PERIODE_SAUVEGARDE + 1)
+M.services.Players.PlayerRemoving:Fire(joueur)
+verifier(parties.donnees[cleJoueur] == nil and serveur.ateliers[joueur] == nil, "partie illisible : jamais écrite, ni régulièrement ni au départ")
+M.services.Players.PlayerAdded:Fire(joueur)
+verifier(parties.donnees[cleJoueur] ~= nil and parties.donnees[cleJoueur].verrou.jobId == "serveur-scenario", "retour du joueur : partie lue, verrou pris")
+M.avancer(0.5)
+verifier(serveur:traiter(joueur, "nouvelleCommande").ok, "une commande commencée sur le serveur")
+M.avancer(serveur.PERIODE_SAUVEGARDE + 1)
+verifier(parties.donnees[cleJoueur].enCours ~= nil and parties.donnees[cleJoueur].enCours.etape == "carnet", "sauvegarde régulière : la commande en cours")
+M.services.Players.PlayerRemoving:Fire(joueur)
+verifier(parties.donnees[cleJoueur].verrou == nil and serveur.ateliers[joueur] == nil, "départ du joueur : partie écrite, verrou rendu")
+M.services.Players.PlayerAdded:Fire(joueur)
+verifier(serveur:atelier(joueur) ~= nil and serveur:atelier(joueur).etat.etape == "carnet", "retour suivant : la commande reprend")
+M.fermeture()
+verifier(parties.donnees[cleJoueur].verrou == nil and parties.donnees[cleJoueur].enCours.etape == "carnet", "arrêt du serveur : partie écrite, verrou rendu")
 
 print(("TOUT EST VERT : %d vérifications"):format(nbVerifs))
