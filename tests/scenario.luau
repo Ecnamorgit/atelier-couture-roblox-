@@ -130,8 +130,22 @@ cliquer("Fermer")
 verifier(not fenetre.Visible, "la croix ferme la fenêtre")
 cliquer("OuvrirAtelier")
 verifier(fenetre.Visible, "le bouton Atelier rouvre la fenêtre")
+-- Un serveur lent (0,5 s) : au-delà de 0,3 s, « Un instant… » en gris sous la fenêtre, jusqu'à la réponse ;
+-- un message déjà affiché (l'avertissement de la sauvegarde) n'est pas remplacé
+local GRIS = Color3.fromRGB(130, 100, 115)
+local remoteAtelier = RS.Atelier
+local brancheServeur = remoteAtelier.OnServerInvoke
+local pendantAttente
+local function serveurLent(...)
+	M.avancer(0.5)
+	pendantAttente = { visible = fenetre.Message.Visible, texte = fenetre.Message.Text, couleur = fenetre.Message.TextColor3 }
+	return brancheServeur(...)
+end
+remoteAtelier.OnServerInvoke = serveurLent
 cliquer("Clochette")
+remoteAtelier.OnServerInvoke = brancheServeur
 verifier(M.dernierAppel ~= nil and M.dernierAppel.action == "nouvelleCommande" and serveur:atelier(joueur).etat.etape == "carnet", "la commande passe par le serveur, qui fait foi")
+verifier(pendantAttente ~= nil and pendantAttente.visible and string.find(pendantAttente.texte, "sauvegardée", 1, true) ~= nil, "serveur lent : l'avertissement affiché n'est pas remplacé")
 
 ---------------------------------------------------------------------------
 -- Carnet de croquis
@@ -153,8 +167,14 @@ for _, d in ipairs(pieces:GetChildren()) do
 	end
 end
 verifier(nbBoutonsTissu == 6, "6 pièces à habiller de tissu (obtenu " .. nbBoutonsTissu .. ")")
+M.avancer(8)
+verifier(not fenetre.Message.Visible, "l'avertissement de la sauvegarde s'est effacé")
+pendantAttente = nil
+remoteAtelier.OnServerInvoke = serveurLent
 cliquer("Valider")
-verifier(titre() == "1. Carnet de croquis" and fenetre.Message.Visible, "valider sans tissu : message d'erreur")
+remoteAtelier.OnServerInvoke = brancheServeur
+verifier(pendantAttente ~= nil and pendantAttente.visible and pendantAttente.texte == "Un instant…" and pendantAttente.couleur == GRIS, "serveur lent : « Un instant… » en gris pendant l'attente")
+verifier(titre() == "1. Carnet de croquis" and fenetre.Message.Visible and fenetre.Message.Text ~= "Un instant…" and fenetre.Message.TextColor3 ~= GRIS, "valider sans tissu : message d'erreur (en rouge), à la place de l'indicateur")
 
 -- Choix d'un tissu : filtre « Romantique », soie rose fleurie pour le corsage, puis pour toute la robe
 local jaugeAvant = fenetre.Contenu.Droite.Jauge_romantique.Acquis.Size
@@ -379,6 +399,14 @@ verifier(boutonNomme("PieceSuivante").Text == "Pièce suivante", "bouton « Piè
 cliquer("Decoudre")
 verifier(panneauC.Note.Text:match("^Couture : ") ~= nil and not panneauC.PieceSuivante.Visible, "la dernière couture ratée se défait encore")
 coudre(60, 400)
+-- Serveur injoignable au moment de rendre la pièce : elle reste finie (rien à recoudre), message en gris
+remoteAtelier.OnServerInvoke = function()
+	error("coupure simulée")
+end
+cliquer("PieceSuivante")
+remoteAtelier.OnServerInvoke = brancheServeur
+verifier(cousues() == 0 and panneauC.PieceSuivante.Visible and panneauC.Note.Text:match("^Pièce finie") ~= nil, "serveur injoignable : la pièce reste finie, à rendre de nouveau")
+verifier(fenetre.Message.Visible and fenetre.Message.Text == "Le serveur ne répond pas. Réessaie." and fenetre.Message.TextColor3 == GRIS, "refus passager : message en gris")
 cliquer("PieceSuivante")
 verifier(cousues() == 1, "première pièce cousue")
 local ratee = tonumber(panneauC.Pieces.Ligne1.Text:match("(%d+) %%$"))

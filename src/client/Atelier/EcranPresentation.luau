@@ -117,19 +117,19 @@ return function(ctx)
 	UiKit.bouton({ Name = "Livrer", Text = "Livrer la robe", Position = UDim2.fromOffset(0, 300), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
 		local r = session:livrer()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end, 0.4)
 	UiKit.boutonDoux({ Name = "RetourDecorations", Text = "Retour aux décorations", TextSize = 14, Position = UDim2.fromOffset(0, 352), Size = UDim2.new(1, -6, 0, 32), Parent = contenu }, function()
 		local r = session:retourDecorations()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 	UiKit.boutonConfirme({ Name = "Recommencer", Text = "Recommencer la robe", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromOffset(200, 34), Parent = contenu }, function()
 		local r = session:recommencer()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 

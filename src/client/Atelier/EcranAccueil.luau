@@ -36,7 +36,7 @@ return function(ctx)
 	}, function()
 		local r = ctx.session:nouvelleCommande()
 		if not r.ok then
-			ctx.message(r.erreur, UiKit.COULEURS.erreur)
+			ctx.refus(r)
 		end
 	end)
 	return function() end

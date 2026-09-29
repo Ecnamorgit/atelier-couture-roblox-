@@ -150,6 +150,29 @@ local function afficherMessage(texte, couleur, duree)
 		end
 	end)
 end
+-- Refus d'une action : en rouge ; un refus passager (serveur occupé ou injoignable) en gris, sans alarmer
+local function refus(r)
+	afficherMessage(r.erreur, if r.passager then C.texteDoux else C.erreur)
+end
+-- Attente du serveur : au-delà de 0,3 s, « Un instant… » en gris sous la fenêtre, jusqu'à la réponse (un
+-- message déjà affiché reste)
+local DELAI_ATTENTE = 0.3
+local appel, jetonAttente = 0, nil
+session:surAttente(function(actif)
+	appel += 1
+	local moi = appel
+	if actif then
+		task.delay(DELAI_ATTENTE, function()
+			if moi == appel and not message.Visible then
+				afficherMessage(Session.OCCUPE, C.texteDoux, 60)
+				jetonAttente = jeton
+			end
+		end)
+	elseif jetonAttente == jeton then
+		message.Visible = false
+		jetonAttente = nil
+	end
+end)
 
 fenetre:GetPropertyChangedSignal("Visible"):Connect(function()
 	scene:ouvrir(fenetre.Visible, session.etat)
@@ -203,7 +226,7 @@ local function afficher()
 		disposer(EN_PANNEAU[etat.etape] == true)
 		etapeAffichee = etat.etape
 		titre.Text = TITRES[etat.etape] or etat.etape
-		fermerEcran = ECRANS[etat.etape]({ session = session, contenu = contenu, fenetre = fenetre, scene = scene, message = afficherMessage, UiKit = UiKit })
+		fermerEcran = ECRANS[etat.etape]({ session = session, contenu = contenu, fenetre = fenetre, scene = scene, message = afficherMessage, refus = refus, UiKit = UiKit })
 	end
 end
 session:surChangement(afficher)

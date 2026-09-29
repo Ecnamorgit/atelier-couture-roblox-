@@ -93,7 +93,7 @@ return function(ctx)
 				majLigne(idTissu)
 				ctx.message(("Acheté : %d dm de %s (%d po)."):format(q, t.nom, r.prix), C.ok)
 			else
-				ctx.message(r.erreur, C.erreur)
+				ctx.refus(r)
 			end
 		end, 0.4)
 		lignes[idTissu] = l
@@ -103,13 +103,13 @@ return function(ctx)
 	UiKit.boutonDoux({ Name = "RetourCarnet", Text = "Retour au carnet", AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromOffset(200, 46), Parent = contenu }, function()
 		local r = session:retourCarnet()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 	UiKit.bouton({ Name = "AllerDecoupe", Text = "Aller à la découpe", AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(240, 46), Parent = contenu }, function()
 		local r = session:commencerDecoupe()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 	return function() end

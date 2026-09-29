@@ -79,13 +79,13 @@ return function(ctx)
 	UiKit.boutonDoux({ Name = "PlusDeTissu", Text = ("Plus de tissu (+%d dm)"):format(ACHAT_RAPIDE), TextSize = 14, Position = UDim2.fromOffset(166, 306), Size = UDim2.fromOffset(160, 34), Parent = panneau }, function()
 		local r = session:acheter(table_.tissu, ACHAT_RAPIDE)
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end, CALME)
 	local couper = UiKit.bouton({ Name = "Couper", Text = "Couper", Position = UDim2.fromOffset(0, 348), Size = UDim2.new(1, 0, 0, 44), Parent = panneau }, function()
 		local r = table_:couper(session)
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		elseif session.etat.etape == "decoupe" then
 			-- La session a prévenu l'écran avant que la table ne choisisse la pièce suivante : on redessine
 			rafraichir()
@@ -95,7 +95,7 @@ return function(ctx)
 	UiKit.boutonConfirme({ Name = "Recommencer", Text = "Recommencer la robe", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromOffset(200, 34), Parent = panneau }, function()
 		local r = session:recommencer()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 

@@ -78,7 +78,7 @@ return function(ctx)
 			end
 			local r = session:epingler(id)
 			if not r.ok then
-				ctx.message(r.erreur, C.erreur)
+				ctx.refus(r)
 			end
 		end)
 		cartes[id] = { carte = carte, etat = etatTexte }
@@ -88,7 +88,7 @@ return function(ctx)
 	UiKit.boutonConfirme({ Name = "Recommencer", Text = "Recommencer la robe", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromOffset(200, 34), Parent = ctx.contenu }, function()
 		local r = session:recommencer()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 

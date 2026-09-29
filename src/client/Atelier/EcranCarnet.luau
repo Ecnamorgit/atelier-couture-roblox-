@@ -213,7 +213,7 @@ return function(ctx)
 		end
 		local r = session:validerCroquis(croquis, choixPieces)
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 

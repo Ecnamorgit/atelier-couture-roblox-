@@ -91,13 +91,13 @@ return function(ctx)
 	UiKit.bouton({ Name = "Presenter", Text = "Présenter à la cliente", Position = UDim2.fromOffset(0, 350), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
 		local r = session:decorer(deco:resultat())
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end, 0.4)
 	UiKit.boutonConfirme({ Name = "Recommencer", Text = "Recommencer la robe", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromOffset(200, 34), Parent = contenu }, function()
 		local r = session:recommencer()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 
@@ -125,7 +125,7 @@ return function(ctx)
 		else
 			local r = deco:toucher(t.indicePiece, t.copie, t.u, t.v)
 			if not r.ok then
-				ctx.message(r.erreur, C.erreur)
+				ctx.refus(r)
 			end
 		end
 		rafraichir()

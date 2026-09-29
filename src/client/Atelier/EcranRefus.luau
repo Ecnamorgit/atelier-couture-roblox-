@@ -36,13 +36,13 @@ return function(ctx)
 	UiKit.bouton({ Name = "Retoucher", Text = "Retoucher la robe", Position = UDim2.fromOffset(0, 186), Size = UDim2.new(1, -6, 0, 46), Parent = contenu }, function()
 		local r = session:retoucher()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 	UiKit.boutonConfirme({ Name = "Abandonner", Text = "Abandonner la commande", TextSize = 14, Position = UDim2.fromOffset(0, 244), Size = UDim2.new(1, -6, 0, 36), Parent = contenu }, function()
 		local r = session:abandonner()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 	return function() end

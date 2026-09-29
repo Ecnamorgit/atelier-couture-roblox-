@@ -97,7 +97,7 @@ return function(ctx)
 	UiKit.boutonConfirme({ Name = "Recommencer", Text = "Recommencer la robe", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromOffset(200, 34), Parent = panneau }, function()
 		local r = session:recommencer()
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
+			ctx.refus(r)
 		end
 	end)
 
@@ -212,14 +212,18 @@ return function(ctx)
 		end
 	end
 
-	-- On rend le relevé de la pièce finie ; la suivante arrive par l'avis de changement
+	-- On rend le relevé de la pièce finie ; la suivante arrive par l'avis de changement. Refusé, la dernière
+	-- couture est à refaire ; refus passager (serveur occupé ou injoignable) : la pièce reste finie, on la
+	-- rendra de nouveau.
 	rendre = function()
 		local r = session:rendreCouture(machine.idPiece, machine:releve())
 		if not r.ok then
-			ctx.message(r.erreur, C.erreur)
-			machine:decoudre()
-			effacerPoints()
-			rafraichir()
+			ctx.refus(r)
+			if not r.passager then
+				machine:decoudre()
+				effacerPoints()
+				rafraichir()
+			end
 		end
 	end
 
