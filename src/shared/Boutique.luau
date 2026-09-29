@@ -19,6 +19,8 @@ local X_EMPLACEMENTS = { -45, -15, 15, 45 }
 Boutique.MANNEQUIN = CFrame.new(0, Mannequin.HAUTEUR_TAILLE * Catalogue.STUDS_PAR_DM, 40)
 -- Le socle de la vitrine, juste derrière la fenêtre : la robe exposée regarde la rue
 Boutique.VITRINE = CFrame.new(7.5, 0.5, 32.5)
+-- La boîte aux lettres, sur le comptoir (le courrier, sous-projet 2)
+Boutique.BOITE_AUX_LETTRES = CFrame.new(-9, 3.4, 40)
 -- Là où l'avatar du joueur apparaît : juste passé la porte, tourné vers l'atelier
 Boutique.ENTREE = CFrame.lookAt(Vector3.new(-6, 3, 33), Vector3.new(-6, 3, 40))
 
