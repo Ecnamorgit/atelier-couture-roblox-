@@ -129,7 +129,11 @@ verifier(titre() == "1. Carnet de croquis" and fenetre.Message.Visible, "valider
 -- Choix d'un tissu : filtre « Romantique », soie rose fleurie pour le corsage, puis pour toute la robe
 local jaugeAvant = fenetre.Contenu.Droite.Jauge_romantique.Acquis.Size
 cliquer("Tissu_corsage_v_devant")
-verifier(fenetre.Contenu:FindFirstChild("ChoixTissu") ~= nil, "le choix du tissu s'ouvre")
+local choix = fenetre.Contenu:FindFirstChild("ChoixTissu")
+verifier(choix ~= nil, "le choix du tissu s'ouvre")
+-- Dans Roblox, un simple cadre (même Active) laisse passer l'appui aux boutons cachés dessous (Valider,
+-- variantes…) ; un bouton sans texte l'arrête (vérifié dans Studio)
+verifier(choix:IsA("TextButton") and choix.Text == "" and not choix.AutoButtonColor, "le choix du tissu arrête les appuis : rien ne passe aux boutons cachés dessous")
 verifierTailles("choix du tissu")
 cliquer("Filtre_gothique")
 local grille = fenetre.Contenu.ChoixTissu.Grille

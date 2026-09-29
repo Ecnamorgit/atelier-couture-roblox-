@@ -65,7 +65,9 @@ return function(ctx)
 		jauges[style] = { plage = plage, acquis = acquis }
 	end
 
-	-- Choix du tissu d'une pièce (par-dessus le carnet), filtrable par style
+	-- Choix du tissu d'une pièce (par-dessus le carnet), filtrable par style. Un bouton sans texte, pas un
+	-- simple cadre : dans Roblox, un cadre (même Active) laisse passer l'appui aux boutons cachés dessous
+	-- (variantes, « Valider le croquis »…), par exemple entre deux cartes de tissu
 	local choix
 	local function fermerChoix()
 		if choix then
@@ -75,7 +77,7 @@ return function(ctx)
 	end
 	local function ouvrirChoix(pieces)
 		fermerChoix()
-		choix = UiKit.arrondir(UiKit.creer("Frame", { Name = "ChoixTissu", BackgroundColor3 = C.fond, Size = UDim2.fromScale(1, 1), ZIndex = 10, Parent = contenu }), 10)
+		choix = UiKit.arrondir(UiKit.creer("TextButton", { Name = "ChoixTissu", Text = "", AutoButtonColor = false, BackgroundColor3 = C.fond, Size = UDim2.fromScale(1, 1), ZIndex = 10, Parent = contenu }), 10)
 		UiKit.boutonDoux({ Name = "FermerChoix", Text = "Retour", Position = UDim2.new(1, -120, 0, 0), Size = UDim2.fromOffset(110, 34), ZIndex = 11, Parent = choix }, fermerChoix)
 		local grille = UiKit.creer("ScrollingFrame", {
 			Name = "Grille",
