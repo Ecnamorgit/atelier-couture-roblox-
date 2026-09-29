@@ -113,9 +113,13 @@ function Sauvegarde.migrer(partie)
 	return partie
 end
 
+-- Taille (JSON) de chaque robe livrée, mesurée une seule fois : une robe livrée ne change plus
+local taillesRobes = setmetatable({}, { __mode = "k" })
+
 -- La partie d'un état de l'atelier (debloques : ceux de la partie chargée, gardés tels quels). Trop
 -- lourde pour le DataStore (des centaines de garnitures sur chaque robe), elle perd ses plus anciennes
--- robes jusqu'à tenir.
+-- robes jusqu'à tenir. La taille se calcule sans réencoder la partie : celle de la partie sans robes,
+-- plus celle de chaque robe gardée (et une virgule entre deux).
 function Sauvegarde.depuisEtat(etat, debloques)
 	local d = etat:exporter()
 	local partie = {
@@ -131,8 +135,20 @@ function Sauvegarde.depuisEtat(etat, debloques)
 			partie.enCours[champ] = d[champ]
 		end
 	end
-	while #partie.recettes > 0 and #HttpService:JSONEncode(partie) > Sauvegarde.TAILLE_MAX do
-		table.remove(partie.recettes)
+	local recettes = partie.recettes
+	partie.recettes = {}
+	local taille = #HttpService:JSONEncode(partie)
+	for i, robe in ipairs(etat.robes) do
+		local t = taillesRobes[robe]
+		if not t then
+			t = #HttpService:JSONEncode(robe)
+			taillesRobes[robe] = t
+		end
+		taille += t + (if i > 1 then 1 else 0)
+		if taille > Sauvegarde.TAILLE_MAX then
+			break -- cette robe et les plus anciennes ne tiennent pas
+		end
+		partie.recettes[i] = recettes[i]
 	end
 	return partie
 end

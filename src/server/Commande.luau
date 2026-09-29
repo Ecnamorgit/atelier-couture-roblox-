@@ -171,6 +171,11 @@ function Commande:enregistrer(joueur, liberer, essais)
 	if not a.sauvable then
 		return nil -- partie prise par un autre serveur pendant l'attente
 	end
+	-- Le joueur est parti ou le serveur s'arrête pendant l'attente : cette écriture rend le verrou, elle
+	-- aussi (sinon elle le reprendrait après celle du départ ou de l'arrêt)
+	if self.ateliers[joueur] ~= a or self.ferme then
+		liberer = true
+	end
 	self.ecritures[id] = true
 	local ok, statut = pcall(function()
 		local partie = Sauvegarde.depuisEtat(a.etat, a.debloques)
@@ -200,6 +205,9 @@ end
 
 -- Sauvegarde régulière de toutes les parties (chacune dans sa tâche)
 function Commande:enregistrerTout()
+	if self.ferme then
+		return -- l'arrêt écrit déjà tout, et rend les verrous
+	end
 	for joueur in pairs(self.ateliers) do
 		task.spawn(self.enregistrer, self, joueur, false)
 	end

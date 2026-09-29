@@ -18,6 +18,22 @@ U.verifier(#HttpService:JSONEncode(partie) <= 4500 and #partie.recettes >= 1 and
 U.verifier(partie.recettes[1].numero == 1 and partie.recettes[#partie.recettes].numero == #partie.recettes, "les plus récentes sont gardées")
 U.verifier(#Sauvegarde.depuisEtat(lourd).recettes == EtatAtelier.ROBES_GARDEES, "sous la limite : toutes les robes")
 U.verifier(limite <= 4000000, "la limite laisse de la place sous les 4 Mo d'une clé du DataStore")
+-- Chaque robe livrée n'est encodée qu'une fois : une partie énorme ne fige pas le serveur à chaque sauvegarde
+local lourde = EtatAtelier.nouveau()
+for i = 1, EtatAtelier.ROBES_GARDEES do
+	lourde.robes[i] = { numero = i, bourrage = string.rep("y", 1000) }
+end
+Sauvegarde.TAILLE_MAX = 4500
+M.encodages = 0
+local premiere = Sauvegarde.depuisEtat(lourde)
+local encodagesPremiere = M.encodages
+M.encodages = 0
+local suivante = Sauvegarde.depuisEtat(lourde)
+local encodagesSuivante = M.encodages
+Sauvegarde.TAILLE_MAX = limite
+U.verifier(#premiere.recettes == #suivante.recettes and #HttpService:JSONEncode(suivante) <= 4500, "même partie d'une sauvegarde à l'autre, sous la limite")
+U.verifier(encodagesPremiere <= EtatAtelier.ROBES_GARDEES + 1, "première sauvegarde : chaque robe encodée une fois au plus (" .. encodagesPremiere .. " encodages)")
+U.verifier(encodagesSuivante <= 1, "sauvegardes suivantes : les robes déjà mesurées ne sont pas réencodées (" .. encodagesSuivante .. " encodages)")
 
 ---------------------------------------------------------------------------
 -- Un serveur, son DataStore ; attendre fait passer le temps (et laisse le test agir pendant l'attente)
@@ -128,4 +144,38 @@ U.verifier(magasin.donnees[cle(retour)].verrou.t == 0 and magasin.donnees[cle(le
 serveur:arrivee(tardif)
 U.verifier(serveur:atelier(tardif) == nil and magasin.donnees[cle(tardif)] ~= nil and magasin.donnees[cle(tardif)].verrou.t == 0, "lue après l'arrêt : la partie est rendue aussitôt, sans atelier")
 U.verifier(serveur.chargements[tardif] == nil, "plus de lecture en cours")
+
+---------------------------------------------------------------------------
+-- Une écriture régulière qui attendait la fin du départ, ou qui passe pendant l'arrêt, rend le verrou
+---------------------------------------------------------------------------
+local serveur2 = Commande.nouvelle({ sauvegarde = sauvegarde, horloge = horloge, attendre = attendre })
+local regulier = joueurNumero("Regulier", 704)
+serveur2:arrivee(regulier)
+serveur2.ecritures[regulier.UserId] = true -- l'écriture du départ est en cours
+attentes = 0
+pendant = function()
+	if attentes == 2 then
+		serveur2.ecritures[regulier.UserId] = nil
+		serveur2:depart(regulier) -- elle se termine : partie écrite, verrou rendu, atelier retiré
+	end
+end
+serveur2:enregistrer(regulier, false) -- la sauvegarde régulière, lancée pendant l'écriture du départ
+pendant = nil
+U.verifier(magasin.donnees[cle(regulier)].verrou.t == 0, "écriture régulière passée après le départ : le verrou reste rendu")
+local arrete = joueurNumero("Arrete", 705)
+serveur2:arrivee(arrete)
+serveur2.ecritures[arrete.UserId] = true -- une écriture est en cours
+attentes = 0
+pendant = function()
+	if attentes == 2 then
+		serveur2.ecritures[arrete.UserId] = nil
+		serveur2:fermer() -- le serveur s'arrête pendant l'attente
+	end
+end
+serveur2:enregistrer(arrete, false)
+pendant = nil
+U.verifier(magasin.donnees[cle(arrete)].verrou.t == 0, "écriture régulière passée pendant l'arrêt : le verrou reste rendu")
+local ecrituresArret = magasin.ecritures
+serveur2:enregistrerTout()
+U.verifier(magasin.ecritures == ecrituresArret, "serveur arrêté : plus de sauvegarde régulière")
 Commande.courante = courant

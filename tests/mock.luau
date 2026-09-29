@@ -630,7 +630,9 @@ local function json(v)
 	end
 	error("JSONEncode : valeur impossible à encoder (" .. t .. ")")
 end
+-- M.encodages compte les appels (coût des sauvegardes)
 function methodes.JSONEncode(_, v)
+	M.encodages = (M.encodages or 0) + 1
 	return json(v)
 end
 -- Sans M.magasins, le DataStore échoue comme dans Studio sans accès aux API ; avec, M.magasins[nom]
