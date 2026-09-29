@@ -624,6 +624,8 @@ M.captureMuette = nil
 verifier(not gui.Atelier.Enabled, "capture en cours : interface cachée")
 M.avancer(ScenePoste.ATTENTE_CAPTURE + 0.1)
 verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA and camera.FieldOfView == 70, "capture sans réponse : l'interface et la vue reviennent")
+M.avancer(1) -- le message de la capture refusée, plus haut, s'est effacé
+verifier(fenetre.Message.Visible and fenetre.Message.Text == "La photo n'a pas pu être prise.", "capture sans réponse : le joueur est prévenu")
 -- La réponse tardive d'une prise abandonnée ne termine pas la suivante
 local tardive = M.rappelCapture
 M.captureMuette = true
@@ -659,6 +661,19 @@ verifier(apercu ~= nil and apercu.Visible and apercu.Image.Image == "rbxtemp://c
 -- Dans Roblox, un simple cadre (même Active) laisse passer l'appui aux boutons cachés dessous (Livrer…) ;
 -- un bouton sans texte l'arrête (vérifié dans Studio)
 verifier(apercu:IsA("TextButton") and apercu.Text == "" and not apercu.AutoButtonColor, "l'aperçu arrête les appuis : rien ne passe aux boutons cachés dessous")
+-- « Fermer » referme l'aperçu : un second appui trop long tomberait sur ce qui est dessous ; rien n'y est
+local fermerA = apercu.FermerApercu
+local hautF, basF = fermerA.Position.Y.Offset, fermerA.Position.Y.Offset + fermerA.Size.Y.Offset
+local dessous = {}
+for _, b in ipairs(fenetre.Contenu:GetChildren()) do
+	local pos, ancre = b.Position or UDim2.new(), b.AnchorPoint or Vector2.new()
+	if b:IsA("GuiButton") and b ~= apercu and pos.Y.Scale == 0 and ancre.Y == 0 then
+		if pos.Y.Offset < basF and pos.Y.Offset + b.Size.Y.Offset > hautF then
+			table.insert(dessous, b.Name)
+		end
+	end
+end
+verifier(#dessous == 0, "« Fermer » de l'aperçu n'est au-dessus d'aucun bouton ; dessous : " .. table.concat(dessous, ", "))
 cliquer("EnregistrerPhoto")
 verifier(M.galerie ~= nil and M.galerie[1] == apercu.Image.Image and fenetre.Message.Visible, "photo proposée à la galerie du joueur")
 M.echecGalerie = true
@@ -710,8 +725,17 @@ verifier(#robe:GetChildren() == 0 and #decorations:GetChildren() == 0 and camera
 verifier(laCliente.Parent ~= nil and laCliente.Head.Bulle.Texte.Text == ScenePoste.PAROLES.merci, "la cliente remercie")
 M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
 verifier(laCliente.Parent == nil, "puis elle s'en va")
-cliquer("Clochette")
-verifier(scene:FindFirstChild("Cliente") ~= nil and scene.Cliente ~= laCliente, "la cliente suivante entre")
+-- La touche E sonne la clochette, fenêtre ouverte seulement (comme au comptoir)
+local toucheE = { KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }
+cliquer("Fermer")
+UIS.InputBegan:Fire(toucheE, false)
+verifier(titre() == "Atelier de couture", "fenêtre fermée : E ne sonne pas")
+cliquer("OuvrirAtelier")
+UIS.InputBegan:Fire(toucheE, true)
+verifier(titre() == "Atelier de couture", "E tapé dans le chat : rien")
+M.avancer(0.5)
+UIS.InputBegan:Fire(toucheE, false)
+verifier(scene:FindFirstChild("Cliente") ~= nil and scene.Cliente ~= laCliente, "E : la cliente suivante entre")
 verifier(titre() == "1. Carnet de croquis", "nouvelle cliente")
 
 ---------------------------------------------------------------------------

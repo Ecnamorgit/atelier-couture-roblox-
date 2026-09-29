@@ -1,5 +1,7 @@
--- Écran d'accueil : la clochette du comptoir fait entrer une cliente et crée la commande.
--- Après une livraison, il annonce ce qu'a pensé la cliente précédente.
+-- Écran d'accueil : la clochette du comptoir (bouton, ou touche E) fait entrer une cliente et crée la
+-- commande. Après une livraison, il annonce ce qu'a pensé la cliente précédente.
+local UserInputService = game:GetService("UserInputService")
+
 return function(ctx)
 	local UiKit = ctx.UiKit
 	local C = UiKit.COULEURS
@@ -27,17 +29,26 @@ return function(ctx)
 		Size = UDim2.new(1, 0, 0, 90),
 		Parent = ctx.contenu,
 	})
-	UiKit.bouton({
-		Name = "Clochette",
-		Text = "Sonner la clochette",
-		Position = UDim2.fromOffset(0, 110 + decalage),
-		Size = UDim2.fromOffset(260, 50),
-		Parent = ctx.contenu,
-	}, function()
+	local function sonner()
 		local r = ctx.session:nouvelleCommande()
 		if not r.ok then
 			ctx.refus(r)
 		end
+	end
+	UiKit.bouton({
+		Name = "Clochette",
+		Text = if UserInputService.KeyboardEnabled then "Sonner la clochette (E)" else "Sonner la clochette",
+		Position = UDim2.fromOffset(0, 110 + decalage),
+		Size = UDim2.fromOffset(260, 50),
+		Parent = ctx.contenu,
+	}, sonner)
+	-- E, fenêtre ouverte (pas pendant la saisie dans le chat) : sonner la clochette
+	local connexion = UserInputService.InputBegan:Connect(function(input, traite)
+		if not traite and input.KeyCode == Enum.KeyCode.E and ctx.fenetre.Visible then
+			sonner()
+		end
 	end)
-	return function() end
+	return function()
+		connexion:Disconnect()
+	end
 end

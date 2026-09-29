@@ -68,10 +68,11 @@ return function(ctx)
 	end
 
 	-- Aperçu de la photo prise. Un bouton sans texte, pas un simple cadre : dans Roblox, un cadre (même
-	-- Active) laisse passer l'appui aux boutons cachés dessous (« Livrer la robe »…)
+	-- Active) laisse passer l'appui aux boutons cachés dessous (« Livrer la robe »…). « Fermer » est en
+	-- haut, au-dessus des textes : un double appui ne tombe sur aucun bouton une fois l'aperçu refermé.
 	local apercu = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Apercu", Text = "", AutoButtonColor = false, Visible = false, BackgroundColor3 = C.panneau, Size = UDim2.new(1, 0, 1, 0), ZIndex = 20, Parent = contenu }), 10)
-	local image = UiKit.creer("ImageLabel", { Name = "Image", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Fit, Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 300), ZIndex = 21, Parent = apercu })
-	UiKit.bouton({ Name = "EnregistrerPhoto", Text = "Enregistrer dans la galerie", TextSize = 16, Position = UDim2.fromOffset(0, 312), Size = UDim2.new(1, -6, 0, 42), ZIndex = 21, Parent = apercu }, function()
+	local image = UiKit.creer("ImageLabel", { Name = "Image", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Fit, Position = UDim2.fromOffset(0, 42), Size = UDim2.new(1, 0, 0, 300), ZIndex = 21, Parent = apercu })
+	UiKit.bouton({ Name = "EnregistrerPhoto", Text = "Enregistrer dans la galerie", TextSize = 16, Position = UDim2.fromOffset(0, 350), Size = UDim2.new(1, -6, 0, 42), ZIndex = 21, Parent = apercu }, function()
 		local photo = image.Image
 		local ok = pcall(function()
 			CaptureService:PromptSaveCapturesToGallery({ photo }, function(resultats)
@@ -84,7 +85,7 @@ return function(ctx)
 			ctx.message("La galerie n'est pas disponible pour le moment.", C.erreur)
 		end
 	end, 0.4)
-	UiKit.boutonDoux({ Name = "FermerApercu", Text = "Fermer", TextSize = 14, Position = UDim2.fromOffset(0, 364), Size = UDim2.new(1, -6, 0, 34), ZIndex = 21, Parent = apercu }, function()
+	UiKit.boutonDoux({ Name = "FermerApercu", Text = "Fermer", TextSize = 14, Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, -6, 0, 34), ZIndex = 21, Parent = apercu }, function()
 		apercu.Visible = false
 	end)
 
@@ -109,7 +110,12 @@ return function(ctx)
 		enCours = numero
 		scene:cadrerPhoto(true)
 		interface.Enabled = false
-		task.delay(scene.ATTENTE_CAPTURE, retablir, numero)
+		task.delay(scene.ATTENTE_CAPTURE, function()
+			if enCours == numero then
+				retablir(numero) -- pas de réponse à temps : l'interface revient, le joueur est prévenu
+				ctx.message("La photo n'a pas pu être prise.", C.erreur)
+			end
+		end)
 		local ok = pcall(function()
 			CaptureService:CaptureScreenshot(function(capture)
 				if enCours ~= numero then
