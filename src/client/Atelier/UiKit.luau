@@ -13,6 +13,7 @@ UiKit.COULEURS = {
 	erreur = Color3.fromRGB(210, 60, 60),
 }
 UiKit.LARGEUR, UiKit.HAUTEUR = 900, 560 -- taille de référence de la fenêtre (mise à l'échelle sur petit écran)
+UiKit.LARGEUR_PANNEAU = 380 -- fenêtre rangée à droite pendant les postes autour du mannequin
 
 function UiKit.creer(classe, props, enfants)
 	local instance = Instance.new(classe)
@@ -87,6 +88,39 @@ end
 -- Bouton secondaire (fond clair)
 function UiKit.boutonDoux(props, auClic, calme)
 	return UiKit.bouton(fusionner({ BackgroundColor3 = UiKit.COULEURS.secondaire, TextColor3 = UiKit.COULEURS.texte }, props), auClic, calme)
+end
+
+-- Bouton d'une action qu'on ne peut pas annuler (recommencer la robe) : le premier appui demande
+-- confirmation, un second appui (au moins 0,4 s après, dans les 3 s) agit ; sinon il revient à la normale.
+UiKit.DELAI_CONFIRMATION = 3
+UiKit.TEXTE_CONFIRMATION = "Vraiment ? Touche encore"
+function UiKit.boutonConfirme(props, auClic)
+	local b
+	local texte = props.Text
+	local jeton = 0
+	local function normal()
+		b.Text = texte
+		b.BackgroundColor3 = UiKit.COULEURS.secondaire
+		b.TextColor3 = UiKit.COULEURS.texte
+	end
+	b = UiKit.boutonDoux(props, function()
+		jeton += 1
+		if b.Text == UiKit.TEXTE_CONFIRMATION then
+			normal()
+			auClic()
+			return
+		end
+		local moi = jeton
+		b.Text = UiKit.TEXTE_CONFIRMATION
+		b.BackgroundColor3 = UiKit.COULEURS.alerte
+		b.TextColor3 = Color3.new(1, 1, 1)
+		task.delay(UiKit.DELAI_CONFIRMATION, function()
+			if moi == jeton then
+				normal()
+			end
+		end)
+	end, 0.4)
+	return b
 end
 
 -- Échelle d'une fenêtre de taille de référence pour tenir dans l'écran (téléphones)

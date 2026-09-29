@@ -92,7 +92,7 @@ return function(ctx)
 			montrerPiece()
 		end
 	end, CALME)
-	UiKit.boutonDoux({ Name = "Recommencer", Text = "Recommencer la robe", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromOffset(200, 34), Parent = panneau }, function()
+	UiKit.boutonConfirme({ Name = "Recommencer", Text = "Recommencer la robe", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromOffset(200, 34), Parent = panneau }, function()
 		local r = session:recommencer()
 		if not r.ok then
 			ctx.message(r.erreur, C.erreur)

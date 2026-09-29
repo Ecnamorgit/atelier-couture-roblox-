@@ -243,12 +243,117 @@ end
 verifier(coupes == 6, "6 pièces coupées (manche et col pliés comptent pour une coupe chacun) : " .. coupes)
 
 ---------------------------------------------------------------------------
--- Suite et recommencer
+-- Épinglage
 ---------------------------------------------------------------------------
-verifier(titre() == "Toutes les pièces sont coupées !", "écran de suite après la dernière coupe")
-verifierTailles("suite")
+local Workspace = M.services.Workspace
+local camera = Workspace.CurrentCamera
+verifier(titre() == "4. Épinglage", "après la dernière coupe : l'épinglage")
+verifier(fenetre.AnchorPoint.X == 1, "la fenêtre se range à droite : le mannequin est visible")
+local scene = Workspace:FindFirstChild("AtelierLocal")
+verifier(scene ~= nil and scene:FindFirstChild("Mannequin") ~= nil, "le mannequin de la cliente est dans l'atelier")
+verifier(camera.CameraType == Enum.CameraType.Scriptable, "caméra fixe sur le mannequin")
+verifierTailles("épinglage")
+cliquer("Fermer")
+verifier(camera.CameraType == Enum.CameraType.Custom, "fenêtre fermée : la caméra revient au joueur")
+cliquer("OuvrirAtelier")
+verifier(camera.CameraType == Enum.CameraType.Scriptable, "fenêtre rouverte : caméra fixe sur le mannequin")
+local robe = scene.Robe
+local liste = fenetre.Contenu.Liste
+local aEpingler = {}
+for _, d in ipairs(liste:GetChildren()) do
+	if d.Name:sub(1, 9) == "Epingler_" then
+		table.insert(aEpingler, d.Name)
+	end
+end
+table.sort(aEpingler)
+verifier(#aEpingler == 6, "6 pièces à épingler (obtenu " .. #aEpingler .. ")")
+-- Les six cartes tiennent dans la liste sans défiler (une carte coupée par le bas cacherait « Recommencer »)
+local hauteurListe = fenetre.Size.Y.Offset + fenetre.Contenu.Size.Y.Offset + liste.Size.Y.Offset
+for _, nom in ipairs(aEpingler) do
+	local carte = liste[nom]
+	verifier(carte.Position.Y.Offset + carte.Size.Y.Offset <= hauteurListe, nom .. " : carte entièrement visible")
+end
+-- « Recommencer la robe » demande une confirmation : un seul appui n'efface rien
+cliquer("Recommencer")
+verifier(titre() == "4. Épinglage" and boutonNomme("Recommencer").Text == "Vraiment ? Touche encore", "recommencer : confirmation demandée")
+M.avancer(4)
+verifier(boutonNomme("Recommencer").Text == "Recommencer la robe", "sans confirmation, le bouton revient à la normale")
+verifier(liste[aEpingler[1]].Apercu.ImageContent.statique == true, "aperçu de la pièce découpée dans le vrai tissu")
+cliquer(aEpingler[1])
+verifier(#robe:GetChildren() >= 1, "la pièce épinglée apparaît sur le mannequin")
+verifier(liste[aEpingler[1]].Etat.Text == "Épinglée", "la pièce est marquée épinglée")
+for i = 2, #aEpingler do
+	cliquer(aEpingler[i])
+end
+verifier(#robe:GetChildren() == 8, "robe entière sur le mannequin, manches et col en double (obtenu " .. #robe:GetChildren() .. ")")
+
+---------------------------------------------------------------------------
+-- Couture
+---------------------------------------------------------------------------
+verifier(titre() == "5. Couture", "tout est épinglé : la couture")
+verifier(fenetre.AnchorPoint.X == 0.5, "la fenêtre revient au centre pour la machine à coudre")
+verifierTailles("couture")
+-- Maintient « Coudre » pendant « duree » secondes, en glissant de « glisse » pixels
+local function coudre(duree, glisse)
+	local appui = { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(700, 400, 0) }
+	boutonNomme("Coudre").InputBegan:Fire(appui)
+	if glisse then
+		UIS.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(700 + glisse, 400, 0) })
+	end
+	M.avancer(duree)
+	UIS.InputEnded:Fire(appui)
+end
+local panneauC = fenetre.Contenu.Panneau
+local points = fenetre.Contenu.Plateau.Tissu.Points
+local function cousues()
+	local n = 0
+	for _, d in ipairs(panneauC.Pieces:GetChildren()) do
+		if d:IsA("TextLabel") and d.Text:find("%d+ %%$") then
+			n += 1
+		end
+	end
+	return n
+end
+verifier(panneauC.Note.Text == "Couture : —", "rien de cousu au départ")
+verifier(#panneauC.Pieces:GetChildren() == 6, "6 pièces à coudre")
+coudre(2)
+verifier(panneauC.Note.Text:match("^Couture : %d+ %%$") ~= nil, "la note s'affiche en cousant : " .. panneauC.Note.Text)
+verifier(#points:GetChildren() > 0, "les points de couture apparaissent sur le tissu")
+cliquer("Decoudre")
+verifier(panneauC.Note.Text == "Couture : —" and #points:GetChildren() == 0, "découdre défait la couture")
+coudre(60, 400) -- en tirant tout le temps du même côté : couture ratée
+verifier(cousues() == 1, "première pièce cousue")
+local ratee = tonumber(panneauC.Pieces.Ligne1.Text:match("(%d+) %%$"))
+cliquer("Vitesse_lapin")
+verifier(boutonNomme("Vitesse_lapin").BackgroundColor3 == Color3.fromRGB(214, 76, 128), "vitesse lapin choisie")
+-- Deuxième pièce au doigt : un second doigt qui glisse ne dirige pas l'aiguille
+local doigtCoudre = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(700, 400, 0) }
+boutonNomme("Coudre").InputBegan:Fire(doigtCoudre)
+UIS.InputChanged:Fire({ UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(1100, 400, 0) })
+M.avancer(30)
+UIS.InputEnded:Fire(doigtCoudre)
+verifier(cousues() == 2, "deuxième pièce cousue au doigt")
+local auDoigt = tonumber(panneauC.Pieces.Ligne2.Text:match("(%d+) %%$"))
+verifier(auDoigt ~= nil and auDoigt > 30, "un second doigt ne dirige pas l'aiguille : " .. tostring(auDoigt))
+cliquer("Assistance")
+verifier(panneauC.Assistance.Text == "Assistance : oui (85 % au plus)", "assistance activée")
+for _ = 3, 6 do
+	coudre(30)
+end
+
+---------------------------------------------------------------------------
+-- Robe cousue, recommencer
+---------------------------------------------------------------------------
+verifier(titre() == "La robe est cousue !", "écran de suite après la dernière couture")
+verifier(fenetre.AnchorPoint.X == 1 and #robe:GetChildren() == 8, "la robe cousue est visible sur le mannequin")
+verifier(texte("Qualité de la robe :") ~= nil, "la qualité de la robe est affichée")
+verifierTailles("robe cousue")
+verifier(ratee ~= nil and ratee < 20, "la couture ratée est mal notée : " .. tostring(ratee))
+cliquer("Recommencer")
+verifier(titre() == "La robe est cousue !", "un appui sur « Recommencer » ne suffit pas")
 cliquer("Recommencer")
 verifier(titre() == "1. Carnet de croquis", "recommencer ramène au carnet avec la même commande")
+verifier(#robe:GetChildren() == 0 and camera.CameraType == Enum.CameraType.Custom, "robe retirée du mannequin, caméra rendue au joueur")
 
 ---------------------------------------------------------------------------
 -- Robe en six tissus : la mise en page tient (lignes d'achat, onglets de la découpe)
