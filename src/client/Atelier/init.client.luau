@@ -25,7 +25,7 @@ local TITRES = {
 	epinglage = "4. Épinglage",
 	couture = "5. Couture",
 	decorations = "6. Décorations",
-	photo = "7. Présentation",
+	photo = "7. Photo et livraison",
 	refus = "La cliente refuse la robe",
 }
 -- Postes autour du mannequin : la fenêtre devient un panneau à droite pour laisser voir la robe
@@ -175,7 +175,7 @@ local etapeAffichee, fermerEcran
 local function afficher()
 	local etat = session.etat
 	argent.Text = ("%d pièces d'or"):format(etat.argent)
-	task.spawn(scene.synchroniser, scene, etat) -- la construction des pièces 3D peut prendre un moment
+	task.spawn(scene.synchroniser, scene, etat, session.derniere) -- la construction des pièces 3D peut prendre un moment
 	if etat.etape ~= etapeAffichee then
 		if fermerEcran then
 			fermerEcran()

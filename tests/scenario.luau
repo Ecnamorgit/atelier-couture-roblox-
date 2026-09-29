@@ -457,12 +457,53 @@ verifier(camera.CFrame ~= ScenePoste.CAMERA and #decorations:GetChildren() == 2,
 ---------------------------------------------------------------------------
 local avantDeco = argent()
 cliquer("Presenter")
-verifier(titre() == "7. Présentation" and argent() == avantDeco - coutRuban, "présenter : décorations payées")
+verifier(titre() == "7. Photo et livraison" and argent() == avantDeco - coutRuban, "présenter : décorations payées")
 verifier(camera.CFrame == ScenePoste.CAMERA, "la cliente voit la robe de face")
 verifier(texte("Au moins 1 en Romantique (actuel :") ~= nil, "le score actuel est affiché à côté d'une exigence de style")
 verifier(#decorations:GetChildren() == 2, "la robe est présentée avec ses décorations")
 verifierTailles("présentation")
+-- La cliente en personne regarde la robe
+local laCliente = scene:FindFirstChild("Cliente")
+verifier(laCliente ~= nil and laCliente.Head.Bulle.Texte.Text == ScenePoste.PAROLES.photo, "la cliente est là et regarde la robe")
+-- Photo : décor, lumière, couleur du mannequin
+local Lighting = M.services.Lighting
+local heureDuJeu = Lighting.ClockTime
+cliquer("Decor_bleu")
+cliquer("Lumiere_soir")
+cliquer("Mannequin_noir")
+verifier(scene.Fond.Color == ScenePoste.DECORS.bleu and Lighting.ClockTime == ScenePoste.LUMIERES.soir.ClockTime and scene.Mannequin.Buste.Color == ScenePoste.MANNEQUINS.noir, "décor bleu, lumière du soir, mannequin noir")
+verifier(boutonNomme("Decor_bleu").BackgroundColor3 == ACCENT, "le décor choisi est en surbrillance")
+-- Capture refusée par Roblox : l'interface revient, avec un message
+M.echecCapture = true
+cliquer("PrendrePhoto")
+M.echecCapture = nil
+verifier(gui.Atelier.Enabled and camera.CFrame == ScenePoste.CAMERA and fenetre.Message.Visible and fenetre.Message.Text == "La photo n'a pas pu être prise.", "capture refusée : interface rétablie, message")
+verifier(not fenetre.Contenu.Apercu.Visible, "capture refusée : pas d'aperçu")
+-- Capture qui ne répond pas : l'interface revient au bout d'un moment
+M.captureMuette = true
+cliquer("PrendrePhoto")
+M.captureMuette = nil
+verifier(not gui.Atelier.Enabled, "capture en cours : interface cachée")
+M.avancer(ScenePoste.ATTENTE_CAPTURE + 0.1)
+verifier(gui.Atelier.Enabled and camera.CFrame == ScenePoste.CAMERA and camera.FieldOfView == 70, "capture sans réponse : l'interface et la vue reviennent")
+-- Prise de vue : sans l'interface, vue centrée sur la robe ; puis aperçu et enregistrement
+local pendant = nil
+M.surCapture = function()
+	pendant = { interface = gui.Atelier.Enabled, vue = camera.CFrame, bulle = laCliente.Head.Bulle.Enabled, champ = camera.FieldOfView }
+end
+cliquer("PrendrePhoto")
+M.surCapture = nil
+verifier(pendant ~= nil and pendant.interface == false and pendant.vue == ScenePoste.CAMERA_PHOTO and pendant.bulle == false, "photo prise sans l'interface ni la bulle, vue centrée sur la robe")
+verifier(pendant.champ == ScenePoste.CHAMP_PHOTO and ScenePoste.CHAMP_PHOTO < 70, "champ resserré sur la robe pendant la prise")
+verifier(gui.Atelier.Enabled and camera.CFrame == ScenePoste.CAMERA and laCliente.Head.Bulle.Enabled and camera.FieldOfView == 70, "après la photo : interface, vue, champ et bulle rétablis")
+local apercu = fenetre.Contenu:FindFirstChild("Apercu")
+verifier(apercu ~= nil and apercu.Visible and apercu.Image.Image == "rbxtemp://capture/" .. M.captures, "aperçu de la photo")
+cliquer("EnregistrerPhoto")
+verifier(M.galerie ~= nil and M.galerie[1] == apercu.Image.Image and fenetre.Message.Visible, "photo proposée à la galerie du joueur")
+cliquer("FermerApercu")
+verifier(not apercu.Visible, "aperçu refermé")
 cliquer("RetourDecorations")
+verifier(scene:FindFirstChild("Fond") == nil and Lighting.ClockTime == heureDuJeu and scene.Mannequin.Buste.Color ~= ScenePoste.MANNEQUINS.noir, "en quittant la présentation : décor, lumière et mannequin rétablis")
 verifier(titre() == "6. Décorations" and #decorations:GetChildren() == 2 and contenuD.Cout.Text == "Coût : 0 po", "retour aux décorations : déjà payées")
 cliquer("Presenter")
 cliquer("Livrer")
@@ -479,7 +520,11 @@ verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe ac
 verifier(texte("La cliente est ravie") ~= nil, "l'accueil annonce la paie")
 verifier(scene.Vitrines.Socle:GetAttribute("Recette") ~= nil, "la robe livrée part en vitrine")
 verifier(#robe:GetChildren() == 0 and #decorations:GetChildren() == 0 and camera.CameraType == Enum.CameraType.Custom, "atelier libéré, caméra rendue au joueur")
+verifier(laCliente.Parent ~= nil and laCliente.Head.Bulle.Texte.Text == ScenePoste.PAROLES.merci, "la cliente remercie")
+M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
+verifier(laCliente.Parent == nil, "puis elle s'en va")
 cliquer("Clochette")
+verifier(scene:FindFirstChild("Cliente") ~= nil and scene.Cliente ~= laCliente, "la cliente suivante entre")
 verifier(titre() == "1. Carnet de croquis", "nouvelle cliente")
 
 ---------------------------------------------------------------------------
