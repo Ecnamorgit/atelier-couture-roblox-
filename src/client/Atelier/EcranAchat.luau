@@ -1,10 +1,14 @@
 -- Écran d'achat : pour chaque tissu du croquis, métrage conseillé, stock, quantité à acheter et coût.
+-- Toucher l'échantillon d'un tissu montre le rouleau conseillé, avec les pièces rangées dessus.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
+local Polygone = require(Couture:WaitForChild("Polygone"))
 local Metrage = require(Couture:WaitForChild("Metrage"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
+
+local PX_APERCU = 20 -- pixels par dm dans l'aperçu du rouleau (14 dm de large : 280 px)
 
 return function(ctx)
 	local UiKit, session, contenu = ctx.UiKit, ctx.session, ctx.contenu
@@ -12,7 +16,7 @@ return function(ctx)
 	local etat = session.etat
 
 	UiKit.texte({
-		Text = "Le métrage conseillé suffit si tu ranges bien tes pièces. Le tissu en trop reste dans ton stock.",
+		Text = "Le métrage conseillé suffit si tu ranges bien tes pièces (touche un échantillon pour voir le rouleau). Le tissu en trop reste dans ton stock.",
 		TextSize = 14,
 		TextColor3 = C.texteDoux,
 		Size = UDim2.new(1, 0, 0, 22),
@@ -33,14 +37,104 @@ return function(ctx)
 	})
 	local lignes = {}
 	local quantites = {}
-	local function conseil(idTissu)
+	local function piecesDe(idTissu)
 		local ids = {}
 		for _, id in ipairs(etat:piecesDuCroquis()) do
 			if etat.tissus[id] == idTissu then
 				table.insert(ids, id)
 			end
 		end
-		return Metrage.conseil(ids)
+		return ids
+	end
+	local function conseil(idTissu)
+		return Metrage.conseil(piecesDe(idTissu))
+	end
+
+	-- Aperçu du rouleau (par-dessus la liste) : le métrage conseillé, les pièces rangées comme le conseil
+	-- les compte (droit-fil parfait), et leur symétrique pour une pièce coupée pliée. Un bouton sans texte,
+	-- pas un simple cadre : dans Roblox, un cadre laisse passer l'appui aux boutons cachés dessous.
+	-- « Fermer » est en haut, au-dessus de la liste : un double appui ne touche aucun bouton.
+	local apercu
+	local function fermerApercu()
+		if apercu then
+			apercu:Destroy()
+			apercu = nil
+		end
+	end
+	local function ouvrirApercu(idTissu)
+		fermerApercu()
+		local t = Catalogue.tissu(idTissu)
+		local ids = piecesDe(idTissu)
+		local placements, longueur = Metrage.disposition(ids)
+		apercu = UiKit.creer("TextButton", { Name = "ApercuRouleau", Text = "", AutoButtonColor = false, BackgroundColor3 = C.fond, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = contenu })
+		UiKit.texte({ Name = "Titre", Text = ("%s : %d dm conseillés"):format(t.nom, longueur), Font = Enum.Font.GothamBold, Size = UDim2.new(1, -150, 0, 30), ZIndex = 21, Parent = apercu })
+		UiKit.boutonDoux({ Name = "FermerRouleau", Text = "Fermer", TextSize = 14, Position = UDim2.new(1, -140, 0, 0), Size = UDim2.fromOffset(140, 30), ZIndex = 21, Parent = apercu }, fermerApercu)
+		local vue = UiKit.creer("ScrollingFrame", {
+			Name = "Vue",
+			BackgroundColor3 = C.secondaire,
+			BorderSizePixel = 0,
+			Position = UDim2.fromOffset(0, 40),
+			Size = UDim2.new(0, 14 * PX_APERCU + 12, 1, -40),
+			CanvasSize = UDim2.fromOffset(0, longueur * PX_APERCU),
+			ScrollBarThickness = 10,
+			ScrollingDirection = Enum.ScrollingDirection.Y,
+			ZIndex = 21,
+			Parent = apercu,
+		})
+		local rouleau = UiKit.creer("ImageLabel", {
+			Name = "Rouleau",
+			BorderSizePixel = 0,
+			BackgroundColor3 = UiKit.couleur(t.motif.couleurs[1]),
+			ScaleType = Enum.ScaleType.Tile,
+			TileSize = UDim2.fromOffset(8 * PX_APERCU, 8 * PX_APERCU),
+			Size = UDim2.fromOffset(14 * PX_APERCU, longueur * PX_APERCU),
+			ZIndex = 21,
+			Parent = vue,
+		})
+		local motif = Vignettes.motif(idTissu)
+		if motif then
+			rouleau.ImageContent = motif
+		end
+		local plie = false
+		for _, id in ipairs(ids) do
+			local p, b = placements[id], Polygone.boite(Catalogue.piece(id).contour)
+			local copies = { { x = p.x, angle = p.angle } }
+			if Catalogue.piece(id).pliee then
+				plie = true
+				table.insert(copies, { x = 2 * Catalogue.PLI - p.x, angle = -p.angle })
+			end
+			for _, c in ipairs(copies) do
+				local img = UiKit.creer("ImageLabel", {
+					Name = "Piece_" .. id,
+					BackgroundTransparency = 1,
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromOffset(c.x * PX_APERCU, p.y * PX_APERCU),
+					Size = UDim2.fromOffset((b.maxX - b.minX) * PX_APERCU, (b.maxY - b.minY) * PX_APERCU),
+					Rotation = c.angle,
+					ImageTransparency = 0.15,
+					ZIndex = 23,
+					Parent = rouleau,
+				})
+				local silhouette = Vignettes.silhouette(id)
+				if silhouette then
+					img.ImageContent = silhouette
+				else
+					img.BackgroundColor3, img.BackgroundTransparency = Color3.new(1, 1, 1), 0.4
+				end
+			end
+		end
+		if plie then
+			UiKit.creer("Frame", { Name = "Pli", BackgroundColor3 = C.texte, BackgroundTransparency = 0.4, BorderSizePixel = 0, Position = UDim2.fromOffset(Catalogue.PLI * PX_APERCU - 1, 0), Size = UDim2.new(0, 2, 1, 0), ZIndex = 22, Parent = rouleau })
+		end
+		UiKit.texte({
+			Text = "Les pièces sont rangées en rangées, droit-fil parfait. À la table de découpe, tu les places toi-même : bien rangées, elles prennent moins de tissu.",
+			TextSize = 14,
+			TextColor3 = C.texteDoux,
+			Position = UDim2.fromOffset(14 * PX_APERCU + 30, 40),
+			Size = UDim2.new(1, -(14 * PX_APERCU + 30), 0, 80),
+			ZIndex = 21,
+			Parent = apercu,
+		})
 	end
 
 	local function majLigne(idTissu)
@@ -58,7 +152,9 @@ return function(ctx)
 		local t = Catalogue.tissu(idTissu)
 		quantites[idTissu] = math.max(0, conseil(idTissu) - (etat.stock[idTissu] or 0))
 		local ligne = UiKit.arrondir(UiKit.creer("Frame", { Name = "Ligne_" .. idTissu, BackgroundColor3 = C.panneau, Position = UDim2.fromOffset(0, (i - 1) * HAUTEUR_LIGNE), Size = UDim2.new(1, -10, 0, 76), Parent = liste }), 10)
-		local echantillon = UiKit.arrondir(UiKit.creer("ImageLabel", {
+		local echantillon = UiKit.arrondir(UiKit.creer("ImageButton", {
+			Name = "Apercu_" .. idTissu,
+			AutoButtonColor = false,
 			BackgroundColor3 = UiKit.couleur(t.motif.couleurs[1]),
 			Position = UDim2.fromOffset(10, 10),
 			Size = UDim2.fromOffset(80, 56),
@@ -66,6 +162,9 @@ return function(ctx)
 			TileSize = UDim2.fromOffset(64, 64),
 			Parent = ligne,
 		}), 6)
+		echantillon.Activated:Connect(function()
+			ouvrirApercu(idTissu)
+		end)
 		local motif = Vignettes.motif(idTissu)
 		if motif then
 			echantillon.ImageContent = motif
@@ -112,5 +211,5 @@ return function(ctx)
 			ctx.refus(r)
 		end
 	end)
-	return function() end
+	return fermerApercu
 end

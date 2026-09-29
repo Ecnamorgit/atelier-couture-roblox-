@@ -232,13 +232,35 @@ local ligne = fenetre.Contenu.Lignes:FindFirstChild("Ligne_soie_rose_fleurs")
 verifier(ligne ~= nil and #fenetre.Contenu:GetChildren() >= 3, "une ligne par tissu du croquis")
 local quantite = tonumber(ligne.Quantite.Text:match("^(%d+)"))
 verifier(quantite and quantite > 0, "quantité conseillée pré-remplie")
+-- Aperçu du rouleau (toucher l'échantillon) : les pièces de ce tissu rangées comme le conseil les compte.
+-- La mémoire des images est pleine jusqu'à la découpe (silhouettes impossibles) : les pièces sont en papier uni.
+M.budget.images = 0
+cliquer("Apercu_soie_rose_fleurs")
+local apercuRouleau = fenetre.Contenu:FindFirstChild("ApercuRouleau")
+verifier(apercuRouleau ~= nil and apercuRouleau:IsA("TextButton") and apercuRouleau.Text == "" and not apercuRouleau.AutoButtonColor, "l'aperçu du rouleau s'ouvre et arrête les appuis")
+local copiesRobe, copiesVues = 0, 0
+for _, id in ipairs(piecesRobe) do
+	copiesRobe += if Catalogue.piece(id).pliee then 2 else 1
+end
+for _, d in ipairs(apercuRouleau.Vue.Rouleau:GetChildren()) do
+	if string.sub(d.Name, 1, 6) == "Piece_" then
+		copiesVues += 1
+	end
+end
+local tailleRouleau = apercuRouleau.Vue.Rouleau.Size
+verifier(tailleRouleau.X.Offset == 14 * 20 and tailleRouleau.Y.Offset == dmRobe * 20 and copiesVues == copiesRobe, "le rouleau conseillé (" .. dmRobe .. " dm), avec ses " .. copiesRobe .. " pièces rangées")
+verifier(apercuRouleau.Titre.Text == ("Soie rose fleurie : %d dm conseillés"):format(dmRobe), "le titre donne le métrage conseillé")
+verifier(apercuRouleau.Vue.Rouleau["Piece_" .. piecesRobe[1]].BackgroundTransparency < 1, "sans silhouette, les pièces restent visibles (papier uni)")
+verifier(apercuRouleau.FermerRouleau.Position.Y.Offset + apercuRouleau.FermerRouleau.Size.Y.Offset <= fenetre.Contenu.Lignes.Position.Y.Offset, "« Fermer » au-dessus de la liste : un double appui ne touche aucun bouton")
+verifierTailles("aperçu du rouleau")
+cliquer("FermerRouleau")
+verifier(fenetre.Contenu:FindFirstChild("ApercuRouleau") == nil, "l'aperçu du rouleau se referme")
 cliquer("Plus")
 verifier(tonumber(ligne.Quantite.Text:match("^(%d+)")) == quantite + 1, "le bouton + ajoute 1 dm")
 cliquer("Moins")
 cliquer("AllerDecoupe")
 verifier(titre() == "2. Achat du tissu" and fenetre.Message.Visible, "découpe refusée sans tissu")
 local avant = argent()
-M.budget.images = 0 -- mémoire des images pleine en arrivant à la découpe (silhouettes impossibles)
 cliquer("Acheter")
 verifier(argent() < avant, "l'achat débite l'argent")
 verifier(texte("En stock : " .. quantite .. " dm") ~= nil, "le stock est mis à jour")
