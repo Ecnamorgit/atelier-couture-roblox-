@@ -19,7 +19,8 @@ EtatAtelier.ACHAT_MAX = 100 -- dm par achat
 EtatAtelier.TOLERANCE_MESURES = 2 -- mesures de couture en plus ou en moins acceptées (spec §6)
 EtatAtelier.DUREE_MIN = 0.9 -- part de la durée minimale d'une couture (trajet / vitesse maximale)
 -- Étapes du plan 3b (le plan 3c ajoute la photo et la livraison après les décorations)
-EtatAtelier.ETAPES = { "accueil", "carnet", "achat", "decoupe", "epinglage", "couture", "decorations" }
+EtatAtelier.ROBES_GARDEES = 10 -- robes livrées gardées, la plus récente en vitrine (spec §6)
+EtatAtelier.ETAPES = { "accueil", "carnet", "achat", "decoupe", "epinglage", "couture", "decorations", "photo", "refus" }
 
 local function refus(message)
 	return { ok = false, erreur = message }
@@ -41,6 +42,8 @@ function EtatAtelier.nouveau(argent)
 		coupees = {}, -- [idPiece] = { x, y, angle }
 		epinglees = {}, -- [idPiece] = true
 		coutures = {}, -- [idPiece] = note de couture (0 à 1)
+		accessoires = {}, -- décorations posées, au format de la recette
+		robes = {}, -- recettes des robes livrées, la plus récente en premier
 	}, EtatAtelier)
 end
 
@@ -113,7 +116,7 @@ function EtatAtelier:nouvelleCommande(rng)
 	self.commande = Commandes.generer(rng)
 	self.argent = math.max(self.argent, EtatAtelier.FILET)
 	self.croquis, self.tissus, self.coupees, self.coupons = nil, {}, {}, {}
-	self.epinglees, self.coutures = {}, {}
+	self.epinglees, self.coutures, self.accessoires = {}, {}, {}
 	self.etape = "carnet"
 	return { ok = true, commande = self.commande }
 end
@@ -270,8 +273,37 @@ function EtatAtelier:rendreCouture(idPiece, ecarts, duree, assistance)
 	return { ok = true, note = note, reste = reste }
 end
 
--- Recette de la robe en cours (position des pièces sur le rouleau, notes de couture ; les accessoires
--- arrivent au plan 3c), ou nil tant que toutes les pièces ne sont pas coupées
+-- Copie propre d'une décoration déjà validée (seulement les champs connus)
+local function copieAccessoire(a)
+	local c = { id = a.id, piece = a.piece, copie = a.copie }
+	if a.trajet then
+		c.trajet = {}
+		for k, pt in ipairs(a.trajet) do
+			c.trajet[k] = { u = pt.u, v = pt.v }
+		end
+	else
+		c.u, c.v, c.echelle, c.angle = a.u, a.v, a.echelle, a.angle
+	end
+	return c
+end
+
+-- Prix de décorations posées sur les pièces d'une recette : objets à l'unité, garnitures au dm
+-- (arrondi au-dessus, par garniture)
+function EtatAtelier.prixDecorations(pieces, accessoires)
+	local total = 0
+	for _, a in ipairs(accessoires) do
+		local def = Catalogue.accessoire(a.id)
+		if def.genre == "garniture" then
+			total += math.ceil(def.prix * Notation.longueurGarniture(pieces[a.piece].id, a.trajet) - 1e-9)
+		else
+			total += def.prix
+		end
+	end
+	return total
+end
+
+-- Recette de la robe en cours (position des pièces sur le rouleau, notes de couture, décorations),
+-- ou nil tant que toutes les pièces ne sont pas coupées
 function EtatAtelier:recette()
 	if not self.commande or not self.croquis or #self:piecesAPoser() > 0 then
 		return nil
@@ -286,8 +318,101 @@ function EtatAtelier:recette()
 		mesures = table.clone(self.commande.mesures),
 		croquis = table.clone(self.croquis),
 		pieces = pieces,
-		accessoires = {},
+		accessoires = (function()
+			local out = {}
+			for i, a in ipairs(self.accessoires) do
+				out[i] = copieAccessoire(a)
+			end
+			return out
+		end)(),
 	}
+end
+
+-- Décorations : la liste complète, envoyée quand on quitte le poste (spec §6). Vérifiée comme une
+-- recette (identifiants, 300 objets et 64 points au plus, u et v dans [0 ; 1], échelle et angle
+-- bornés) ; on facture la différence avec la liste précédente (ce qu'on retire est remboursé).
+function EtatAtelier:decorer(liste)
+	if self.etape ~= "decorations" then
+		return refus("Ce n'est pas le moment de décorer.")
+	end
+	if type(liste) ~= "table" then
+		return refus("Décorations invalides.")
+	end
+	local recette = self:recette()
+	recette.accessoires = liste
+	local ok, erreur = Recette.valider(recette)
+	if not ok then
+		return refus(erreur)
+	end
+	local propres = {}
+	for i, a in ipairs(liste) do
+		propres[i] = copieAccessoire(a)
+	end
+	local difference = EtatAtelier.prixDecorations(recette.pieces, propres) - EtatAtelier.prixDecorations(recette.pieces, self.accessoires)
+	if difference > self.argent then
+		return refus("Pas assez d'argent pour ces décorations.")
+	end
+	self.argent -= difference
+	self.accessoires = propres
+	self.etape = "photo"
+	return { ok = true, prix = difference }
+end
+
+-- De la photo, on peut revenir ajuster les décorations
+function EtatAtelier:retourDecorations()
+	if self.etape ~= "photo" then
+		return refus("Ce n'est pas le moment.")
+	end
+	self.etape = "decorations"
+	return { ok = true }
+end
+
+-- Fin de la commande : l'atelier est prêt pour la suivante
+local function terminer(self)
+	self.commande, self.croquis = nil, nil
+	self.tissus, self.coupees, self.coupons = {}, {}, {}
+	self.epinglees, self.coutures, self.accessoires = {}, {}, {}
+	self.etape = "accueil"
+end
+
+-- Livraison : la cliente juge la robe (styles, qualité, couleur, accessoires) d'après sa recette.
+-- Acceptée : paie = base × (0,5 + qualité), la robe part en vitrine. Refusée : retouche ou abandon.
+function EtatAtelier:livrer()
+	if self.etape ~= "photo" then
+		return refus("Ce n'est pas le moment de livrer.")
+	end
+	local recette = self:recette()
+	local bilan = Notation.bilan(recette)
+	local reussie, ratees = Notation.verifierExigences(self.commande.exigences, bilan)
+	if not reussie then
+		self.etape = "refus"
+		return { ok = true, reussie = false, ratees = ratees, bilan = bilan }
+	end
+	local paie = Notation.paie(#recette.pieces, #self.commande.exigences, bilan.qualite)
+	self.argent += paie
+	table.insert(self.robes, 1, recette)
+	for k = #self.robes, EtatAtelier.ROBES_GARDEES + 1, -1 do
+		self.robes[k] = nil
+	end
+	terminer(self)
+	return { ok = true, reussie = true, paie = paie, bilan = bilan, ratees = {} }
+end
+
+-- Après un refus : retoucher (retour aux décorations) ou abandonner (ni paie ni vitrine)
+function EtatAtelier:retoucher()
+	if self.etape ~= "refus" then
+		return refus("Il n'y a rien à retoucher.")
+	end
+	self.etape = "decorations"
+	return { ok = true }
+end
+
+function EtatAtelier:abandonner()
+	if self.etape ~= "refus" then
+		return refus("Il n'y a rien à abandonner.")
+	end
+	terminer(self)
+	return { ok = true }
 end
 
 -- Abandonne la robe en cours (le tissu déjà coupé est perdu), garde la commande
@@ -297,7 +422,7 @@ function EtatAtelier:recommencer()
 	end
 	consommer(self)
 	self.croquis, self.tissus, self.coupees = nil, {}, {}
-	self.epinglees, self.coutures = {}, {}
+	self.epinglees, self.coutures, self.accessoires = {}, {}, {}
 	self.argent = math.max(self.argent, EtatAtelier.FILET) -- jamais bloqué sans argent ni tissu
 	self.etape = "carnet"
 	return { ok = true }
