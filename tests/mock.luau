@@ -595,6 +595,44 @@ function M.nouveauMagasin()
 	end
 	return magasin
 end
+-- HttpService:JSONEncode : une table aux clés 1..n devient une liste, les autres tables des objets
+local function json(v)
+	local t = type(v)
+	if t == "table" then
+		local n, liste = #v, true
+		for k in pairs(v) do
+			if type(k) ~= "number" or k < 1 or k > n or k % 1 ~= 0 then
+				liste = false
+				break
+			end
+		end
+		local morceaux = {}
+		if liste then
+			for i = 1, n do
+				morceaux[i] = json(v[i])
+			end
+			return "[" .. table.concat(morceaux, ",") .. "]"
+		end
+		for k, x in pairs(v) do
+			table.insert(morceaux, json(tostring(k)) .. ":" .. json(x))
+		end
+		return "{" .. table.concat(morceaux, ",") .. "}"
+	elseif t == "string" then
+		-- guillemets, barres obliques inverses (caractère 92) et caractères de contrôle : en \uXXXX
+		local oblique = string.char(92)
+		return '"' .. (v:gsub('[%c"' .. oblique .. "]", function(c)
+			return oblique .. ("u%04x"):format(c:byte())
+		end)) .. '"'
+	elseif t == "number" then
+		return ("%.17g"):format(v)
+	elseif t == "boolean" then
+		return tostring(v)
+	end
+	error("JSONEncode : valeur impossible à encoder (" .. t .. ")")
+end
+function methodes.JSONEncode(_, v)
+	return json(v)
+end
 -- Sans M.magasins, le DataStore échoue comme dans Studio sans accès aux API ; avec, M.magasins[nom]
 function methodes.GetDataStore(_, nom)
 	if M.magasins then
@@ -836,6 +874,7 @@ function M.initialiser()
 		"StarterGui",
 		"Lighting",
 		"CaptureService",
+		"HttpService",
 	}) do
 		local s = nouvelleInstance(nom)
 		s.Parent = game

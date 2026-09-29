@@ -4,6 +4,7 @@
 -- main. Aucune écriture si la lecture a échoué, ni sur une partie d'une version plus récente du jeu.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
+local HttpService = game:GetService("HttpService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Recette = require(Couture:WaitForChild("Recette"))
@@ -19,6 +20,7 @@ Sauvegarde.VERROU_VIVANT = 90 -- s : un verrou plus récent appartient à un ser
 Sauvegarde.ESSAI_PAS = 3 -- s entre deux essais quand la partie est tenue ailleurs
 Sauvegarde.ESSAI_MAX = 15 -- s : au-delà, on prend la main
 Sauvegarde.ESSAIS_LECTURE = 3 -- une panne passagère du DataStore à la lecture est réessayée
+Sauvegarde.TAILLE_MAX = 3500000 -- caractères (JSON) : sous les 4 Mo d'une clé du DataStore, verrou compris
 -- Champs de l'état qui forment la commande en cours (une déconnexion ne perd pas le travail)
 local EN_COURS = { "etape", "commande", "croquis", "tissus", "coupees", "coupons", "epinglees", "coutures", "accessoires" }
 
@@ -111,7 +113,9 @@ function Sauvegarde.migrer(partie)
 	return partie
 end
 
--- La partie d'un état de l'atelier (debloques : ceux de la partie chargée, gardés tels quels)
+-- La partie d'un état de l'atelier (debloques : ceux de la partie chargée, gardés tels quels). Trop
+-- lourde pour le DataStore (des centaines de garnitures sur chaque robe), elle perd ses plus anciennes
+-- robes jusqu'à tenir.
 function Sauvegarde.depuisEtat(etat, debloques)
 	local d = etat:exporter()
 	local partie = {
@@ -126,6 +130,9 @@ function Sauvegarde.depuisEtat(etat, debloques)
 		for _, champ in ipairs(EN_COURS) do
 			partie.enCours[champ] = d[champ]
 		end
+	end
+	while #partie.recettes > 0 and #HttpService:JSONEncode(partie) > Sauvegarde.TAILLE_MAX do
+		table.remove(partie.recettes)
 	end
 	return partie
 end

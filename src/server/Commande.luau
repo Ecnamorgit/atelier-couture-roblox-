@@ -83,6 +83,9 @@ function Commande.nouvelle(options)
 	options = options or {}
 	local self = setmetatable({
 		ateliers = {}, -- [joueur] = { etat = EtatAtelier, rng = Random, sauvable = bool, debloques = table? }
+		ecritures = {}, -- [UserId] = vrai pendant l'écriture de sa partie (une à la fois par joueur)
+		chargements = {}, -- [joueur] = vrai pendant la lecture de sa partie
+		ferme = false, -- vrai une fois le serveur en train de s'arrêter
 		limiteur = Limiteur.nouveau(Commande.APPELS_PAR_SECONDE, 1),
 		sauvegarde = options.sauvegarde,
 		vitrine = options.vitrine,
@@ -118,20 +121,27 @@ end
 
 -- Arrivée d'un joueur : lit sa partie (peut attendre, jusqu'à 15 s si un autre serveur la tient). Si la
 -- lecture échoue, il joue une partie neuve qui ne sera jamais écrite (sa vraie partie reste intacte).
+-- De retour sur ce serveur avant la fin de l'écriture de son départ, on attend qu'elle soit faite.
 function Commande:arrivee(joueur)
 	if not self.sauvegarde then
 		self:atelier(joueur)
 		self:exposer(joueur)
 		return
 	end
+	while self.ecritures[joueur.UserId] do
+		self.attendre(0.5)
+	end
+	self.chargements[joueur] = true
 	local partie, statut = self.sauvegarde:charger(joueur.UserId)
-	if joueur.Parent == nil then
-		-- parti pendant la lecture : sa partie est rendue tout de suite
+	if joueur.Parent == nil or self.ferme then
+		-- parti pendant la lecture, ou serveur qui s'arrête : sa partie est rendue tout de suite
 		if statut == "ok" then
 			self.sauvegarde:enregistrer(joueur.UserId, partie, true)
 		end
+		self.chargements[joueur] = nil
 		return
 	end
+	self.chargements[joueur] = nil
 	if statut ~= "ok" then
 		warn(("[Atelier] %s : partie illisible, elle ne sera pas écrite pendant cette session."):format(joueur.Name))
 	end
@@ -147,19 +157,37 @@ end
 -- Écrit la partie d'un joueur (et rend son verrou, si liberer), en « essais » tentatives (1 par défaut ;
 -- la sauvegarde régulière réessaie d'elle-même 60 s plus tard). Renvoie le statut de la sauvegarde, ou nil
 -- si sa partie n'est pas à écrire. Une partie prise par un autre serveur n'est plus jamais écrite d'ici.
+-- Une écriture à la fois par joueur : la suivante attend la fin de la précédente, puis écrit l'état du
+-- moment (la sauvegarde régulière et celle du départ ne se croisent pas).
 function Commande:enregistrer(joueur, liberer, essais)
 	local a = self.ateliers[joueur]
 	if not self.sauvegarde or not a or not a.sauvable then
 		return nil
 	end
-	local partie = Sauvegarde.depuisEtat(a.etat, a.debloques)
-	local statut
-	for essai = 1, essais or 1 do
-		statut = self.sauvegarde:enregistrer(joueur.UserId, partie, liberer)
-		if statut ~= "echec" or essai == (essais or 1) then
-			break
+	local id = joueur.UserId
+	while self.ecritures[id] do
+		self.attendre(0.5)
+	end
+	if not a.sauvable then
+		return nil -- partie prise par un autre serveur pendant l'attente
+	end
+	self.ecritures[id] = true
+	local ok, statut = pcall(function()
+		local partie = Sauvegarde.depuisEtat(a.etat, a.debloques)
+		local s
+		for essai = 1, essais or 1 do
+			s = self.sauvegarde:enregistrer(id, partie, liberer)
+			if s ~= "echec" or essai == (essais or 1) then
+				break
+			end
+			self.attendre(1)
 		end
-		self.attendre(1)
+		return s
+	end)
+	self.ecritures[id] = nil
+	if not ok then
+		warn(("[Atelier] %s : erreur en préparant la sauvegarde : %s"):format(joueur.Name, tostring(statut)))
+		statut = "echec"
 	end
 	if statut == "perdu" then
 		a.sauvable = false
@@ -189,8 +217,10 @@ function Commande:retirer(joueur)
 	self.limiteur:oublier(joueur)
 end
 
--- Arrêt du serveur : toutes les parties écrites en même temps, verrous rendus (25 s au plus)
+-- Arrêt du serveur : toutes les parties écrites en même temps, verrous rendus (25 s au plus). Les parties
+-- en cours de lecture sont attendues (rendues aussitôt lues).
 function Commande:fermer()
+	self.ferme = true
 	local restantes = 0
 	for joueur in pairs(self.ateliers) do
 		restantes += 1
@@ -200,7 +230,7 @@ function Commande:fermer()
 		end)
 	end
 	local debut = self.horloge()
-	while restantes > 0 and self.horloge() - debut < Commande.FERMETURE_MAX do
+	while (restantes > 0 or next(self.chargements) ~= nil) and self.horloge() - debut < Commande.FERMETURE_MAX do
 		self.attendre(0.5)
 	end
 end
