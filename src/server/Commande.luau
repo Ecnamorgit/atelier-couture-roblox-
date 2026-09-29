@@ -21,8 +21,9 @@ local SANS_SAUVEGARDE = "Ta partie ne peut pas être sauvegardée pour le moment
 -- Les relevés de couture ne sont pas limités : leur propre vraisemblance les borne (spec §6)
 local SANS_LIMITE = { rendreCouture = true }
 
-local function refus(message)
-	return { ok = false, erreur = message }
+-- passager : refus d'un moment (trop d'appels, partie pas encore lue), le client pourra réessayer
+local function refus(message, passager)
+	return { ok = false, erreur = message, passager = passager }
 end
 
 -- Actions permises : le nom envoyé par le client choisit l'une d'elles, jamais une méthode quelconque
@@ -206,9 +207,7 @@ end
 
 -- L'état envoyé au client : tout, sauf les anciennes robes (seule la plus récente est en vitrine)
 function Commande.instantane(etat)
-	local d = etat:exporter()
-	d.robes = { d.robes[1] }
-	return d
+	return etat:exporter(1)
 end
 
 -- Une action d'un joueur. Ne lève jamais d'erreur : une erreur imprévue devient un refus.
@@ -218,19 +217,27 @@ function Commande:traiter(joueur, action, ...)
 		return refus("Action inconnue.")
 	end
 	if not SANS_LIMITE[action] and not self.limiteur:autoriser(joueur) then
-		return refus("Doucement !")
+		return refus("Doucement !", true)
 	end
 	local a = self:atelier(joueur)
 	if not a then
-		return { ok = false, erreur = PREPARATION, attente = true }
+		return { ok = false, erreur = PREPARATION, attente = true, passager = true }
 	end
-	local ok, reponse = pcall(faire, a, ...)
+	local ok, reponse = pcall(function(...)
+		local r = faire(a, ...)
+		-- Acceptée ou refusée par les règles, la réponse emporte l'état : le client répare ainsi sa copie
+		-- (réponse perdue, partie lue après son arrivée). Les relevés de couture, que rien ne limite,
+		-- ne l'emportent sur un refus que dans la limite des appels.
+		if r.ok or not SANS_LIMITE[action] or self.limiteur:autoriser(joueur) then
+			r.etat = Commande.instantane(a.etat)
+		end
+		return r
+	end, ...)
 	if not ok then
 		warn(("[Atelier] %s : erreur dans « %s » : %s"):format(joueur.Name, action, tostring(reponse)))
 		return refus("Action impossible.")
 	end
 	if reponse.ok then
-		reponse.etat = Commande.instantane(a.etat)
 		if action == "etat" and self.sauvegarde and not a.sauvable then
 			reponse.avertissement = SANS_SAUVEGARDE
 		elseif action == "livrer" and reponse.reussie then

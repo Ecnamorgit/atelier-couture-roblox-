@@ -477,11 +477,18 @@ local function rouleauxExportes(coupons)
 end
 
 -- L'état en données simples, sans métatable : ce que le serveur envoie au client après chaque action.
--- Les rouleaux deviennent { longueur, poses }.
-function EtatAtelier:exporter()
+-- Les rouleaux deviennent { longueur, poses }. robes (facultatif) : nombre de robes copiées, les plus
+-- récentes (toutes par défaut)
+function EtatAtelier:exporter(robes)
 	local d = {}
 	for _, cle in ipairs(CHAMPS) do
-		d[cle] = copie(self[cle])
+		if cle ~= "robes" then
+			d[cle] = copie(self[cle])
+		end
+	end
+	d.robes = {}
+	for i = 1, math.min(#self.robes, robes or #self.robes) do
+		d.robes[i] = copie(self.robes[i])
 	end
 	d.coupons = rouleauxExportes(self.coupons)
 	return d

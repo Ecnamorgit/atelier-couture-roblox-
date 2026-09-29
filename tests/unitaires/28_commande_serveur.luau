@@ -34,7 +34,7 @@ end
 r = appeler(joueur)
 U.verifier(not r.ok and r.erreur == "Action inconnue.", "appel sans action refusé")
 r = appeler(joueur, "livrer")
-U.verifier(not r.ok and r.erreur == "Ce n'est pas le moment de livrer." and r.etat == nil, "livrer sans commande : refusé")
+U.verifier(not r.ok and r.erreur == "Ce n'est pas le moment de livrer." and r.etat ~= nil and r.etat.etape == "accueil", "livrer sans commande : refusé (avec l'état du serveur)")
 U.verifier(etatDe(joueur).argent == EtatAtelier.ARGENT_DEPART and etatDe(joueur).etape == "accueil", "rien n'a changé")
 
 ---------------------------------------------------------------------------
