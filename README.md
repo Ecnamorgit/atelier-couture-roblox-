@@ -5,9 +5,11 @@ On ne choisit pas un vêtement tout fait : on **dessine**, **coupe**, **coud** e
 et le tissu découpé se voit tel quel sur la robe en 3D.
 
 Le jeu est en cours de refonte, sous-projet par sous-projet
-(spec : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`, plans : `docs/superpowers/plans/`).
+(specs : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md` pour le cœur de l'atelier,
+`docs/superpowers/specs/2026-09-29-clientes-progression-design.md` pour les clientes et la progression ;
+plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 1 terminé côté code, plan 4d-3 ; reste l'essai sur téléphone)
+## État actuel (sous-projet 2 en cours : plan 5a, les clientes)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -15,8 +17,16 @@ voient. Le serveur tient l'atelier de chaque joueur et valide chaque action (il 
 qu'une copie de l'état. Dans un jeu publié, la partie est sauvegardée (argent, stock de tissu, dix dernières
 robes et commande en cours : une déconnexion ne perd pas le travail) :
 
-1. **Commande** : la clochette (ou E) fait entrer la cliente en personne (un avatar construit en code, taille S, M ou L)
-   avec 1 à 3 exigences de style, de couleur, de qualité ou d'accessoire. Elle parle par une bulle.
+1. **Commande** : la clochette (ou E) fait entrer une cliente en personne (un avatar construit en code, son nom
+   au-dessus de la tête), avec 1 à 3 exigences tirées de ses styles préférés et de sa teinte. Six clientes, qui
+   reviennent : Colette, Margot et Salomé aux trois premières commandes ; Hélène, Inès et Victoire quand le
+   prestige de l'atelier atteint 2, 3 puis 4 ; ensuite, celle qu'on n'a pas vue depuis le plus longtemps. Chacune
+   parle par une bulle, avec ses propres mots (présentation, arrivée, merci, déception).
+   **Mesures** : à sa première visite, on la mesure. Sa silhouette est dessinée à ses vraies mesures ; on règle
+   trois rubans (poitrine, taille, hanches) jusqu'au bord de la silhouette, en glissant ou avec − et + (0,1 dm
+   près). Le serveur refuse un ruban à plus de 1,5 dm de la vraie mesure. Quand elle revient, « Reprendre ses
+   mesures » les reprend du carnet. Le mannequin et le patron suivent les mesures prises ; l'ajustement
+   (100 % jusqu'à 0,2 dm d'écart par tour, puis moins, 50 % au pire) multiplie la qualité de la robe.
 2. **Carnet de croquis** : corsage, manches, col et jupe au choix ; un tissu par pièce (24 tissus, filtre par style).
    Les jauges de style, l'état des exigences, le métrage et le coût du tissu à acheter se mettent à jour en
    direct.
@@ -40,8 +50,11 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    la robe (styles, qualité, couleur dominante, accessoires). Acceptée : paie = base × (0,5 + qualité), et la
    robe part en vitrine ; la cliente remercie et s'en va. Refusée : les exigences ratées s'affichent (avec le
    score actuel pour les styles) ; on retouche les décorations ou on abandonne.
-9. La suite : sous-projet 2, clientes et progression (prise de mesures, clientes qui reviennent, déblocages,
-   équilibrage des prix).
+   **Amitié et prestige** : une robe acceptée vaut +2 d'amitié avec la cliente (+1 de plus à 80 % de qualité),
+   un abandon −1 ; niveaux 0 à 5 (seuils 3, 7, 12, 18, 25). Elle rapporte aussi du prestige à l'atelier
+   (paie / 10) ; niveaux 1 à 8. L'accueil annonce ce qui a été gagné.
+9. La suite : prestige et déblocages (plan 5b), robes libres à vendre ou à offrir (plan 5c), courrier et
+   carnet d'adresses (plan 5d).
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
@@ -86,7 +99,8 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Polygone`, `Patron` | Géométrie 2D des pièces, enroulement 3D autour du corps |
   | `Catalogue` | Pièces, variantes, tissus, accessoires, constantes |
   | `Coupon`, `Metrage` | Rouleau de découpe (pli, chevauchements) et métrage conseillé |
-  | `Notation`, `Commandes` | Droit-fil, couture, qualité, styles, exigences, paie ; commandes réalisables |
+  | `Notation`, `Commandes` | Droit-fil, couture, qualité, styles, exigences, paie, ajustement aux mesures ; commandes réalisables, d'après les goûts de la cliente |
+  | `Clientes`, `Progression` | Les six clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux |
   | `Pixels` | Motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron |
   | `Recette` | Recette d'une robe en JSON et validation complète (filtre du serveur au plan 4) |
   | `Maillage`, `Mannequin`, `Editables`, `ConstructeurRobe`, `Vitrines` | Robe 3D, mannequin, vitrines |
@@ -98,7 +112,7 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   vraisemblance), toute erreur devient un refus ; chaque réponse acceptée emporte l'état. `Limiteur` compte
   les appels. `Sauvegarde` range la partie de chaque joueur dans le DataStore `AtelierCouture_v2` (une clé
   par joueur, écriture par `UpdateAsync` avec un verrou de session, migrations, reprise de l'argent de
-  l'ancienne clé `AtelierCouture_v1`) : lue à l'arrivée, écrite toutes les 60 s, au départ et à l'arrêt du
+  l'ancienne clé `AtelierCouture_v1` ; partie v3 depuis le plan 5a : prestige, fiches des clientes) : lue à l'arrivée, écrite toutes les 60 s, au départ et à l'arrêt du
   serveur. Rien n'est écrit si la lecture a échoué (le joueur est prévenu), ni sur un lieu non publié.
   Une écriture à la fois par joueur (la sauvegarde régulière et celle du départ ne se croisent pas, et un
   retour rapide sur le même serveur attend l'écriture du départ) ; à l'arrêt du serveur, les parties en
@@ -116,7 +130,7 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   de découpe, de la machine à coudre et de l'éditeur de décorations (`Decorateur`) ; `Cliente` construit
   l'avatar de la cliente et sa bulle ; `Scene` tient, dans la boutique du joueur, la cliente, le mannequin,
   la robe épinglée, l'aperçu des décorations, les réglages de la photo et la caméra du poste ; `Sons` joue
-  les bruits et la musique ; un module `Ecran…` par étape.
+  les bruits et la musique ; un module `Ecran…` par étape (`EcranMesures` : la silhouette et les rubans).
 
 **Tester la sauvegarde** : un lieu non publié (fichier local, `game.PlaceId == 0`) ne sauvegarde pas.
 Publier un lieu de test privé et activer « Autoriser l'accès de Studio aux services d'API » (paramètres du
