@@ -92,6 +92,9 @@ U.verifier(partPerle.CanQuery, "une décoration se touche (pour la sélectionner
 M.impacts = { { Instance = partPerle, Position = partPerle.CFrame.Position, Normal = Vector3.new(0, 0, -1) } }
 t = scene:toucher(Vector3.new(0, 3, 30), Vector3.new(0, 0, 50))
 U.verifier(t ~= nil and t.genre == "decoration" and t.indice == 2, "touche sur la perle : décoration n° 2")
+scene:montrerDecorations(recette, liste, nil, 2)
+local groupes = scene.decorations:GetChildren()
+U.verifier(groupes[2]:FindFirstChild("Selection") ~= nil and groupes[1]:FindFirstChild("Selection") == nil, "la décoration sélectionnée est surlignée, et elle seule")
 scene:montrerDecorations(recette, { liste[1] }, nil)
 U.verifier(#scene.decorations:GetChildren() == 1, "l'aperçu suit la liste")
 scene:montrerDecorations(nil, {}, nil)
@@ -129,3 +132,28 @@ M.avancer(1)
 U.verifier(scene.socle:FindFirstChild("Exposition") ~= nil, "la vitrine se construit quand on est près")
 scene:detruire()
 U.verifier(scene.dossier.Parent == nil, "scène détruite")
+
+-- Relecture finale : pendant les postes, l'avatar ne bouge pas (commandes du joueur coupées), et les
+-- commandes reviennent en quittant le poste ou en fermant la fenêtre
+local appels = {}
+local etat2 = EtatAtelier.nouveau(1000)
+local scene2 = Scene.nouvelle(Workspace, {
+	etaler = false,
+	controles = function(actif)
+		table.insert(appels, actif)
+	end,
+})
+etat2:nouvelleCommande(Random.new(3))
+scene2:synchroniser(etat2)
+U.verifier(#appels == 0 or appels[#appels] == true, "au carnet : l'avatar garde ses commandes")
+etat2.etape = "epinglage"
+scene2:synchroniser(etat2)
+U.verifier(appels[#appels] == false, "au poste : commandes de l'avatar coupées")
+scene2:ouvrir(false, etat2)
+U.verifier(appels[#appels] == true, "fenêtre fermée : l'avatar bouge de nouveau")
+scene2:ouvrir(true, etat2)
+U.verifier(appels[#appels] == false, "fenêtre rouverte au poste : commandes coupées")
+etat2.etape = "carnet"
+scene2:synchroniser(etat2)
+U.verifier(appels[#appels] == true, "retour au carnet : commandes rendues")
+scene2:detruire()

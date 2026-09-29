@@ -136,3 +136,20 @@ local e4 = jusquAuxDecorations({ { type = "qualite", valeur = 0.5 } })
 local argent4 = e4.argent
 e4:decorer({ noeud })
 U.verifier(e4:recommencer().ok and #e4.accessoires == 0 and e4.argent == argent4 - 3, "recommencer : les décorations posées sont perdues")
+
+-- Relecture finale : le rouleau ne dépasse jamais la longueur qu'une recette accepte (100 dm)
+local Recette = U.module("Recette")
+local e5 = EtatAtelier.nouveau(1000)
+e5:nouvelleCommande(Random.new(3))
+e5.commande.exigences = { { type = "qualite", valeur = 0.5 } }
+local tissus5 = {}
+for _, id in ipairs(PIECES) do
+	tissus5[id] = "coton_blanc"
+end
+e5:validerCroquis(CROQUIS, tissus5)
+e5:acheter("coton_blanc", 100)
+e5:acheter("coton_blanc", 50)
+U.verifier(e5:commencerDecoupe().ok and e5.coupons.coton_blanc.longueur == Recette.LONGUEUR_MAX, "150 dm en stock : rouleau limité à 100 dm")
+U.verifier(not e5:couper("jupe_droite_devant", { x = 2.5, y = 120, angle = 0 }).ok, "une pièce au-delà de 100 dm est refusée")
+e5:acheter("coton_blanc", 10)
+U.verifier(e5.coupons.coton_blanc.longueur == Recette.LONGUEUR_MAX, "acheter pendant la découpe ne dépasse pas 100 dm")

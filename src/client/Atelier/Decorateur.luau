@@ -8,6 +8,7 @@ local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Patron = require(Couture:WaitForChild("Patron"))
 local Recette = require(Couture:WaitForChild("Recette"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
+local Notation = require(Couture:WaitForChild("Notation"))
 
 local Decorateur = {}
 Decorateur.__index = Decorateur
@@ -49,9 +50,15 @@ local function memoriser(self)
 	table.insert(self.historique, copier(self.liste))
 end
 
+-- Une garniture compte si elle a au moins deux points et mesure au moins 0,5 dm
+local function garnitureValable(self, g)
+	return g ~= nil and #g.trajet >= 2
+		and Notation.longueurGarniture(self.recette.pieces[g.piece].id, g.trajet) >= Recette.LONGUEUR_MIN_GARNITURE
+end
+
 function Decorateur:terminerGarniture()
 	local g = self.garniture
-	if not g or #g.trajet < 2 then
+	if not garnitureValable(self, g) then
 		return false
 	end
 	memoriser(self)
@@ -164,11 +171,11 @@ function Decorateur:annuler()
 	return true
 end
 
--- Liste complète, garniture en cours comprise si elle a au moins deux points
+-- Liste complète, garniture en cours comprise si elle compte déjà
 local function complete(self)
 	local liste = copier(self.liste)
 	local g = self.garniture
-	if g and #g.trajet >= 2 then
+	if garnitureValable(self, g) then
 		table.insert(liste, copier({ g })[1])
 	end
 	return liste

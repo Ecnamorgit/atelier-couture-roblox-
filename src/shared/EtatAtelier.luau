@@ -172,7 +172,8 @@ function EtatAtelier:acheter(idTissu, dm)
 	self.stock[idTissu] = (self.stock[idTissu] or 0) + dm
 	local coupon = self.coupons[idTissu]
 	if coupon then
-		coupon.longueur += dm -- le rouleau se déroule plus loin pendant la découpe
+		-- le rouleau se déroule plus loin pendant la découpe, jusqu'à la longueur qu'une recette accepte
+		coupon.longueur = math.min(coupon.longueur + dm, Recette.LONGUEUR_MAX)
 	end
 	return { ok = true, prix = prix }
 end
@@ -189,7 +190,7 @@ function EtatAtelier:commencerDecoupe()
 	end
 	self.coupons = {}
 	for _, t in ipairs(self:tissusUtilises()) do
-		self.coupons[t] = Coupon.nouveau(self.stock[t])
+		self.coupons[t] = Coupon.nouveau(math.min(self.stock[t], Recette.LONGUEUR_MAX))
 	end
 	self.etape = "decoupe"
 	return { ok = true }

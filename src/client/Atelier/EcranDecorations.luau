@@ -85,7 +85,7 @@ return function(ctx)
 	end)
 	local finir = outil("FinirGarniture", "Finir la garniture", 0, 308, 1, function()
 		if not deco:terminerGarniture() then
-			ctx.message("Une garniture a besoin d'au moins deux points.", C.erreur)
+			ctx.message("Une garniture a besoin de deux points, sur au moins 0,5 dm.", C.erreur)
 		end
 	end)
 	UiKit.bouton({ Name = "Presenter", Text = "Présenter à la cliente", Position = UDim2.fromOffset(0, 350), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
@@ -109,7 +109,7 @@ return function(ctx)
 			b.TextColor3 = id == deco.choix and Color3.new(1, 1, 1) or C.texte
 		end
 		finir.Visible = deco.garniture ~= nil
-		scene:montrerDecorations(deco.recette, deco.liste, deco.garniture)
+		scene:montrerDecorations(deco.recette, deco.liste, deco.garniture, deco.selection)
 	end
 
 	-- Toucher la scène : une décoration posée (sélection) ou la robe (pose)

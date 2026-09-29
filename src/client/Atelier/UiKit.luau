@@ -136,7 +136,12 @@ end
 -- Texte lisible d'une exigence de commande ; styles (facultatif) : scores actuels de la robe,
 -- ajoutés aux exigences de style pour savoir ce qu'il reste à faire
 function UiKit.exigence(e, Catalogue, styles)
-	local actuel = styles and e.style and (" (actuel : %d)"):format(math.floor(styles[e.style] + 0.5)) or ""
+	-- Arrondi du côté de la comparaison : le chiffre affiché ne contredit jamais le jugement de la cliente
+	local actuel = ""
+	if styles and e.style then
+		local arrondi = e.type == "max" and math.ceil(styles[e.style] - 1e-9) or math.floor(styles[e.style] + 1e-9)
+		actuel = (" (actuel : %d)"):format(arrondi)
+	end
 	if e.type == "min" then
 		return ("Au moins %d en %s"):format(e.valeur, Catalogue.NOMS_STYLES[e.style]) .. actuel
 	elseif e.type == "max" then

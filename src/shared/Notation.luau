@@ -107,7 +107,7 @@ local function pointsAccessoire(a)
 	local def = Catalogue.accessoire(a.id)
 	assert(def, "accessoire inconnu : " .. tostring(a.id))
 	if def.genre == "garniture" then
-		return def.style, math.ceil((a.longueur or 0) / 5 - 1e-9)
+		return def.style, (a.longueur or 0) / 5 -- points proportionnels à la longueur (valeurs du catalogue pour 5 dm)
 	end
 	return def.style, 1
 end

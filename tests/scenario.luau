@@ -408,8 +408,10 @@ end
 local function centre(groupe)
 	local somme, n = Vector3.new(0, 0, 0), 0
 	for _, d in ipairs(groupe:GetChildren()) do
-		somme += d.CFrame.Position
-		n += 1
+		if d:IsA("BasePart") then
+			somme += d.CFrame.Position
+			n += 1
+		end
 	end
 	return somme / n
 end
@@ -438,6 +440,7 @@ verifier(#decorations:GetChildren() == 2 and coutRuban and coutRuban > 3, "ruban
 -- Toucher une décoration la sélectionne ; supprimer, puis annuler
 local partNoeud = decorations:GetChildren()[1]:GetChildren()[1]
 toucherScene({ Instance = partNoeud, Position = partNoeud.CFrame.Position, Normal = Vector3.new(0, 0, -1) })
+verifier(decorations:GetChildren()[1]:FindFirstChild("Selection") ~= nil and decorations:GetChildren()[2]:FindFirstChild("Selection") == nil, "le nœud touché est surligné : on voit ce que « Supprimer » va retirer")
 cliquer("Supprimer")
 verifier(#decorations:GetChildren() == 1 and contenuD.Cout.Text == ("Coût : %d po"):format(coutRuban - 3), "nœud touché puis supprimé")
 cliquer("Annuler")

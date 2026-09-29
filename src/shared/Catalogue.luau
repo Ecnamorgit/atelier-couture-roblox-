@@ -202,7 +202,7 @@ Catalogue.MATIERES = {
 }
 
 ---------------------------------------------------------------------------
--- Accessoires : objets (prix à l'unité) et garnitures (prix au dm, points par tranche de 5 dm)
+-- Accessoires : objets (prix à l'unité) et garnitures (prix au dm, points de style pour 5 dm, au prorata)
 ---------------------------------------------------------------------------
 -- apparence : forme 3D ("boule", "bloc", "cylindre", "noeud", "fleur", "croix"), taille (dm), couleur, reflet
 local function objet(id, nom, prix, style, apparence)

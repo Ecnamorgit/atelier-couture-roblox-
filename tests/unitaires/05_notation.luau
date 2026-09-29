@@ -50,10 +50,12 @@ for _ = 1, 300 do
 end
 U.verifier(Notation.styles({ croquis = croquis, tissus = {}, accessoires = beaucoup }).gothique == 100, "score borné à 100")
 
--- Garniture : points par tranche de 5 dm entamée
+-- Garniture : points proportionnels à la longueur (ceux du catalogue valent pour 5 dm)
 U.verifier(U.proche(Notation.longueurGarniture("jupe_droite_devant", { { u = 0, v = 1 }, { u = 1, v = 1 } }), 5), "garniture de 5 dm")
 local g = Notation.styles({ croquis = croquis, tissus = {}, accessoires = { { id = "ruban_rose", longueur = 5.5 } } })
-U.verifier(U.proche(g.mignon, 0.5 * 3 * 2), "5,5 dm de ruban = 2 tranches")
+U.verifier(U.proche(g.mignon, 0.5 * 3 * 5.5 / 5), "5,5 dm de ruban : 1,1 fois les points du catalogue")
+local court = Notation.styles({ croquis = croquis, tissus = {}, accessoires = { { id = "ruban_rose", longueur = 0.5 } } })
+U.verifier(U.proche(court.mignon, 0.5 * 3 * 0.1), "0,5 dm de ruban : un dixième des points (pas de tranche entière pour un bout de ruban)")
 
 -- Fourchette du carnet
 local f = Notation.fourchette(croquis, {})

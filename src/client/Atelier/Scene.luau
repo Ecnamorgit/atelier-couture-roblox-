@@ -4,6 +4,7 @@
 -- Au plan 4, la boutique construite par le serveur donnera l'emplacement du mannequin et de la vitrine.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Patron = require(Couture:WaitForChild("Patron"))
@@ -24,7 +25,28 @@ Scene.POSTES = { epinglage = true, couture = true, decorations = true, photo = t
 -- Socle de la vitrine (la dernière robe livrée), en retrait du mannequin de travail
 Scene.VITRINE = CFrame.new(7, 0.5, 52)
 
--- options : { etaler = bool } pour la construction de la vitrine (défaut vrai)
+-- Commandes de l'avatar (clavier, stick tactile) : coupées pendant les postes, pour que toucher ou
+-- glisser sur la scène ne fasse pas marcher l'avatar. Passe par le PlayerModule de Roblox.
+local function controlesDuJoueur(actif)
+	local joueur = Players.LocalPlayer
+	local scripts = joueur and joueur:FindFirstChild("PlayerScripts")
+	local module = scripts and scripts:FindFirstChild("PlayerModule")
+	if not module then
+		return
+	end
+	local ok, playerModule = pcall(require, module)
+	if ok and type(playerModule) == "table" and playerModule.GetControls then
+		local controles = playerModule:GetControls()
+		if actif then
+			controles:Enable()
+		else
+			controles:Disable()
+		end
+	end
+end
+
+-- options : { etaler = bool } pour la construction de la vitrine (défaut vrai),
+-- { controles = function(actif) } pour remplacer la coupure des commandes de l'avatar (tests)
 function Scene.nouvelle(parent, options)
 	local dossier = Instance.new("Folder")
 	dossier.Name = "AtelierLocal"
@@ -58,6 +80,7 @@ function Scene.nouvelle(parent, options)
 		cameraFixe = false,
 		ouverte = true,
 		orbite = 0, -- degrés autour du mannequin (décorations)
+		controles = options and options.controles or controlesDuJoueur,
 	}, Scene)
 	self.vitrines = Vitrines.nouveau(vitrines, function()
 		local camera = Workspace.CurrentCamera
@@ -142,8 +165,9 @@ function Scene:synchroniser(etat)
 end
 
 -- Aperçu des décorations : la liste (format de la recette) et la garniture en cours ; chaque décoration
--- posée garde sa place dans la liste (attribut « Indice ») pour être sélectionnée au toucher
-function Scene:montrerDecorations(recette, liste, garniture)
+-- posée garde sa place dans la liste (attribut « Indice ») pour être sélectionnée au toucher.
+-- selection (facultatif) : indice de la décoration sélectionnée, surlignée
+function Scene:montrerDecorations(recette, liste, garniture, selection)
 	self.decorations:ClearAllChildren()
 	if not recette then
 		return
@@ -153,6 +177,13 @@ function Scene:montrerDecorations(recette, liste, garniture)
 	local function poser(a, indice)
 		local groupe = ConstructeurRobe.accessoire(r, a, Scene.CADRE, self.decorations)
 		groupe:SetAttribute("Indice", indice)
+		if indice ~= nil and indice == selection then
+			local surlignage = Instance.new("Highlight")
+			surlignage.Name = "Selection"
+			surlignage.FillTransparency = 1
+			surlignage.OutlineColor = Color3.fromRGB(255, 220, 60)
+			surlignage.Parent = groupe
+		end
 		for _, d in ipairs(groupe:GetDescendants()) do
 			if d:IsA("BasePart") then
 				d.CanQuery = true
@@ -229,9 +260,11 @@ function Scene:regarder(actif)
 			camera.CFrame = axe * CFrame.Angles(0, math.rad(self.orbite), 0) * axe:Inverse() * Scene.CAMERA
 		end
 		self.cameraFixe = true
+		self.controles(false)
 	elseif self.cameraFixe then
 		camera.CameraType = Enum.CameraType.Custom
 		self.cameraFixe = false
+		self.controles(true)
 	end
 end
 

@@ -84,6 +84,8 @@ local cas = {
 	{ "échelle démesurée", function(x) x.accessoires[1].echelle = 10 end },
 	{ "garniture d'un point", function(x) x.accessoires[3].trajet = { { u = 0, v = 0 } } end },
 	{ "garniture hors pièce", function(x) x.accessoires[3].trajet[2].u = 1.5 end },
+	{ "garniture plus courte que 0,5 dm", function(x) x.accessoires[3].trajet = { { u = 0.5, v = 0.5 }, { u = 0.501, v = 0.5 } } end },
+	{ "garniture de longueur nulle", function(x) x.accessoires[3].trajet = { { u = 0.5, v = 0.5 }, { u = 0.5, v = 0.5 } } end },
 	{ "garniture de 65 points", function(x)
 		local t = {}
 		for k = 1, 65 do

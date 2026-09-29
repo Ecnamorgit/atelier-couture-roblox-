@@ -3,11 +3,13 @@
 local dossier = script.Parent
 local Catalogue = require(dossier:WaitForChild("Catalogue"))
 local Patron = require(dossier:WaitForChild("Patron"))
+local Notation = require(dossier:WaitForChild("Notation"))
 
 local Recette = {}
 
 Recette.MAX_ACCESSOIRES = 300
 Recette.MAX_POINTS_GARNITURE = 64
+Recette.LONGUEUR_MIN_GARNITURE = 0.5 -- dm : une garniture plus courte ne se voit pas et ne compte pas
 Recette.ANGLE_MAX = 3600
 Recette.ECHELLE_MIN, Recette.ECHELLE_MAX = 0.5, 3
 -- Tours acceptés (dm) ; la taille ne dépasse ni la poitrine ni les hanches
@@ -300,6 +302,9 @@ function Recette.valider(r)
 				if type(pt) ~= "table" or not champsConnus(pt, "point") or not dans(pt.u, 0, 1) or not dans(pt.v, 0, 1) then
 					return false, "Garniture mal placée."
 				end
+			end
+			if Notation.longueurGarniture(piece.id, a.trajet) < Recette.LONGUEUR_MIN_GARNITURE then
+				return false, "Garniture trop courte."
 			end
 		end
 	end
