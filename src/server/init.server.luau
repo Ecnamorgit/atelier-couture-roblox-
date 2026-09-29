@@ -38,9 +38,11 @@ Players.PlayerAdded:Connect(arrivee)
 for _, joueur in ipairs(Players:GetPlayers()) do
 	task.spawn(arrivee, joueur)
 end
+-- Départ : la boutique est libérée d'abord (l'écriture de la partie peut attendre le DataStore, et un
+-- joueur qui arrive entre-temps doit trouver une place), puis la partie est écrite
 Players.PlayerRemoving:Connect(function(joueur)
-	commande:depart(joueur)
 	boutiques:liberer(joueur)
+	commande:depart(joueur)
 end)
 
 local function sauvegardeReguliere()

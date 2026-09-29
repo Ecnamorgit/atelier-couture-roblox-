@@ -669,7 +669,16 @@ M.avancer(0.5)
 verifier(serveur:traiter(joueur, "nouvelleCommande").ok, "une commande commencée sur le serveur")
 M.avancer(serveur.PERIODE_SAUVEGARDE + 1)
 verifier(parties.donnees[cleJoueur].enCours ~= nil and parties.donnees[cleJoueur].enCours.etape == "carnet", "sauvegarde régulière : la commande en cours")
+-- (au moment où l'écriture de sa partie commence, sa boutique est déjà libérée : un joueur qui arrive
+-- pendant une écriture lente trouve une place)
+local boutiqueAuDepart = nil
+serveur.depart = function(self, j)
+	boutiqueAuDepart = M.services.Workspace.Rue:FindFirstChild("Boutique_1") ~= nil
+	return getmetatable(self).depart(self, j)
+end
 M.services.Players.PlayerRemoving:Fire(joueur)
+serveur.depart = nil
+verifier(boutiqueAuDepart == false, "départ du joueur : sa boutique est libérée avant l'écriture de sa partie")
 verifier(parties.donnees[cleJoueur].verrou.t == 0 and serveur.ateliers[joueur] == nil, "départ du joueur : partie écrite, verrou rendu")
 verifier(M.services.Workspace.Rue:FindFirstChild("Boutique_1") == nil and M.services.Workspace.Vitrines:FindFirstChild("Vitrine_1") == nil, "départ du joueur : sa boutique est retirée de la rue")
 M.services.Players.PlayerAdded:Fire(joueur)
