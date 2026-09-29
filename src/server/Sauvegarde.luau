@@ -43,6 +43,46 @@ local function copie(v)
 	return c
 end
 
+-- Une exigence de commande qu'on sait juger (catalogue actuel)
+local function exigenceLisible(e)
+	if type(e) ~= "table" then
+		return false
+	elseif e.type == "min" or e.type == "max" then
+		return table.find(Catalogue.STYLES, e.style) ~= nil and nombre(e.valeur, nil) ~= nil
+	elseif e.type == "qualite" then
+		return nombre(e.valeur, nil) ~= nil
+	elseif e.type == "teinte" then
+		return table.find(Catalogue.TEINTES, e.teinte) ~= nil
+	elseif e.type == "accessoire" then
+		return type(e.id) == "string" and Catalogue.accessoire(e.id) ~= nil
+	end
+	return false
+end
+
+-- Une commande sauvegardée qu'on peut jouer jusqu'au bout : taille connue, mesures dans les bornes d'une
+-- recette, 1 à 3 exigences lisibles
+local function commandeLisible(c)
+	if type(c) ~= "table" or type(c.taille) ~= "string" or not Catalogue.TAILLES[c.taille] then
+		return false
+	end
+	local m = c.mesures
+	local function borne(v, bornes)
+		return nombre(v, nil) ~= nil and v >= bornes[1] and v <= bornes[2]
+	end
+	if type(m) ~= "table" or not borne(m.poitrine, Recette.POITRINE) or not borne(m.taille, Recette.TAILLE) or not borne(m.hanches, Recette.HANCHES) then
+		return false
+	end
+	if type(c.exigences) ~= "table" or #c.exigences < 1 or #c.exigences > 3 then
+		return false
+	end
+	for _, e in ipairs(c.exigences) do
+		if not exigenceLisible(e) then
+			return false
+		end
+	end
+	return true
+end
+
 -- Migrations : MIGRATIONS[v] passe une partie du format v au format v + 1
 Sauvegarde.MIGRATIONS = {
 	-- v1 (prototype) : seul l'argent est repris ; une table vide donne une partie neuve
@@ -117,9 +157,18 @@ function Sauvegarde.versEtat(partie)
 	local ok, erreur = pcall(function()
 		etat:charger(d)
 		assert(table.find(EtatAtelier.ETAPES, etat.etape), "étape inconnue")
-		assert(etat.etape == "accueil" or etat.commande, "commande manquante")
+		assert(etat.etape == "accueil" or commandeLisible(etat.commande), "commande illisible")
 		etat:piecesDuCroquis() -- lit le croquis
-		etat:recette() -- lit les pièces coupées, les coutures et les décorations
+		for _, idTissu in pairs(etat.tissus) do
+			assert(Catalogue.tissu(idTissu), "tissu inconnu")
+		end
+		for idTissu in pairs(etat.coupons) do
+			assert(Catalogue.tissu(idTissu), "rouleau d'un tissu inconnu")
+		end
+		local recette = etat:recette() -- lit les pièces coupées, les coutures et les décorations
+		if recette then
+			assert(Recette.valider(recette))
+		end
 	end)
 	if not ok then
 		warn("[Atelier] Commande en cours illisible, abandonnée : " .. tostring(erreur))

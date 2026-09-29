@@ -136,6 +136,45 @@ M.avertissements = {}
 local e = Sauvegarde.versEtat(abimee)
 U.verifier(e.etape == "accueil" and e.commande == nil and e.argent == etat.argent and e.stock.coton_blanc == etat.stock.coton_blanc and #e.robes == 1, "commande en cours illisible : abandonnée, le reste gardé")
 U.verifier(#M.avertissements == 1, "un avertissement")
+-- Toute commande qu'on ne pourrait pas jouer jusqu'au bout est abandonnée au chargement (sinon la partie
+-- resterait bloquée : ni nouvelle commande, ni abandon, et sauvegardée ainsi toutes les 60 s)
+local function abandonnee(depart, modifier, nom)
+	local q = Sauvegarde.depuisEtat(depart)
+	modifier(q.enCours)
+	M.avertissements = {}
+	local chargee = Sauvegarde.versEtat(q)
+	U.verifier(chargee.etape == "accueil" and chargee.commande == nil and chargee.argent == depart.argent and #M.avertissements == 1, "commande illisible abandonnée : " .. nom)
+end
+abandonnee(etat, function(c)
+	c.commande = { taille = "M" }
+end, "commande incomplète")
+abandonnee(etat, function(c)
+	c.commande.exigences = { { type = "voler" } }
+end, "exigence inconnue")
+abandonnee(etat, function(c)
+	c.commande.exigences = { { type = "min", style = "punk", valeur = 20 } }
+end, "style inconnu")
+abandonnee(etat, function(c)
+	c.commande.mesures.poitrine = 500
+end, "mesures hors bornes")
+abandonnee(etat, function(c)
+	c.tissus.corsage_droit_devant = "tissu_retire"
+end, "tissu retiré du catalogue")
+abandonnee(etat, function(c)
+	c.coupons.tissu_retire, c.coupons.coton_blanc = c.coupons.coton_blanc, nil
+end, "rouleau d'un tissu retiré du catalogue")
+local coupee = EtatAtelier.nouveau(1000)
+coupee:nouvelleCommande(Random.new(4))
+coupee:validerCroquis(CROQUIS, tissus)
+coupee:acheter("coton_blanc", 24)
+coupee:commencerDecoupe()
+for _, id in ipairs(ORDRE) do
+	coupee:couper(id, PLACES[id])
+end
+U.verifier(coupee.etape == "epinglage", "robe entièrement coupée (mise en place du test)")
+abandonnee(coupee, function(c)
+	c.accessoires = { { id = "accessoire_retire", piece = 1, copie = "unique", u = 0.5, v = 0.5, echelle = 1, angle = 0 } }
+end, "robe coupée : accessoire retiré du catalogue")
 local s = Sauvegarde.depuisEtat(EtatAtelier.nouveau())
 s.argent = 0 / 0
 s.stock = { coton_blanc = 12, inconnu = 5, soie_rouge = "x", lin_bleu = -3 }
