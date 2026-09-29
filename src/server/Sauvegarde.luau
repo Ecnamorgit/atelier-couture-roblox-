@@ -230,7 +230,9 @@ function Sauvegarde:enregistrer(userId, partie, liberer)
 			end
 			local d = copie(partie)
 			d.version = Sauvegarde.VERSION
-			d.verrou = if liberer then nil else { jobId = self.jobId, t = self.horloge() }
+			-- Rendu, le verrou garde le serveur qui le tenait (temps nul : libre pour tous) : un autre serveur
+			-- resté en retard, qui se réveillerait après une session plus récente ailleurs, ne l'écrase pas
+			d.verrou = { jobId = self.jobId, t = if liberer then 0 else self.horloge() }
 			return d
 		end)
 	end)

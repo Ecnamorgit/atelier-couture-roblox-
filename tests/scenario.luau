@@ -657,10 +657,10 @@ verifier(serveur:traiter(joueur, "nouvelleCommande").ok, "une commande commencé
 M.avancer(serveur.PERIODE_SAUVEGARDE + 1)
 verifier(parties.donnees[cleJoueur].enCours ~= nil and parties.donnees[cleJoueur].enCours.etape == "carnet", "sauvegarde régulière : la commande en cours")
 M.services.Players.PlayerRemoving:Fire(joueur)
-verifier(parties.donnees[cleJoueur].verrou == nil and serveur.ateliers[joueur] == nil, "départ du joueur : partie écrite, verrou rendu")
+verifier(parties.donnees[cleJoueur].verrou.t == 0 and serveur.ateliers[joueur] == nil, "départ du joueur : partie écrite, verrou rendu")
 M.services.Players.PlayerAdded:Fire(joueur)
 verifier(serveur:atelier(joueur) ~= nil and serveur:atelier(joueur).etat.etape == "carnet", "retour suivant : la commande reprend")
 M.fermeture()
-verifier(parties.donnees[cleJoueur].verrou == nil and parties.donnees[cleJoueur].enCours.etape == "carnet", "arrêt du serveur : partie écrite, verrou rendu")
+verifier(parties.donnees[cleJoueur].verrou.t == 0 and parties.donnees[cleJoueur].enCours.etape == "carnet", "arrêt du serveur : partie écrite, verrou rendu")
 
 print(("TOUT EST VERT : %d vérifications"):format(nbVerifs))

@@ -82,7 +82,7 @@ temps += 60
 A:enregistrer(7, p)
 U.verifier(magasin.donnees.joueur_7.verrou.t == temps, "verrou rafraîchi à chaque sauvegarde")
 A:enregistrer(7, p, true)
-U.verifier(magasin.donnees.joueur_7.verrou == nil, "verrou rendu au départ")
+U.verifier(magasin.donnees.joueur_7.verrou.jobId == "A" and magasin.donnees.joueur_7.verrou.t == 0, "verrou rendu au départ (A reste noté comme dernier serveur)")
 attentes = 0
 local relue = Sauvegarde.versEtat(B:charger(7))
 U.verifier(attentes == 0 and magasin.donnees.joueur_7.verrou.jobId == "B", "verrou rendu : B prend la partie sans attendre")

@@ -24,6 +24,10 @@ local function joueurNumero(nom, userId)
 	rawget(j, "__props").UserId = userId
 	return j
 end
+-- Verrou rendu : le serveur qui tenait la partie reste noté, avec un temps nul
+local function rendu(verrou)
+	return type(verrou) == "table" and verrou.t == 0
+end
 local function appeler(serveur, joueur, action, ...)
 	M.avancer(0.25)
 	return serveur:traiter(joueur, action, ...)
@@ -63,7 +67,7 @@ local rangee = magasin.donnees.joueur_501
 U.verifier(rangee ~= nil and rangee.enCours.etape == "decoupe" and rangee.verrou.jobId == "S1", "sauvegarde régulière : la commande en cours, verrou tenu")
 fidele.Parent = nil
 s1:depart(fidele)
-U.verifier(magasin.donnees.joueur_501.verrou == nil and s1.ateliers[fidele] == nil, "départ : partie écrite, verrou rendu, atelier libéré")
+U.verifier(rendu(magasin.donnees.joueur_501.verrou) and s1.ateliers[fidele] == nil, "départ : partie écrite, verrou rendu, atelier libéré")
 fidele.Parent = M.services.Players
 local s2 = Commande.nouvelle({ sauvegarde = sauvegarde("S2") })
 attentes = 0
@@ -88,6 +92,20 @@ s2:enregistrerTout()
 s2:depart(fidele)
 U.verifier(magasin.ecritures == ecritures and magasin.donnees.joueur_501.verrou.jobId == "S3", "il ne l'écrit plus du tout, même au départ")
 
+-- Un serveur figé qui se réveille après que le joueur a joué, puis quitté un autre serveur (verrou rendu
+-- entre-temps) n'écrase pas cette partie plus récente
+local figee = joueurNumero("Figee", 505)
+local sA = Commande.nouvelle({ sauvegarde = sauvegarde("SA") })
+sA:arrivee(figee)
+local sB = Commande.nouvelle({ sauvegarde = sauvegarde("SB") })
+sB:arrivee(figee) -- SA ne répond plus : SB prend la main après 15 s
+sB:atelier(figee).etat.argent = 777
+sB:depart(figee)
+U.verifier(magasin.donnees.joueur_505.argent == 777 and rendu(magasin.donnees.joueur_505.verrou), "le joueur a joué sur SB, qui a rendu sa partie")
+ecritures = magasin.ecritures
+sA:depart(figee) -- SA se réveille, avec sa vieille copie
+U.verifier(magasin.ecritures == ecritures and magasin.donnees.joueur_505.argent == 777, "le serveur figé n'écrase pas la partie plus récente")
+
 ---------------------------------------------------------------------------
 -- Lecture ratée : partie neuve pour cette fois, jamais écrite, le joueur est prévenu
 ---------------------------------------------------------------------------
@@ -110,13 +128,13 @@ U.verifier(magasin.donnees.joueur_502.argent == 900 and magasin.ecritures == ecr
 local presse = joueurNumero("Presse", 503)
 presse.Parent = nil
 s3:arrivee(presse)
-U.verifier(s3.ateliers[presse] == nil and magasin.donnees.joueur_503 ~= nil and magasin.donnees.joueur_503.verrou == nil, "parti pendant le chargement : partie rendue, pas d'atelier")
+U.verifier(s3.ateliers[presse] == nil and magasin.donnees.joueur_503 ~= nil and rendu(magasin.donnees.joueur_503.verrou), "parti pendant le chargement : partie rendue, pas d'atelier")
 
 ---------------------------------------------------------------------------
 -- Arrêt du serveur : toutes les parties écrites, verrous rendus
 ---------------------------------------------------------------------------
 s3:fermer()
-U.verifier(magasin.donnees.joueur_501.verrou == nil and magasin.donnees.joueur_501.enCours.etape == "decoupe", "arrêt du serveur : partie écrite, verrou rendu")
+U.verifier(rendu(magasin.donnees.joueur_501.verrou) and magasin.donnees.joueur_501.enCours.etape == "decoupe", "arrêt du serveur : partie écrite, verrou rendu")
 
 ---------------------------------------------------------------------------
 -- Sans sauvegarde (lieu non publié) : partie neuve tout de suite, comme avant
