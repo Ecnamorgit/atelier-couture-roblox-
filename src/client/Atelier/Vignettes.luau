@@ -61,4 +61,16 @@ function Vignettes.piece(idPiece, idTissu, placement, plafond)
 	end)
 end
 
+-- Oublie les images des pièces découpées (commande finie ou recommencée) : elles occupent la mémoire des
+-- images et ne resserviront pas. Les motifs et les silhouettes restent.
+function Vignettes.oublierPieces()
+	for _, t in ipairs({ cache, echecs }) do
+		for cle in pairs(t) do
+			if string.sub(cle, 1, 6) == "piece:" then
+				t[cle] = nil
+			end
+		end
+	end
+end
+
 return Vignettes

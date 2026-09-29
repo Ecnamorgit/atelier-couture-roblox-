@@ -10,6 +10,7 @@ local Vitrines = require(Couture:WaitForChild("Vitrines"))
 local UiKit = require(script:WaitForChild("UiKit"))
 local Session = require(script:WaitForChild("Session"))
 local Scene = require(script:WaitForChild("Scene"))
+local Vignettes = require(script:WaitForChild("Vignettes"))
 
 local ECRANS = {
 	accueil = require(script:WaitForChild("EcranAccueil")),
@@ -223,6 +224,10 @@ local function afficher()
 			fermerEcran()
 		end
 		contenu:ClearAllChildren()
+		-- Sans pièce découpée (accueil, carnet), leurs images ne resserviront pas : place en mémoire
+		if etat.etape == "accueil" or etat.etape == "carnet" then
+			Vignettes.oublierPieces()
+		end
 		disposer(EN_PANNEAU[etat.etape] == true)
 		etapeAffichee = etat.etape
 		titre.Text = TITRES[etat.etape] or etat.etape

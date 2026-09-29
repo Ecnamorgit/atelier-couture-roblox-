@@ -30,6 +30,12 @@ U.verifier(Vignettes.piece("manche_ballon", "soie_rose_fleurs", { x = 3.5, y = 2
 M.budget.images = 0
 U.verifier(Vignettes.piece("manche_ballon", "soie_rose_fleurs", { x = 4, y = 2, angle = 0 }) == nil, "mémoire des images pleine : pas d'aperçu, sans erreur")
 M.budget.images = 64
+-- Commande finie : les images des pièces découpées sont oubliées (mémoire), pas celles des tissus
+local motifSoie = Vignettes.motif("soie_rose_fleurs")
+Vignettes.oublierPieces()
+local refait = Vignettes.piece("manche_ballon", "soie_rose_fleurs", { x = 3, y = 2, angle = 0 })
+U.verifier(refait ~= nil and refait ~= apercu, "images des pièces oubliées : refaites à la demande")
+U.verifier(motifSoie ~= nil and Vignettes.motif("soie_rose_fleurs") == motifSoie, "les motifs des tissus restent en cache")
 
 ---------------------------------------------------------------------------
 -- Scène : mannequin de la cliente, pièces épinglées, caméra fixe
@@ -113,6 +119,8 @@ M.budget.maillages = 0
 scene2:synchroniser(etat2)
 M.budget.maillages = 7
 U.verifier(#scene2.robe:GetChildren() == 0 and scene2.dossier:FindFirstChild("Mannequin") ~= nil, "mémoire pleine : pièce absente, scène intacte")
+scene2:synchroniser(etat2)
+U.verifier(scene2.robe:FindFirstChild("Piece_" .. PIECES[1] .. "_unique") ~= nil, "mémoire libérée : la pièce ratée est construite à la synchronisation suivante")
 
 scene2:detruire()
 scene:detruire()

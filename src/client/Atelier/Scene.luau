@@ -305,6 +305,7 @@ function Scene:synchroniser(etat, derniere)
 		if voulues[p.id] and not self.pieces[p.id] then
 			local entree = { parts = {}, mesures = self.mesures }
 			self.pieces[p.id] = entree
+			local ratee = false
 			for _, copie in ipairs(Patron.copies(p.id)) do
 				local part = ConstructeurRobe.piece(p, copie, recette.mesures, self.cadre, "robe")
 				if part and self.pieces[p.id] == entree and self.dossier.Parent then
@@ -313,7 +314,16 @@ function Scene:synchroniser(etat, derniere)
 					table.insert(entree.parts, part)
 				elseif part then
 					part:Destroy() -- la pièce a été retirée pendant sa construction
+				else
+					ratee = true -- mémoire des maillages pleine
 				end
+			end
+			-- Pièce ratée : oubliée, pour être reconstruite à la prochaine synchronisation
+			if ratee and self.pieces[p.id] == entree then
+				for _, part in ipairs(entree.parts) do
+					part:Destroy()
+				end
+				self.pieces[p.id] = nil
 			end
 		end
 	end

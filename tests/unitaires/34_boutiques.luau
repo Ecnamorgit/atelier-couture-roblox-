@@ -129,4 +129,19 @@ rue:liberer(joueurs[3])
 U.verifier(monde.Rue:FindFirstChild("Boutique_3") == nil and monde.Vitrines:FindFirstChild("Vitrine_3") == nil, "départ : boutique et vitrine retirées")
 U.verifier(rue:attribuer(neuvieme) == 3 and monde.Rue.Boutique_3:GetAttribute("Proprietaire") == neuvieme.UserId, "l'emplacement libéré revient au joueur suivant")
 rue:liberer(joueurNumero("Inconnue", 799)) -- sans boutique : sans effet, sans erreur
+
+---------------------------------------------------------------------------
+-- Construction en panne : le joueur joue quand même (hors de la rue), l'emplacement reste libre
+---------------------------------------------------------------------------
+rue:liberer(joueurs[4])
+local vraie = Boutique.emplacement
+Boutique.emplacement = function()
+	error("panne simulée")
+end
+local malchanceux = joueurNumero("Malchanceux", 750)
+local sansErreur, indice = pcall(rue.attribuer, rue, malchanceux)
+Boutique.emplacement = vraie
+U.verifier(sansErreur and indice == nil and malchanceux:GetAttribute("Boutique") == 0, "construction en panne : sans erreur, pas de boutique (attribut 0 : le client n'attend pas)")
+U.verifier(monde.Rue:FindFirstChild("Boutique_4") == nil and monde.Vitrines:FindFirstChild("Vitrine_4") == nil, "construction en panne : rien de laissé dans la rue")
+U.verifier(rue:attribuer(joueurNumero("Suivante", 751)) == 4, "l'emplacement resté libre sert au joueur suivant")
 monde:Destroy()

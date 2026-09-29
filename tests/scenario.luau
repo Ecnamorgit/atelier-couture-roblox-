@@ -621,10 +621,17 @@ cliquer("Deco_croix_argent")
 toucherRobe("Piece_corsage_v_devant_unique", "corsage_v_devant", "unique", 0.5, 0.7)
 cliquer("Presenter")
 local avantLivraison = argent()
+-- Image d'une pièce découpée (en cache depuis la couture), à comparer après la livraison
+local Vignettes = requireModule(scriptClient.Vignettes)
+local etatClient = requireModule(scriptClient.Session).courante.etat
+local idVignette = "corsage_v_devant"
+local tissuVignette, placeVignette = etatClient.tissus[idVignette], table.clone(etatClient.coupees[idVignette])
+local imageAvant = Vignettes.piece(idVignette, tissuVignette, placeVignette, 256)
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe acceptée : payée")
 verifier(texte("La cliente est ravie") ~= nil, "l'accueil annonce la paie")
+verifier(imageAvant ~= nil and Vignettes.piece(idVignette, tissuVignette, placeVignette, 256) ~= imageAvant, "commande finie : les images des pièces découpées sont oubliées (mémoire)")
 M.avancer(1)
 verifier(maVitrine:FindFirstChild("Exposition") ~= nil, "le client construit la robe exposée dans la vitrine de la rue")
 verifier(maVitrine:GetAttribute("Recette") == requireModule(dossier.Recette).encoder(serveur:atelier(joueur).etat.robes[1]), "la robe livrée part dans la vitrine de la boutique, sur la rue")

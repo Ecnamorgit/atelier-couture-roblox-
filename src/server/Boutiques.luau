@@ -129,16 +129,25 @@ function Boutiques:attribuer(joueur)
 	end
 	for indice = 1, Boutique.NOMBRE do
 		if not self.parIndice[indice] then
-			local modele = construire(indice, joueur, self.rue)
-			local vitrine = Instance.new("Part")
-			vitrine.Name = "Vitrine_" .. indice
-			vitrine.Anchored = true
-			vitrine.Size = Vector3.new(4, 1, 4)
-			vitrine.CFrame = Boutique.emplacement(indice) * Boutique.VITRINE
-			vitrine.Material = Enum.Material.Wood
-			vitrine.Color = BOIS
-			vitrine.Parent = self.vitrines
-			local b = { indice = indice, modele = modele, vitrine = vitrine, joueur = joueur }
+			-- Une panne de construction ne bloque pas l'arrivée : le joueur joue hors de la rue (attribut 0),
+			-- et l'emplacement reste libre (boutique et vitrine ne sont posées qu'une fois construites)
+			local ok, b = pcall(function()
+				local modele = construire(indice, joueur, self.rue)
+				local vitrine = Instance.new("Part")
+				vitrine.Name = "Vitrine_" .. indice
+				vitrine.Anchored = true
+				vitrine.Size = Vector3.new(4, 1, 4)
+				vitrine.CFrame = Boutique.emplacement(indice) * Boutique.VITRINE
+				vitrine.Material = Enum.Material.Wood
+				vitrine.Color = BOIS
+				vitrine.Parent = self.vitrines
+				return { indice = indice, modele = modele, vitrine = vitrine, joueur = joueur }
+			end)
+			if not ok then
+				warn(("[Atelier] %s : boutique %d impossible à construire : %s"):format(joueur.Name, indice, tostring(b)))
+				joueur:SetAttribute("Boutique", 0)
+				return nil
+			end
 			self.parIndice[indice], self.parJoueur[joueur] = b, b
 			joueur:SetAttribute("Boutique", indice)
 			return indice
