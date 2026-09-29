@@ -65,7 +65,7 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    **Robes libres** (après deux commandes livrées) : « Robe libre » à l'accueil, une taille (S, M, L), et l'on
    va droit au carnet, sans cliente ni exigence. À la photo : « Vendre » (prix = (matières + décorations +
    6 po par pièce) × (0,5 + qualité), +6 % par niveau de prestige au-delà du premier ; du prestige, un quinzième
-   du prix) ou « Offrir à… » une cliente déjà venue (+1 à +4 d'amitié selon le score de son style préféré,
+   de la main d'œuvre, qui ne s'achète pas en décorant) ou « Offrir à… » une cliente déjà venue (+1 à +4 d'amitié selon le score de son style préféré,
    +2 de prestige). La robe part en vitrine.
    **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8, une robe libre de
    jute vendue sur quatre robes) atteint le prestige 2 à la 3e robe au plus tard, le 5 vers la 19e, et tout est

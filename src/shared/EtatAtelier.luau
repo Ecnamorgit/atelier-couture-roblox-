@@ -648,7 +648,8 @@ function EtatAtelier:prixVente()
 	return math.round(base * (0.5 + self:bilan().qualite) * (1 + bonus))
 end
 
--- Vendre la robe libre : le prix, du prestige (prix / 15) ; elle part en vitrine
+-- Vendre la robe libre : le prix, du prestige ; elle part en vitrine. Le prestige vient de la main d'œuvre
+-- seule (ce qu'elle rapporterait sans matières ni décorations, / 15) : il ne s'achète pas en décorant
 function EtatAtelier:vendre()
 	if self.etape ~= "photo" or not self.commande.libre then
 		return refus("Seule une robe libre se vend, une fois présentée.")
@@ -657,7 +658,9 @@ function EtatAtelier:vendre()
 	local recette, bilan, prix = self:recette(), self:bilan(), self:prixVente()
 	self.argent += prix
 	self.ventes += 1
-	local prestige = gagnerPrestige(self, Progression.prestigeVente(prix))
+	local bonus = Progression.bonusVente(Progression.niveauPrestige(self.prestige))
+	local mainOeuvre = math.round(EtatAtelier.MAIN_OEUVRE * #recette.pieces * (0.5 + bilan.qualite) * (1 + bonus))
+	local prestige = gagnerPrestige(self, Progression.prestigeVente(mainOeuvre))
 	garderRobe(self, recette)
 	terminer(self)
 	return { ok = true, prix = prix, bilan = bilan, prestige = prestige, nouveaux = Deblocages.nouveaux(avant, self) }

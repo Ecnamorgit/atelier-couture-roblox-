@@ -62,7 +62,7 @@ e.prestige = 0
 local avant = e.argent
 r = e:vendre()
 U.verifier(r.ok and r.prix == attendu and e.argent == avant + attendu and e.ventes == 1 and e.etape == "accueil", "vendue : le prix dans la caisse")
-U.verifier(r.prestige.gain == Progression.prestigeVente(attendu) and e.prestige == r.prestige.gain and #e.robes == 1, "prestige d'un quinzième du prix ; la robe en vitrine")
+U.verifier(r.prestige.gain == Progression.prestigeVente(math.round(24 * (0.5 + qualite))) and e.prestige == r.prestige.gain and #e.robes == 1, "prestige d'un quinzième de la main d'œuvre ; la robe en vitrine")
 
 -- En toile de jute : gratuite, et pourtant vendue (la main d'œuvre)
 e:nouvelleRobeLibre("S")
@@ -70,6 +70,22 @@ avant = e.argent
 jusquALaPhoto(e, "toile_jute")
 U.verifier(e.argent == avant and e.commande.matieres == 0, "toile de jute : rien à payer")
 U.verifier(e:prixVente() == math.round(24 * (0.5 + e:bilan().qualite)) and e:prixVente() > 0, "robe de jute : vendue pour sa main d'œuvre")
+
+-- Le prestige d'une vente ne s'achète pas : il vient de la main d'œuvre, pas des décorations ajoutées
+local function robeDeJuteVendue(fleurs)
+	local j = EtatAtelier.nouveau(5000)
+	j.livraisons = 2
+	j:nouvelleRobeLibre("M")
+	jusquALaPhoto(j, "toile_jute")
+	local deco = {}
+	for k = 1, fleurs do
+		deco[k] = { id = "fleur_rose", piece = 1, copie = "unique", u = 0.5, v = k / (fleurs + 1), echelle = 1, angle = 0 }
+	end
+	assert(j:retourDecorations().ok and j:decorer(deco).ok)
+	return j:vendre()
+end
+local nue, fleurie = robeDeJuteVendue(0), robeDeJuteVendue(100)
+U.verifier(fleurie.prix > nue.prix * 5 and fleurie.prestige.gain == nue.prestige.gain, "cent fleurs : le prix monte, pas le prestige (" .. nue.prestige.gain .. ")")
 
 -- Offrir : seulement à une cliente déjà venue ; l'amitié monte selon son style préféré, le prestige de 2
 e.clientes.helene = { amitie = 0, vues = 0, derniere = 0 } -- une fiche, mais jamais venue
