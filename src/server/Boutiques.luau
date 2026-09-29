@@ -66,7 +66,8 @@ local function construire(indice, joueur, parent)
 	local P, W = Boutique.PORTE, Boutique.FENETRE
 	local profondeur, milieu = F - A, (A + F) / 2
 	-- Sol et murs (la façade, en z = AVANT, a une porte et une fenêtre)
-	bloc(modele, origine, "Sol", Vector3.new(0, -0.1, milieu), Vector3.new(L, 0.2, profondeur), SOL, { matiere = Enum.Material.WoodPlanks })
+	-- Le sol dépasse à peine celui du monde : deux surfaces au même niveau scintilleraient
+	bloc(modele, origine, "Sol", Vector3.new(0, 0.025, milieu), Vector3.new(L, 0.05, profondeur), SOL, { matiere = Enum.Material.WoodPlanks })
 	bloc(modele, origine, "MurFond", Vector3.new(0, H / 2, F + 0.5), Vector3.new(L + 2, H, 1), MUR)
 	bloc(modele, origine, "MurGauche", Vector3.new(-L / 2 - 0.5, H / 2, milieu), Vector3.new(1, H, profondeur), MUR)
 	bloc(modele, origine, "MurDroit", Vector3.new(L / 2 + 0.5, H / 2, milieu), Vector3.new(1, H, profondeur), MUR)
@@ -83,6 +84,7 @@ local function construire(indice, joueur, parent)
 	local enseigne = bloc(modele, origine, "Enseigne", Vector3.new(-3, 10, A - 1.2), Vector3.new(14, 2.2, 0.3), BOIS)
 	local surface = Instance.new("SurfaceGui")
 	surface.Face = Enum.NormalId.Front
+	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud -- par défaut, un canevas fixe de 800 × 600 serait écrasé sur la planche
 	surface.PixelsPerStud = 40
 	surface.Parent = enseigne
 	local texte = Instance.new("TextLabel")
@@ -91,6 +93,7 @@ local function construire(indice, joueur, parent)
 	texte.BackgroundTransparency = 1
 	texte.Font = Enum.Font.GothamBold
 	texte.TextSize = 48
+	texte.TextScaled = true -- un long nom tient sur la planche
 	texte.TextColor3 = rgb(255, 240, 220)
 	local nom = (joueur.DisplayName ~= nil and joueur.DisplayName ~= "") and joueur.DisplayName or joueur.Name
 	texte.Text = "L'atelier de " .. nom

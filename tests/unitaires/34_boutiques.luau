@@ -49,6 +49,11 @@ U.verifier(meubles, "sol, murs, vitre, comptoir et clochette, étagère, table d
 local surfaceEnseigne = b3.Enseigne:FindFirstChild("SurfaceGui")
 local texteEnseigne = surfaceEnseigne and surfaceEnseigne:FindFirstChild("Texte")
 U.verifier(texteEnseigne ~= nil and string.find(texteEnseigne.Text, "Couturiere3", 1, true) ~= nil and texteEnseigne.TextSize >= 14, "enseigne au nom de la joueuse")
+U.verifier(surfaceEnseigne.SizingMode == Enum.SurfaceGuiSizingMode.PixelsPerStud and texteEnseigne.TextScaled, "enseigne lisible : dessinée à l'échelle de la planche, le texte s'adapte à la longueur du nom")
+local sol = b3.Sol
+local basSol = Boutique.emplacement(3):PointToObjectSpace(sol.CFrame.Position).Y - sol.Size.Y / 2
+local hautSol = basSol + sol.Size.Y
+U.verifier(basSol >= -1e-6 and hautSol > 0.01 and hautSol <= 0.1, "le sol de la boutique dépasse à peine le sol du monde (deux surfaces au même niveau scintillent)")
 local rouleaux = 0
 for _, p in ipairs(b3:GetChildren()) do
 	if p.Name:sub(1, 8) == "Rouleau_" then
