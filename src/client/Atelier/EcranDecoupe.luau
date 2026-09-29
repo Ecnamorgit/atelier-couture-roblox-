@@ -230,6 +230,10 @@ return function(ctx)
 		return x, y
 	end
 	local function lacher()
+		-- Au doigt, « MouseLeave » n'arrive souvent qu'au toucher suivant : la pièce lâchée, plus de survol
+		if saisie and saisie.UserInputType == Enum.UserInputType.Touch then
+			survol = false
+		end
 		saisie = nil
 		vue.ScrollingEnabled = not survol
 	end

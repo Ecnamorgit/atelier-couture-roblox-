@@ -322,6 +322,13 @@ pieceC.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseWheel, Positi
 verifier(pieceC.Rotation == angleAvant, "molette vers le bas : elle revient")
 pieceC.MouseLeave:Fire()
 verifier(rouleau.ScrollingEnabled == true, "souris hors de la pièce : le rouleau défile de nouveau")
+-- Au doigt, « MouseEnter » arrive au toucher, mais « MouseLeave » souvent bien plus tard : la pièce lâchée,
+-- le rouleau défile de nouveau au doigt sans l'attendre
+pieceC.MouseEnter:Fire()
+local doigtPiece = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(60, 60, 0) }
+pieceC.InputBegan:Fire(doigtPiece)
+UIS.InputEnded:Fire(doigtPiece)
+verifier(rouleau.ScrollingEnabled == true, "au doigt, pièce lâchée : le rouleau défile de nouveau, sans attendre MouseLeave")
 -- A et D : le rouleau se déroule de 2 dm ou revient ; les touches ne font pas marcher l'avatar
 local deroule = M.actions.AtelierDerouler
 verifier(deroule ~= nil and table.find(deroule.touches, Enum.KeyCode.A) ~= nil and table.find(deroule.touches, Enum.KeyCode.D) ~= nil, "A et D servent à dérouler tant que la table est affichée")
