@@ -8,6 +8,7 @@ local Workspace = game:GetService("Workspace")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Decorateur = require(script.Parent:WaitForChild("Decorateur"))
+local Sons = require(script.Parent:WaitForChild("Sons"))
 
 local SEUIL_GLISSER = 8 -- px : au-delà, c'est un glisser (la vue tourne), pas une touche
 local DEGRES_PAR_PX = 0.5
@@ -124,7 +125,9 @@ return function(ctx)
 			deco:selectionner(t.indice)
 		else
 			local r = deco:toucher(t.indicePiece, t.copie, t.u, t.v)
-			if not r.ok then
+			if r.ok then
+				Sons.jouer("decoration")
+			else
 				ctx.refus(r)
 			end
 		end

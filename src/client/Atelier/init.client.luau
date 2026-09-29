@@ -11,6 +11,7 @@ local UiKit = require(script:WaitForChild("UiKit"))
 local Session = require(script:WaitForChild("Session"))
 local Scene = require(script:WaitForChild("Scene"))
 local Vignettes = require(script:WaitForChild("Vignettes"))
+local Sons = require(script:WaitForChild("Sons"))
 
 local ECRANS = {
 	accueil = require(script:WaitForChild("EcranAccueil")),
@@ -154,6 +155,9 @@ end
 -- Refus d'une action : en rouge ; un refus passager (serveur occupé ou injoignable) en gris, sans alarmer
 local function refus(r)
 	afficherMessage(r.erreur, if r.passager then C.texteDoux else C.erreur)
+	if not r.passager then
+		Sons.jouer("refus")
+	end
 end
 -- Attente du serveur : au-delà de 0,3 s, « Un instant… » en gris sous la fenêtre, jusqu'à la réponse (un
 -- message déjà affiché reste)
@@ -189,6 +193,34 @@ UiKit.bouton({
 }, function()
 	fenetre.Visible = not fenetre.Visible
 end)
+
+-- Sons : un petit clic à chaque bouton, un bruit par action réussie, la musique d'ambiance ; le bouton
+-- « Son » (sous « Atelier ») coupe tout
+UiKit.surClic = function()
+	Sons.jouer("clic")
+end
+local SONS_ACTIONS = { nouvelleCommande = "clochette", acheter = "achat", couper = "couper", epingler = "epingler", abandonner = "echec" }
+session:surAction(function(nom, reponse)
+	if nom == "livrer" then
+		Sons.jouer(if reponse.reussie then "reussite" else "echec")
+	elseif SONS_ACTIONS[nom] then
+		Sons.jouer(SONS_ACTIONS[nom])
+	end
+end)
+local boutonSon
+boutonSon = UiKit.boutonDoux({
+	Name = "Son",
+	Text = "Son : oui",
+	TextSize = 14,
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, 16, 0.5, 46),
+	Size = UDim2.fromOffset(140, 36),
+	Parent = gui,
+}, function()
+	Sons.activer(not Sons.actif)
+	boutonSon.Text = if Sons.actif then "Son : oui" else "Son : non"
+end)
+Sons.boucle("musique", true)
 
 -- Fenêtre au centre, ou panneau à droite (titre et argent sur deux lignes)
 local function disposer(enPanneau)

@@ -79,6 +79,9 @@ function UiKit.bouton(props, auClic, calme)
 				return
 			end
 			dernier = maintenant
+			if UiKit.surClic then
+				pcall(UiKit.surClic) -- (le petit clic des boutons, réglé par le script du client)
+			end
 			auClic(...)
 		end)
 	end

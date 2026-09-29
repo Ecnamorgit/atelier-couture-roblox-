@@ -10,6 +10,7 @@ local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Polygone = require(Couture:WaitForChild("Polygone"))
 local MachineCoudre = require(script.Parent:WaitForChild("MachineCoudre"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
+local Sons = require(script.Parent:WaitForChild("Sons"))
 
 local PX = 80 -- pixels par dm sous l'aiguille : 0,05 dm de tolérance = 4 px
 local LARGEUR_PLATEAU = 480
@@ -18,6 +19,7 @@ local BOIS = Color3.fromRGB(205, 170, 125)
 local FIL = Color3.fromRGB(60, 40, 50)
 local VITESSES = { { "tortue", "Tortue" }, { "normale", "Normale" }, { "lapin", "Lapin" } }
 local ACTION_ESPACE = "AtelierCoudre" -- Espace coud (au lieu de sauter) tant que la machine est affichée
+local RYTHMES = { tortue = 0.8, normale = 1, lapin = 1.3 } -- vitesse du son de la machine
 
 return function(ctx)
 	local UiKit, session, contenu = ctx.UiKit, ctx.session, ctx.contenu
@@ -89,6 +91,7 @@ return function(ctx)
 	local effacerPoints
 	UiKit.boutonDoux({ Name = "Decoudre", Text = "Découdre (découd-vite)", TextSize = 14, Position = UDim2.fromOffset(0, 320), Size = UDim2.new(1, -6, 0, 34), Parent = panneau }, function()
 		if machine and machine:decoudre() then
+			Sons.jouer("decoudre")
 			effacerPoints()
 			rafraichir()
 		end
@@ -293,8 +296,19 @@ return function(ctx)
 			tenu = nil
 		end
 	end))
+	-- Le son de la machine suit l'aiguille : il tourne tant qu'on coud, au rythme de la vitesse choisie
+	local rythme = nil
+	local function sonMachine(cousant)
+		local r = cousant and RYTHMES[vitesse] or nil
+		if r ~= rythme then
+			rythme = r
+			Sons.boucle("couture", r ~= nil, r)
+		end
+	end
 	table.insert(connexions, RunService.RenderStepped:Connect(function(dt)
-		if not machine or machine:fini() or not tenu or not ctx.fenetre.Visible then
+		local cousant = machine ~= nil and not machine:fini() and tenu ~= nil and ctx.fenetre.Visible
+		sonMachine(cousant)
+		if not cousant then
 			return
 		end
 		machine:avancer(dt, direction())
@@ -316,6 +330,7 @@ return function(ctx)
 	return function()
 		desabonner()
 		lierEspace(false)
+		sonMachine(false)
 		for _, c in ipairs(connexions) do
 			c:Disconnect()
 		end

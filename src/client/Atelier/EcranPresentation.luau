@@ -6,6 +6,7 @@ local CaptureService = game:GetService("CaptureService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Notation = require(Couture:WaitForChild("Notation"))
+local Sons = require(script.Parent:WaitForChild("Sons"))
 
 local CHOIX = {
 	{ cle = "decor", nom = "Décor", prefixe = "Decor_", options = { { "rose", "Rose" }, { "bleu", "Bleu" }, { "creme", "Crème" }, { "nuit", "Nuit" } } },
@@ -116,6 +117,7 @@ return function(ctx)
 				ctx.message("La photo n'a pas pu être prise.", C.erreur)
 			end
 		end)
+		Sons.jouer("photo")
 		local ok = pcall(function()
 			CaptureService:CaptureScreenshot(function(capture)
 				if enCours ~= numero then

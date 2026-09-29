@@ -130,6 +130,28 @@ cliquer("Fermer")
 verifier(not fenetre.Visible, "la croix ferme la fenêtre")
 cliquer("OuvrirAtelier")
 verifier(fenetre.Visible, "le bouton Atelier rouvre la fenêtre")
+-- Sons : la musique d'ambiance joue ; le bouton « Son » coupe tout, puis rétablit
+local SoundService = M.services.SoundService
+local function sonsDepuis(n)
+	local out = {}
+	for k = n + 1, #(M.sonsJoues or {}) do
+		table.insert(out, M.sonsJoues[k])
+	end
+	return table.concat(out, ",")
+end
+local function nombreSons()
+	return #(M.sonsJoues or {})
+end
+verifier(SoundService:FindFirstChild("Atelier_musique") ~= nil and SoundService.Atelier_musique.IsPlaying, "la musique d'ambiance joue")
+cliquer("Son")
+verifier(boutonNomme("Son").Text == "Son : non" and not SoundService.Atelier_musique.IsPlaying, "« Son » : la musique s'arrête")
+local nCoupe = nombreSons()
+cliquer("Fermer")
+cliquer("OuvrirAtelier")
+verifier(nombreSons() == nCoupe, "son coupé : les boutons ne font plus de bruit")
+cliquer("Son")
+verifier(boutonNomme("Son").Text == "Son : oui" and SoundService.Atelier_musique.IsPlaying, "« Son » de nouveau : la musique reprend")
+local nSons = nombreSons()
 -- Un serveur lent (0,5 s) : au-delà de 0,3 s, « Un instant… » en gris sous la fenêtre, jusqu'à la réponse ;
 -- un message déjà affiché (l'avertissement de la sauvegarde) n'est pas remplacé
 local GRIS = Color3.fromRGB(130, 100, 115)
@@ -146,6 +168,7 @@ cliquer("Clochette")
 remoteAtelier.OnServerInvoke = brancheServeur
 verifier(M.dernierAppel ~= nil and M.dernierAppel.action == "nouvelleCommande" and serveur:atelier(joueur).etat.etape == "carnet", "la commande passe par le serveur, qui fait foi")
 verifier(pendantAttente ~= nil and pendantAttente.visible and string.find(pendantAttente.texte, "sauvegardée", 1, true) ~= nil, "serveur lent : l'avertissement affiché n'est pas remplacé")
+verifier(sonsDepuis(nSons) == "Atelier_clic,Atelier_clochette", "sons : le clic du bouton, puis la clochette (" .. sonsDepuis(nSons) .. ")")
 
 ---------------------------------------------------------------------------
 -- Carnet de croquis
@@ -176,6 +199,7 @@ cliquer("Valider")
 remoteAtelier.OnServerInvoke = brancheServeur
 verifier(pendantAttente ~= nil and pendantAttente.visible and pendantAttente.texte == "Un instant…" and pendantAttente.couleur == GRIS, "serveur lent : « Un instant… » en gris pendant l'attente")
 verifier(titre() == "1. Carnet de croquis" and fenetre.Message.Visible and fenetre.Message.Text ~= "Un instant…" and fenetre.Message.TextColor3 ~= GRIS, "valider sans tissu : message d'erreur (en rouge), à la place de l'indicateur")
+verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_refus", "un refus fait son petit bruit")
 
 -- Choix d'un tissu : filtre « Romantique », soie rose fleurie pour le corsage, puis pour toute la robe
 local jaugeAvant = fenetre.Contenu.Droite.Jauge_romantique.Acquis.Size
@@ -263,6 +287,7 @@ verifier(titre() == "2. Achat du tissu" and fenetre.Message.Visible, "découpe r
 local avant = argent()
 cliquer("Acheter")
 verifier(argent() < avant, "l'achat débite l'argent")
+verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_achat", "l'achat fait sonner la caisse")
 verifier(texte("En stock : " .. quantite .. " dm") ~= nil, "le stock est mis à jour")
 -- L'état change sans achat (réparé par le serveur, par exemple) : les lignes suivent
 local stockServeur = serveur:atelier(joueur).etat.stock
@@ -463,6 +488,16 @@ verifier(panneauC.Note.Text:match("^Couture : %d+ %%$") ~= nil, "la note s'affic
 verifier(#points:GetChildren() > 0, "les points de couture apparaissent sur le tissu")
 cliquer("Decoudre")
 verifier(panneauC.Note.Text == "Couture : —" and #points:GetChildren() == 0, "découdre défait la couture")
+verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_decoudre", "découdre : le tissu se défait (son)")
+-- La machine tourne (son en boucle) tant qu'on tient « Coudre », et s'arrête au lâcher
+local appuiSon = { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(700, 400, 0) }
+boutonNomme("Coudre").InputBegan:Fire(appuiSon)
+M.avancer(0.5)
+verifier(SoundService.Atelier_couture.IsPlaying and SoundService.Atelier_couture.Looped, "on tient « Coudre » : la machine tourne")
+UIS.InputEnded:Fire(appuiSon)
+M.avancer(0.1)
+verifier(not SoundService.Atelier_couture.IsPlaying, "on lâche : la machine s'arrête")
+cliquer("Decoudre")
 -- Fenêtre fermée pendant qu'on tient « Coudre » : plus rien n'est cousu, Espace rendu au jeu (saut)
 verifier(M.actions.AtelierCoudre ~= nil, "Espace sert à coudre tant que la machine est affichée")
 boutonNomme("Coudre").InputBegan:Fire({ UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(700, 400, 0) })
@@ -580,6 +615,7 @@ cliquer("Deco_noeud_satin")
 verifier(boutonNomme("Deco_noeud_satin").BackgroundColor3 == ACCENT, "nœud de satin choisi dans la palette")
 toucherRobe("Piece_corsage_v_devant_unique", "corsage_v_devant", "unique", 0.5, 0.4)
 verifier(#decorations:GetChildren() == 1 and contenuD.Cout.Text == "Coût : 3 po", "nœud posé sur le corsage : 3 po")
+verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_decoration", "une décoration posée fait son petit bruit")
 local noeud = decorations:GetChildren()[1]
 verifier((centre(noeud) - point3D("corsage_v_devant", "unique", 0.5, 0.4)).Magnitude < 0.3, "le nœud est là où l'on a touché")
 local tailleAvant = noeud:GetChildren()[1].Size
@@ -674,6 +710,7 @@ end
 cliquer("PrendrePhoto")
 M.surCapture = nil
 verifier(pendant ~= nil and pendant.interface == false and pendant.vue == origineBoutique * ScenePoste.CAMERA_PHOTO and pendant.bulle == false, "photo prise sans l'interface ni la bulle, vue centrée sur la robe")
+verifier(table.find(M.sonsJoues, "Atelier_photo") ~= nil and M.sonsJoues[#M.sonsJoues] == "Atelier_photo", "déclic de l'appareil photo")
 verifier(pendant.champ == ScenePoste.CHAMP_PHOTO and ScenePoste.CHAMP_PHOTO < 70, "champ resserré sur la robe pendant la prise")
 verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA and laCliente.Head.Bulle.Enabled and camera.FieldOfView == 70, "après la photo : interface, vue, champ et bulle rétablis")
 local apercu = fenetre.Contenu:FindFirstChild("Apercu")
@@ -720,6 +757,7 @@ livrer.Activated:Fire() -- second appui d'un double clic (moins de 0,4 s) : igno
 verifier(titre() == "7. Photo et livraison", "un double clic trop rapide ne livre pas")
 cliquer("Livrer")
 verifier(titre() == "La cliente refuse la robe" and texte("Avec : Croix d'argent") ~= nil, "sans la croix d'argent : robe refusée, exigence ratée affichée")
+verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_echec", "robe refusée : un son déçu")
 verifierTailles("refus")
 cliquer("Retoucher")
 verifier(titre() == "6. Décorations", "retouche : retour aux décorations")
@@ -736,6 +774,7 @@ local imageAvant = Vignettes.piece(idVignette, tissuVignette, placeVignette, 256
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe acceptée : payée")
+verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_reussite", "robe acceptée : une petite fanfare")
 verifier(texte("La cliente est ravie") ~= nil, "l'accueil annonce la paie")
 verifier(imageAvant ~= nil and Vignettes.piece(idVignette, tissuVignette, placeVignette, 256) ~= imageAvant, "commande finie : les images des pièces découpées sont oubliées (mémoire)")
 M.avancer(1)
