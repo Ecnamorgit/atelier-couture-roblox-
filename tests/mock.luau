@@ -125,6 +125,9 @@ end
 function CFM.PointToWorldSpace(c, v)
 	return c * v
 end
+function CFM.PointToObjectSpace(c, v)
+	return CFM.Inverse(c) * v
+end
 CF.__index = function(c, k)
 	if CFM[k] then
 		return CFM[k]
@@ -585,6 +588,19 @@ end
 function methodes.UnbindAction(_, nom)
 	M.actions[nom] = nil
 end
+-- Rayons : aucune géométrie simulée. Un test range les impacts voulus dans M.impacts (une file) ;
+-- Workspace:Raycast renvoie le premier (ou nil) et garde le rayon et ses paramètres dans M.dernierRayon.
+function methodes.Raycast(_, origine, direction, params)
+	assert(typeDe(origine) == "Vector3" and typeDe(direction) == "Vector3", "Raycast : Vector3 attendus")
+	M.dernierRayon = { origine = origine, direction = direction, params = params }
+	return table.remove(M.impacts, 1)
+end
+function methodes.ViewportPointToRay(_, x, y)
+	return { Origin = Vector3.new(x, y, 0), Direction = Vector3.new(0, 0, 1) }
+end
+function methodes.ScreenPointToRay(_, x, y)
+	return { Origin = Vector3.new(x, y, 0), Direction = Vector3.new(0, 0, 1) }
+end
 function methodes.GetMouseLocation(_)
 	return M.souris or Vector2.new(0, 0)
 end
@@ -665,6 +681,7 @@ function M.initialiser()
 	M.joueurs = {}
 	M.actions = {}
 	M.coreGui = {} -- [Enum.CoreGuiType] = activé (StarterGui:SetCoreGuiEnabled)
+	M.impacts = {}
 	local game = nouvelleInstance("DataModel")
 	rawget(game, "__props").Name = "Game"
 	M.game = game
@@ -893,6 +910,11 @@ M.env = {
 	typeof = typeDe,
 	task = task,
 	Content = Content,
+	RaycastParams = {
+		new = function()
+			return { FilterType = Enum.RaycastFilterType.Exclude, FilterDescendantsInstances = {} }
+		end,
+	},
 }
 
 return M

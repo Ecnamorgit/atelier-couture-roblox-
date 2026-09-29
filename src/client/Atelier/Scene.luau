@@ -1,6 +1,7 @@
 -- Scene : le coin de l'atelier en 3D, côté client. Le mannequin aux mesures de la cliente, les pièces
--- épinglées dessus (le vrai tissu découpé), et la caméra fixe des postes autour du mannequin.
--- Au plan 4, la boutique construite par le serveur donnera l'emplacement du mannequin.
+-- épinglées dessus (le vrai tissu découpé), l'aperçu des décorations, la vitrine de la dernière robe
+-- livrée, et la caméra fixe des postes autour du mannequin (qui peut tourner pendant les décorations).
+-- Au plan 4, la boutique construite par le serveur donnera l'emplacement du mannequin et de la vitrine.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
@@ -8,6 +9,8 @@ local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Patron = require(Couture:WaitForChild("Patron"))
 local Mannequin = require(Couture:WaitForChild("Mannequin"))
 local ConstructeurRobe = require(Couture:WaitForChild("ConstructeurRobe"))
+local Recette = require(Couture:WaitForChild("Recette"))
+local Vitrines = require(Couture:WaitForChild("Vitrines"))
 
 local Scene = {}
 Scene.__index = Scene
@@ -17,16 +20,50 @@ Scene.CADRE = CFrame.new(0, Mannequin.HAUTEUR_TAILLE * Catalogue.STUDS_PAR_DM, 4
 -- Caméra face au mannequin, décalée pour le laisser à gauche de l'écran (le panneau est à droite)
 Scene.CAMERA = CFrame.lookAt(Vector3.new(-1.1, 2.6, 34.6), Vector3.new(-1.1, 2.2, 40))
 -- Étapes où la caméra montre le mannequin
-Scene.POSTES = { epinglage = true, couture = true, decorations = true }
+Scene.POSTES = { epinglage = true, couture = true, decorations = true, photo = true, refus = true }
+-- Socle de la vitrine (la dernière robe livrée), en retrait du mannequin de travail
+Scene.VITRINE = CFrame.new(7, 0.5, 52)
 
-function Scene.nouvelle(parent)
+-- options : { etaler = bool } pour la construction de la vitrine (défaut vrai)
+function Scene.nouvelle(parent, options)
 	local dossier = Instance.new("Folder")
 	dossier.Name = "AtelierLocal"
 	local robe = Instance.new("Model")
 	robe.Name = "Robe"
 	robe.Parent = dossier
+	local decorations = Instance.new("Folder")
+	decorations.Name = "Decorations"
+	decorations.Parent = dossier
+	local vitrines = Instance.new("Folder")
+	vitrines.Name = "Vitrines"
+	vitrines.Parent = dossier
+	local socle = Instance.new("Part")
+	socle.Name = "Socle"
+	socle.Anchored = true
+	socle.Size = Vector3.new(4, 1, 4)
+	socle.CFrame = Scene.VITRINE
+	socle.Material = Enum.Material.Wood
+	socle.Color = Color3.fromRGB(120, 84, 56)
+	socle.Parent = vitrines
 	dossier.Parent = parent or Workspace
-	return setmetatable({ dossier = dossier, robe = robe, mesures = nil, mannequin = nil, pieces = {}, cameraFixe = false, ouverte = true }, Scene)
+	local self = setmetatable({
+		dossier = dossier,
+		robe = robe,
+		decorations = decorations,
+		socle = socle,
+		mesures = nil,
+		mannequin = nil,
+		recette = nil,
+		pieces = {},
+		cameraFixe = false,
+		ouverte = true,
+		orbite = 0, -- degrés autour du mannequin (décorations)
+	}, Scene)
+	self.vitrines = Vitrines.nouveau(vitrines, function()
+		local camera = Workspace.CurrentCamera
+		return camera and camera.CFrame.Position or Scene.VITRINE.Position
+	end, { etaler = not options or options.etaler ~= false })
+	return self
 end
 
 local function memesMesures(a, b)
@@ -48,8 +85,15 @@ function Scene:synchroniser(etat)
 			self.mannequin = Mannequin.construire(mesures, Scene.CADRE, self.dossier)
 		end
 	end
+	-- Vitrine : la dernière robe livrée
+	local derniere = etat.robes and etat.robes[1]
+	local texte = derniere and Recette.encoder(derniere) or nil
+	if self.socle:GetAttribute("Recette") ~= texte then
+		self.socle:SetAttribute("Recette", texte)
+	end
 	-- Pièces épinglées
 	local recette = etat:recette()
+	self.recette = recette
 	local voulues = {}
 	if recette then
 		for _, p in ipairs(recette.pieces) do
@@ -66,6 +110,15 @@ function Scene:synchroniser(etat)
 			self.pieces[id] = nil
 		end
 	end
+	if etat.etape ~= "decorations" then
+		self.orbite = 0
+	end
+	-- Décorations : l'écran des décorations montre la liste qu'il édite ; ailleurs, celles de la recette
+	if etat.etape == "photo" or etat.etape == "refus" then
+		self:montrerDecorations(recette, recette.accessoires, nil)
+	elseif etat.etape ~= "decorations" then
+		self:montrerDecorations(nil, {}, nil)
+	end
 	self:regarder(self.ouverte and Scene.POSTES[etat.etape] == true)
 	if not recette then
 		return
@@ -77,6 +130,7 @@ function Scene:synchroniser(etat)
 			for _, copie in ipairs(Patron.copies(p.id)) do
 				local part = ConstructeurRobe.piece(p, copie, recette.mesures, Scene.CADRE, "robe")
 				if part and self.pieces[p.id] == entree and self.dossier.Parent then
+					part.CanQuery = true -- touchée par les rayons des décorations
 					part.Parent = self.robe
 					table.insert(entree.parts, part)
 				elseif part then
@@ -84,6 +138,72 @@ function Scene:synchroniser(etat)
 				end
 			end
 		end
+	end
+end
+
+-- Aperçu des décorations : la liste (format de la recette) et la garniture en cours ; chaque décoration
+-- posée garde sa place dans la liste (attribut « Indice ») pour être sélectionnée au toucher
+function Scene:montrerDecorations(recette, liste, garniture)
+	self.decorations:ClearAllChildren()
+	if not recette then
+		return
+	end
+	local r = table.clone(recette)
+	r.accessoires = liste
+	local function poser(a, indice)
+		local groupe = ConstructeurRobe.accessoire(r, a, Scene.CADRE, self.decorations)
+		groupe:SetAttribute("Indice", indice)
+		for _, d in ipairs(groupe:GetDescendants()) do
+			if d:IsA("BasePart") then
+				d.CanQuery = true
+			end
+		end
+	end
+	for i, a in ipairs(liste) do
+		poser(a, i)
+	end
+	if garniture and #garniture.trajet >= 2 then
+		poser(garniture, nil)
+	end
+end
+
+-- Ce que touche un rayon (repère du monde) : une décoration { genre = "decoration", indice },
+-- une pièce de la robe { genre = "piece", indicePiece, copie, u, v }, ou nil
+function Scene:toucher(origine, direction)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { self.robe, self.decorations }
+	local impact = Workspace:Raycast(origine, direction, params)
+	local i = impact and impact.Instance
+	while i and i.Parent ~= self.decorations and i.Parent ~= self.robe do
+		i = i.Parent
+	end
+	if not i then
+		return nil
+	end
+	if i.Parent == self.decorations then
+		local indice = i:GetAttribute("Indice")
+		return indice and { genre = "decoration", indice = indice } or nil
+	end
+	local id, copie = i.Name:match("^Piece_(.+)_(%a+)$")
+	if not id or not self.recette then
+		return nil
+	end
+	for k, p in ipairs(self.recette.pieces) do
+		if p.id == id then
+			local point = Scene.CADRE:PointToObjectSpace(impact.Position) / Catalogue.STUDS_PAR_DM
+			local u, v = Patron.versUV(id, copie, point, self.recette.mesures)
+			return { genre = "piece", indicePiece = k, copie = copie, u = u, v = v }
+		end
+	end
+	return nil
+end
+
+-- Tourne la caméra autour du mannequin (degrés), pendant les décorations
+function Scene:orbiter(degres)
+	self.orbite = (self.orbite + degres) % 360
+	if self.cameraFixe then
+		self:regarder(true)
 	end
 end
 
@@ -101,7 +221,13 @@ function Scene:regarder(actif)
 	end
 	if actif then
 		camera.CameraType = Enum.CameraType.Scriptable
-		camera.CFrame = Scene.CAMERA
+		if self.orbite == 0 then
+			camera.CFrame = Scene.CAMERA
+		else
+			-- Même vue, tournée autour de l'axe vertical du mannequin
+			local axe = CFrame.new(Scene.CADRE.Position)
+			camera.CFrame = axe * CFrame.Angles(0, math.rad(self.orbite), 0) * axe:Inverse() * Scene.CAMERA
+		end
 		self.cameraFixe = true
 	elseif self.cameraFixe then
 		camera.CameraType = Enum.CameraType.Custom
@@ -111,6 +237,7 @@ end
 
 function Scene:detruire()
 	self:regarder(false)
+	self.vitrines.arreter()
 	self.pieces = {}
 	self.dossier:Destroy()
 end
