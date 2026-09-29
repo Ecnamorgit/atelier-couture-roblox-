@@ -107,8 +107,10 @@ local function construire(indice, joueur, parent)
 		local t = Catalogue.Tissus[k]
 		local c = t.motif.couleurs[1]
 		local rangee, colonne = math.floor((k - 1) / 4), (k - 1) % 4
-		local rouleau = bloc(modele, origine, "Rouleau_" .. t.id, Vector3.new(-9.9, 1.2 + rangee * 2, 44.5 + colonne * 2.2), Vector3.new(0.9, 0.9, 1.8), rgb(c[1], c[2], c[3]), { forme = Enum.PartType.Cylinder, matiere = Enum.Material.Fabric, decor = true })
-		rouleau.CFrame = rouleau.CFrame * CFrame.Angles(0, math.rad(90), 0) -- couché, le long du mur
+		local rouleau = bloc(modele, origine, "Rouleau_" .. t.id, Vector3.new(-9.9, 1.2 + rangee * 2, 44.5 + colonne * 2.2), Vector3.new(1.8, 0.9, 0.9), rgb(c[1], c[2], c[3]), { forme = Enum.PartType.Cylinder, decor = true })
+		-- Un cylindre s'allonge selon X : tourné d'un quart de tour, il est couché le long du mur. Matière lisse :
+		-- la matière « tissu » de Roblox assombrit trop les couleurs
+		rouleau.CFrame = rouleau.CFrame * CFrame.Angles(0, math.rad(90), 0)
 	end
 	-- Table de découpe et machine à coudre, au fond
 	bloc(modele, origine, "TableDecoupe", Vector3.new(-6, 1.5, 51), Vector3.new(6, 3, 4), BOIS_CLAIR, { matiere = Enum.Material.Wood })

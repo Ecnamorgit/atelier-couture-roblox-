@@ -1,9 +1,13 @@
-import sys, glob, os
+import sys, glob, os, json
 S, SRC = sys.argv[1], sys.argv[2]
 ICI = os.path.dirname(os.path.abspath(__file__))
 sim = S + "/sim/"
 def lire(p): return open(p, encoding="utf-8").read()
 def nom(chemin): return os.path.basename(chemin)[: -len(".luau")]
+# Le point d'apparition du lieu (default.project.json) n'a pas de bulle de protection : l'avatar est aussitôt
+# déplacé à l'entrée de sa boutique, et la bulle le suivrait (le jeu n'a pas de combat)
+projet = json.load(open(os.path.join(SRC, "..", "default.project.json"), encoding="utf-8"))
+assert projet["tree"]["Workspace"]["SpawnLocation"]["$properties"].get("Duration") == 0,     "SpawnLocation : « Duration » doit valoir 0 (pas de bulle de protection à l'arrivée)"
 ENTETE = """local game, workspace, os, Vector3, Vector2, CFrame, Color3, UDim, UDim2, Enum, Random, Instance, typeof, task, require, warn, Content, RaycastParams =
 	M.game, M.services and M.services.Workspace, M.os, G.Vector3, G.Vector2, G.CFrame, G.Color3, G.UDim, G.UDim2, G.Enum, G.Random, G.Instance, G.typeof, G.task, requireModule, avertir, G.Content, G.RaycastParams
 """

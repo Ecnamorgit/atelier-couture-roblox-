@@ -2,6 +2,7 @@ local Boutiques = U.module("Boutiques")
 local Boutique = U.module("Boutique")
 local Scene = U.module("Scene")
 local Recette = U.module("Recette")
+local Catalogue = U.module("Catalogue")
 
 local monde = M.nouvelleInstance("Folder")
 monde.Name = "MondeTest"
@@ -61,6 +62,8 @@ for _, p in ipairs(b3:GetChildren()) do
 	end
 end
 U.verifier(rouleaux >= 6, "des rouleaux de tissu sur l'étagère (" .. rouleaux .. ")")
+local unRouleau = b3:FindFirstChild("Rouleau_" .. Catalogue.Tissus[1].id)
+U.verifier(unRouleau.Shape == Enum.PartType.Cylinder and unRouleau.Size.X >= 1.5 and unRouleau.Material ~= Enum.Material.Fabric, "rouleaux assez longs (un cylindre s'allonge selon X), en matière lisse (la matière tissu assombrit trop)")
 
 -- Rien ne gêne l'atelier : caméra du poste (même quand elle tourne), photo, cliente, entrée par la porte
 local o = Boutique.emplacement(3)

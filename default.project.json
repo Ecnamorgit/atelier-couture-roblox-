@@ -38,6 +38,7 @@
         "$className": "SpawnLocation",
         "$properties": {
           "Anchored": true,
+          "Duration": 0,
           "Size": [
             12,
             1,
