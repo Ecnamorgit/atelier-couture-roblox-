@@ -15,6 +15,7 @@ Commande.__index = Commande
 Commande.APPELS_PAR_SECONDE = 5 -- par joueur (spec §6)
 Commande.PERIODE_SAUVEGARDE = 60 -- s entre deux sauvegardes de toutes les parties (spec §6)
 Commande.FERMETURE_MAX = 25 -- s : à l'arrêt du serveur, attente maximale des dernières sauvegardes
+Commande.ESSAIS_ECRITURE = 3 -- au départ et à l'arrêt, une panne passagère du DataStore est réessayée
 local PREPARATION = "L'atelier se prépare, réessaie dans un instant."
 local SANS_SAUVEGARDE = "Ta partie ne peut pas être sauvegardée pour le moment : tes progrès de cette session seront perdus."
 -- Les relevés de couture ne sont pas limités : leur propre vraisemblance les borne (spec §6)
@@ -126,14 +127,23 @@ function Commande:arrivee(joueur)
 	}
 end
 
--- Écrit la partie d'un joueur (et rend son verrou, si liberer). Renvoie le statut de la sauvegarde, ou nil
+-- Écrit la partie d'un joueur (et rend son verrou, si liberer), en « essais » tentatives (1 par défaut ;
+-- la sauvegarde régulière réessaie d'elle-même 60 s plus tard). Renvoie le statut de la sauvegarde, ou nil
 -- si sa partie n'est pas à écrire. Une partie prise par un autre serveur n'est plus jamais écrite d'ici.
-function Commande:enregistrer(joueur, liberer)
+function Commande:enregistrer(joueur, liberer, essais)
 	local a = self.ateliers[joueur]
 	if not self.sauvegarde or not a or not a.sauvable then
 		return nil
 	end
-	local statut = self.sauvegarde:enregistrer(joueur.UserId, Sauvegarde.depuisEtat(a.etat, a.debloques), liberer)
+	local partie = Sauvegarde.depuisEtat(a.etat, a.debloques)
+	local statut
+	for essai = 1, essais or 1 do
+		statut = self.sauvegarde:enregistrer(joueur.UserId, partie, liberer)
+		if statut ~= "echec" or essai == (essais or 1) then
+			break
+		end
+		self.attendre(1)
+	end
 	if statut == "perdu" then
 		a.sauvable = false
 		warn(("[Atelier] %s : sa partie est tenue par un autre serveur, elle n'est plus écrite d'ici."):format(joueur.Name))
@@ -152,7 +162,7 @@ end
 
 -- Départ du joueur : partie écrite, verrou rendu, atelier libéré
 function Commande:depart(joueur)
-	self:enregistrer(joueur, true)
+	self:enregistrer(joueur, true, Commande.ESSAIS_ECRITURE)
 	self:retirer(joueur)
 end
 
@@ -168,7 +178,7 @@ function Commande:fermer()
 	for joueur in pairs(self.ateliers) do
 		restantes += 1
 		task.spawn(function()
-			self:enregistrer(joueur, true)
+			self:enregistrer(joueur, true, Commande.ESSAIS_ECRITURE)
 			restantes -= 1
 		end)
 	end

@@ -24,12 +24,12 @@ end
 local joueur = M.nouveauJoueur("Testeur")
 rawget(M.services.Players, "__props").LocalPlayer = joueur
 M.joueurLocal = joueur
--- Lieu publié : les parties sont sauvegardées (DataStores en mémoire du faux Roblox). La première lecture
--- de la partie du joueur échoue : il joue sans sauvegarde, et sa vraie partie n'est jamais écrasée.
+-- Lieu publié : les parties sont sauvegardées (DataStores en mémoire du faux Roblox). La partie du joueur
+-- a été écrite par une version plus récente du jeu : il joue sans sauvegarde, et elle n'est jamais écrasée.
 rawget(game, "__props").PlaceId = 4242
 rawget(game, "__props").JobId = "serveur-scenario"
 M.magasins = { AtelierCouture_v2 = M.nouveauMagasin() }
-M.magasins.AtelierCouture_v2.panne = 1
+M.magasins.AtelierCouture_v2.donnees["joueur_" .. joueur.UserId] = { version = 99, argent = 5000 }
 -- Serveur (il fait foi) : démarré avant le client, qui attend sa RemoteFunction « Atelier »
 local scriptServeur = M.nouvelleInstance("Script")
 scriptServeur.Name = "Atelier"
@@ -115,7 +115,7 @@ verifier(titre() == "Atelier de couture", "écran d'accueil")
 verifier(argent() == 150, "150 pièces d'or au départ")
 local parties = M.magasins.AtelierCouture_v2
 local cleJoueur = "joueur_" .. joueur.UserId
-verifier(parties.donnees[cleJoueur] == nil and serveur:atelier(joueur) ~= nil and not serveur:atelier(joueur).sauvable, "lecture ratée : le joueur joue sans sauvegarde")
+verifier(parties.donnees[cleJoueur].version == 99 and serveur:atelier(joueur) ~= nil and not serveur:atelier(joueur).sauvable, "partie illisible : le joueur joue sans sauvegarde")
 verifier(fenetre.Message.Visible and string.find(fenetre.Message.Text, "sauvegardée", 1, true) ~= nil, "le joueur est prévenu que sa partie ne sera pas sauvegardée")
 verifierTailles("accueil")
 cliquer("Fermer")
@@ -649,9 +649,11 @@ verifier(etatJeu.argent == argentServeur and titre() == "3. Table de découpe", 
 ---------------------------------------------------------------------------
 M.avancer(serveur.PERIODE_SAUVEGARDE + 1)
 M.services.Players.PlayerRemoving:Fire(joueur)
-verifier(parties.donnees[cleJoueur] == nil and serveur.ateliers[joueur] == nil, "partie illisible : jamais écrite, ni régulièrement ni au départ")
+verifier(parties.donnees[cleJoueur].version == 99 and parties.donnees[cleJoueur].argent == 5000 and serveur.ateliers[joueur] == nil, "partie illisible : jamais écrite, ni régulièrement ni au départ")
+-- La mise à jour arrive : la partie devient lisible
+parties.donnees[cleJoueur] = { version = 2, argent = 5000, stock = {}, debloques = {}, recettes = {} }
 M.services.Players.PlayerAdded:Fire(joueur)
-verifier(parties.donnees[cleJoueur] ~= nil and parties.donnees[cleJoueur].verrou.jobId == "serveur-scenario", "retour du joueur : partie lue, verrou pris")
+verifier(parties.donnees[cleJoueur].verrou.jobId == "serveur-scenario" and serveur:atelier(joueur).etat.argent == 5000, "retour du joueur : partie lue, verrou pris")
 M.avancer(0.5)
 verifier(serveur:traiter(joueur, "nouvelleCommande").ok, "une commande commencée sur le serveur")
 M.avancer(serveur.PERIODE_SAUVEGARDE + 1)

@@ -11,7 +11,8 @@ local Session = {}
 Session.__index = Session
 
 local INJOIGNABLE = "Le serveur ne répond pas. Réessaie."
-Session.ESSAIS_ARRIVEE = 30 -- à l'arrivée, un essai par seconde tant que le serveur lit la partie
+Session.ESSAIS_ARRIVEE = 60 -- à l'arrivée, un essai par seconde tant que le serveur lit la partie (réessais du
+-- DataStore et verrou tenu ailleurs compris)
 
 -- Session locale ; graine : pour des commandes reproductibles (tests) ; sinon aléatoire
 function Session.nouvelle(graine)

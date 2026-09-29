@@ -111,7 +111,7 @@ U.verifier(magasin.ecritures == ecritures and magasin.donnees.joueur_505.argent 
 ---------------------------------------------------------------------------
 local malchance = joueurNumero("Malchance", 502)
 magasin.donnees.joueur_502 = { version = Sauvegarde.VERSION, argent = 900, stock = {}, debloques = {}, recettes = {} }
-magasin.panne = 1
+magasin.panne = Sauvegarde.ESSAIS_LECTURE
 s3:arrivee(malchance)
 r = appeler(s3, malchance, "etat")
 U.verifier(r.ok and r.etat.argent == EtatAtelier.ARGENT_DEPART and type(r.avertissement) == "string", "lecture ratée : partie neuve, joueur prévenu")
@@ -121,6 +121,27 @@ s3:enregistrerTout()
 malchance.Parent = nil
 s3:depart(malchance)
 U.verifier(magasin.donnees.joueur_502.argent == 900 and magasin.ecritures == ecritures + 1, "sa vraie partie n'est jamais écrasée (seule celle de Fidele est écrite)")
+
+---------------------------------------------------------------------------
+-- Écriture au départ ou à l'arrêt : une panne passagère est réessayée
+---------------------------------------------------------------------------
+local tenace = joueurNumero("Tenace", 506)
+local s5 = Commande.nouvelle({
+	sauvegarde = sauvegarde("S5"),
+	attendre = function(s)
+		temps += s
+	end,
+})
+s5:arrivee(tenace)
+s5:atelier(tenace).etat.argent = 321
+magasin.panne = 1
+s5:depart(tenace)
+U.verifier(magasin.donnees.joueur_506.argent == 321 and rendu(magasin.donnees.joueur_506.verrou) and magasin.panne == 0, "panne passagère au départ : réessai, partie écrite")
+s5:arrivee(tenace)
+s5:atelier(tenace).etat.argent = 654
+magasin.panne = 1
+s5:fermer()
+U.verifier(magasin.donnees.joueur_506.argent == 654 and rendu(magasin.donnees.joueur_506.verrou), "panne passagère à l'arrêt : réessai, partie écrite")
 
 ---------------------------------------------------------------------------
 -- Joueur parti pendant le chargement : sa partie est rendue tout de suite, pas d'atelier

@@ -110,11 +110,16 @@ U.verifier(statut == "ok" and attentes == 0 and magasin.donnees.joueur_7.verrou.
 ---------------------------------------------------------------------------
 -- Protections : lecture ratée, version plus récente, écriture impossible
 ---------------------------------------------------------------------------
+-- Panne passagère : on réessaie (toutes les 3 s) ; panne qui dure : échec, rien écrit
 magasin.panne = 1
-ecritures = magasin.ecritures
+attentes = 0
 partie, statut = A:charger(9)
-U.verifier(partie == nil and statut == "echec" and magasin.ecritures == ecritures, "lecture ratée : échec, rien écrit")
-ancien.panne = 1
+U.verifier(statut == "ok" and attentes == 1 and magasin.donnees.joueur_9 ~= nil, "panne passagère à la lecture : réessai, partie lue")
+magasin.panne = Sauvegarde.ESSAIS_LECTURE
+ecritures = magasin.ecritures
+partie, statut = A:charger(13)
+U.verifier(partie == nil and statut == "echec" and magasin.ecritures == ecritures and magasin.panne == 0, "lecture impossible à chaque essai : échec, rien écrit")
+ancien.panne = Sauvegarde.ESSAIS_LECTURE
 partie, statut = A:charger(10)
 U.verifier(partie == nil and statut == "echec" and magasin.donnees.joueur_10 == nil, "ancienne sauvegarde illisible : échec, rien écrit")
 magasin.donnees.joueur_11 = { version = Sauvegarde.VERSION + 1, argent = 5000 }

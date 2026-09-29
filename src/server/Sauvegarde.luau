@@ -18,6 +18,7 @@ Sauvegarde.ANCIEN_MAGASIN = "AtelierCouture_v1" -- le prototype : { argent, repu
 Sauvegarde.VERROU_VIVANT = 90 -- s : un verrou plus récent appartient à un serveur encore en vie
 Sauvegarde.ESSAI_PAS = 3 -- s entre deux essais quand la partie est tenue ailleurs
 Sauvegarde.ESSAI_MAX = 15 -- s : au-delà, on prend la main
+Sauvegarde.ESSAIS_LECTURE = 3 -- une panne passagère du DataStore à la lecture est réessayée
 -- Champs de l'état qui forment la commande en cours (une déconnexion ne perd pas le travail)
 local EN_COURS = { "etape", "commande", "croquis", "tissus", "coupees", "coupons", "epinglees", "coutures", "accessoires" }
 
@@ -208,6 +209,16 @@ end
 function Sauvegarde:charger(userId)
 	local debut = self.horloge()
 	local ancienne = nil -- ancienne sauvegarde (v1), lue une fois pour un joueur sans partie v2
+	local pannes = 0
+	-- Panne du DataStore : on réessaie (toutes les 3 s), puis on renonce
+	local function panne()
+		pannes += 1
+		if pannes >= Sauvegarde.ESSAIS_LECTURE then
+			return true
+		end
+		self.attendre(Sauvegarde.ESSAI_PAS)
+		return false
+	end
 	while true do
 		local maintenant = self.horloge()
 		local prendre = maintenant - debut >= Sauvegarde.ESSAI_MAX
@@ -242,17 +253,22 @@ function Sauvegarde:charger(userId)
 				return migree
 			end)
 		end)
-		if not ok or illisible then
+		if illisible then
 			return nil, "echec"
 		end
-		if absente then
+		if not ok then
+			if panne() then
+				return nil, "echec"
+			end
+		elseif absente then
 			local lue, v1 = pcall(function()
 				return self.ancien and self.ancien:GetAsync(cle(userId))
 			end)
-			if not lue then
+			if lue then
+				ancienne = type(v1) == "table" and v1 or {} -- rien : une partie neuve
+			elseif panne() then
 				return nil, "echec"
 			end
-			ancienne = type(v1) == "table" and v1 or {} -- rien : une partie neuve
 		elseif tenue then
 			self.attendre(Sauvegarde.ESSAI_PAS)
 		else
