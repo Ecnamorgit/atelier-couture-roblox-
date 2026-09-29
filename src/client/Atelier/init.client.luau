@@ -1,6 +1,7 @@
 -- Atelier : script de démarrage du client. Construit la fenêtre de l'atelier, affiche l'écran
 -- qui correspond à l'étape de la commande en cours et tient la scène 3D (mannequin, robe) à jour.
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local UiKit = require(script:WaitForChild("UiKit"))
 local Session = require(script:WaitForChild("Session"))
@@ -36,7 +37,8 @@ local joueur = Players.LocalPlayer
 
 -- La liste des joueurs de Roblox (en haut à droite) cacherait le haut du panneau de l'atelier
 game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
-local session = Session.nouvelle()
+-- Chaque action passe par le serveur, qui fait foi (attend sa RemoteFunction, puis l'état du joueur)
+local session = Session.distante(ReplicatedStorage:WaitForChild("Atelier"))
 local scene = Scene.nouvelle()
 
 local gui = UiKit.creer("ScreenGui", {

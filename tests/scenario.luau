@@ -1,5 +1,5 @@
--- Scénario du nouvel atelier : une commande jouée de bout en bout en cliquant dans l'interface
--- (accueil → carnet → achat → découpe → écran de suite), comme le ferait un joueur.
+-- Scénario du nouvel atelier : le serveur et le client démarrés comme dans le jeu, une commande jouée
+-- de bout en bout en cliquant dans l'interface, comme le ferait un joueur, puis des tentatives de triche.
 local nbVerifs = 0
 local function verifier(condition, message)
 	nbVerifs += 1
@@ -24,6 +24,17 @@ end
 local joueur = M.nouveauJoueur("Testeur")
 rawget(M.services.Players, "__props").LocalPlayer = joueur
 M.joueurLocal = joueur
+-- Serveur (il fait foi) : démarré avant le client, qui attend sa RemoteFunction « Atelier »
+local scriptServeur = M.nouvelleInstance("Script")
+scriptServeur.Name = "Atelier"
+for _, nom in ipairs(NOMS_SERVEUR) do
+	local ms = M.nouvelleInstance("ModuleScript")
+	ms.Name = nom
+	ms.Parent = scriptServeur
+end
+scriptServeur.Parent = M.services.ServerScriptService
+SCRIPTS.Serveur(scriptServeur)
+local serveur = requireModule(scriptServeur.Commande).courante
 local scriptClient = M.nouvelleInstance("LocalScript")
 scriptClient.Name = "Atelier"
 for _, nom in ipairs(NOMS_CLIENT) do
@@ -102,6 +113,7 @@ verifier(not fenetre.Visible, "la croix ferme la fenêtre")
 cliquer("OuvrirAtelier")
 verifier(fenetre.Visible, "le bouton Atelier rouvre la fenêtre")
 cliquer("Clochette")
+verifier(M.dernierAppel ~= nil and M.dernierAppel.action == "nouvelleCommande" and serveur:atelier(joueur).etat.etape == "carnet", "la commande passe par le serveur, qui fait foi")
 
 ---------------------------------------------------------------------------
 -- Carnet de croquis
@@ -387,8 +399,13 @@ local etatJeu = SessionModule.courante.etat
 local contenuD = fenetre.Contenu
 local decorations = scene.Decorations
 local ACCENT = Color3.fromRGB(214, 76, 128)
--- La cliente veut une croix d'argent : sans elle, la robe sera refusée
-etatJeu.commande.exigences = { { type = "accessoire", id = "croix_argent" }, { type = "min", style = "romantique", valeur = 1 } }
+-- La cliente veut une croix d'argent : sans elle, la robe sera refusée (posé sur le serveur, qui juge
+-- la robe, et sur la copie du client, qui affiche la commande)
+local function exigencesTest()
+	return { { type = "accessoire", id = "croix_argent" }, { type = "min", style = "romantique", valeur = 1 } }
+end
+serveur:atelier(joueur).etat.commande.exigences = exigencesTest()
+etatJeu.commande.exigences = exigencesTest()
 -- La palette ne montre que des rangées entières (une rangée coupée attirerait les clics à côté)
 local palette = contenuD.Palette
 verifier(palette.Size.Y.Offset % 44 == 0, "palette : rangées entières")
@@ -583,5 +600,37 @@ for _, o in ipairs(ongletsDecoupe:GetChildren()) do
 end
 verifier(nbOnglets == 6 and ongletsDecoupe.CanvasSize.X.Offset >= finOnglets, "six onglets, tous atteignables")
 verifierTailles("découpe à six tissus")
+
+---------------------------------------------------------------------------
+-- Triche : appels directs au serveur ; le client n'a qu'une copie de l'état
+---------------------------------------------------------------------------
+local remoteAtelier = RS.Atelier
+local etatServeur = serveur:atelier(joueur).etat
+local argentServeur, stockServeur = etatServeur.argent, table.clone(etatServeur.stock)
+M.avancer(1)
+local rt = remoteAtelier:InvokeServer("voler", 1000)
+verifier(not rt.ok and rt.erreur == "Action inconnue.", "triche : action inconnue refusée")
+M.avancer(0.5)
+rt = remoteAtelier:InvokeServer("livrer")
+verifier(not rt.ok and rt.erreur == "Ce n'est pas le moment de livrer.", "triche : action dans le désordre refusée")
+M.avancer(0.5)
+rt = remoteAtelier:InvokeServer("couper", "jupe_trapeze_devant", { x = 50, y = 2, angle = 0 })
+verifier(not rt.ok and rt.erreur == "La pièce dépasse du tissu.", "triche : découpe hors du rouleau refusée")
+M.avancer(1.1)
+local refuses = 0
+for _ = 1, 8 do
+	if remoteAtelier:InvokeServer("etat").erreur == "Doucement !" then
+		refuses += 1
+	end
+end
+verifier(refuses == 8 - serveur.APPELS_PAR_SECONDE, "triche : rafale d'appels, les appels de trop refusés")
+etatJeu.argent = 1000000 -- le client modifie sa copie
+M.avancer(1.1)
+rt = remoteAtelier:InvokeServer("acheter", "soie_rouge", 100)
+verifier(etatServeur.argent == argentServeur - (rt.ok and rt.prix or 0) and (rt.ok or rt.erreur == "Pas assez d'argent."), "triche : l'argent de la copie du client ne compte pas")
+etatServeur.argent, etatServeur.stock = argentServeur, stockServeur
+M.avancer(1.1)
+SessionModule.courante:actualiser()
+verifier(etatJeu.argent == argentServeur and titre() == "3. Table de découpe", "la copie du client revient à l'état du serveur")
 
 print(("TOUT EST VERT : %d vérifications"):format(nbVerifs))
