@@ -7,11 +7,13 @@ et le tissu découpé se voit tel quel sur la robe en 3D.
 Le jeu est en cours de refonte, sous-projet par sous-projet
 (spec : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`, plans : `docs/superpowers/plans/`).
 
-## État actuel (plan 4b)
+## État actuel (plan 4c)
 
-Jouable dans Studio, en solo. Le serveur tient l'atelier de chaque joueur et valide chaque action (il fait
-foi) ; le client n'affiche qu'une copie de l'état. Dans un jeu publié, la partie est sauvegardée (argent,
-stock de tissu, dix dernières robes et commande en cours : une déconnexion ne perd pas le travail) :
+Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
+y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
+voient. Le serveur tient l'atelier de chaque joueur et valide chaque action (il fait foi) ; le client n'affiche
+qu'une copie de l'état. Dans un jeu publié, la partie est sauvegardée (argent, stock de tissu, dix dernières
+robes et commande en cours : une déconnexion ne perd pas le travail) :
 
 1. **Commande** : la clochette fait entrer la cliente en personne (un avatar construit en code, taille S, M ou L)
    avec 1 à 3 exigences de style, de couleur, de qualité ou d'accessoire. Elle parle par une bulle.
@@ -34,7 +36,7 @@ stock de tissu, dix dernières robes et commande en cours : une déconnexion ne 
    la robe (styles, qualité, couleur dominante, accessoires). Acceptée : paie = base × (0,5 + qualité), et la
    robe part en vitrine ; la cliente remercie et s'en va. Refusée : les exigences ratées s'affichent (avec le
    score actuel pour les styles) ; on retouche les décorations ou on abandonne.
-9. La suite : boutiques de la rue et vitrines visibles par tous (plan 4c), finition (plan 4d).
+9. La suite : finition (plan 4d).
 
 « Recommencer la robe » demande une confirmation (deuxième appui) : le tissu coupé et les décorations
 posées sont perdus.
@@ -63,6 +65,7 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Pixels` | Motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron |
   | `Recette` | Recette d'une robe en JSON et validation complète (filtre du serveur au plan 4) |
   | `Maillage`, `Mannequin`, `Editables`, `ConstructeurRobe`, `Vitrines` | Robe 3D, mannequin, vitrines |
+  | `Boutique` | Plan d'une boutique (repère local) et les 8 emplacements de la rue |
   | `EtatAtelier` | État de la commande et règles de chaque étape, relevé de couture vraisemblable, recette de la robe ; copie de l'état en données simples (`exporter`, `charger`) |
 - `src/server/` (Script `Atelier` de ServerScriptService et ses modules) : le serveur, qui fait foi.
   `Commande` tient l'atelier de chaque joueur (un `EtatAtelier`) derrière la RemoteFunction `Atelier` :
@@ -72,11 +75,14 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   par joueur, écriture par `UpdateAsync` avec un verrou de session, migrations, reprise de l'argent de
   l'ancienne clé `AtelierCouture_v1`) : lue à l'arrivée, écrite toutes les 60 s, au départ et à l'arrêt du
   serveur. Rien n'est écrit si la lecture a échoué (le joueur est prévenu), ni sur un lieu non publié.
+  `Boutiques` construit la rue : une boutique par joueur (murs, porte et fenêtre, enseigne à son nom,
+  comptoir et clochette, étagère de tissus, table, machine), et le socle de sa vitrine, qui porte la
+  recette de sa dernière robe livrée (attribut `Recette`) ; chaque client construit les robes proches.
 - `src/client/Atelier/` (LocalScript `Atelier` et ses modules) : l'interface.
   `Session` envoie chaque action au serveur et recharge sur place la copie de l'état qu'il renvoie ; `TableDecoupe` et `MachineCoudre` sont la logique pure de la table
   de découpe, de la machine à coudre et de l'éditeur de décorations (`Decorateur`) ; `Cliente` construit
-  l'avatar de la cliente et sa bulle ; `Scene` tient la cliente, le mannequin, la robe épinglée, l'aperçu des
-  décorations, les réglages de la photo, la vitrine et la caméra du poste ;
+  l'avatar de la cliente et sa bulle ; `Scene` tient, dans la boutique du joueur, la cliente, le mannequin,
+  la robe épinglée, l'aperçu des décorations, les réglages de la photo et la caméra du poste ;
   un module `Ecran…` par étape.
 
 **Tester la sauvegarde** : un lieu non publié (fichier local, `game.PlaceId == 0`) ne sauvegarde pas.
