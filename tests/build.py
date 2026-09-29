@@ -19,6 +19,9 @@ function U.proche(a, b, tol)
 end
 local dossierUnitaires
 function U.module(nomModule)
+	if dossierUnitaires and dossierUnitaires.Parent ~= M.services.ReplicatedStorage then
+		dossierUnitaires.Parent = M.services.ReplicatedStorage -- un test a réinitialisé le monde
+	end
 	if not dossierUnitaires then
 		M.initialiser()
 		dossierUnitaires = M.nouvelleInstance("Folder")
@@ -46,20 +49,25 @@ out.append("""requireModule = function(ms)
 	end
 	return cache[nom]
 end""")
-# Tous les modules partagés sont chargés automatiquement
-modules = sorted(glob.glob(SRC + "/shared/*.luau"))
+# Modules partagés et modules du client (sauf le script de démarrage) : chargés automatiquement
+modules = sorted(glob.glob(SRC + "/shared/*.luau")) + sorted(
+    c for c in glob.glob(SRC + "/client/Atelier/*.luau") if not os.path.basename(c).startswith("init."))
 for chemin in modules:
     out.append(f"MODULES[\"{nom(chemin)}\"] = function(script)\n" + ENTETE + lire(chemin) + "\nend")
 out.append("local NOMS_MODULES = { " + ", ".join(f"\"{nom(c)}\"" for c in modules) + " }")
+# Noms séparés pour le scénario : modules partagés (ReplicatedStorage.Couture) et modules du client (enfants du LocalScript)
+out.append("local NOMS_PARTAGES = { " + ", ".join(f"\"{nom(c)}\"" for c in modules if "/shared/" in c.replace("\\", "/")) + " }")
+out.append("local NOMS_CLIENT = { " + ", ".join(f"\"{nom(c)}\"" for c in modules if "/client/" in c.replace("\\", "/")) + " }")
 out.append("local SCRIPTS = {}")
-for nomScript, chemin in [("AtelierServer", "server/AtelierServer.server.luau"),
-                          ("AtelierClient", "client/AtelierClient.client.luau")]:
-    out.append(f"SCRIPTS[\"{nomScript}\"] = function(script)\n" + ENTETE + lire(SRC + "/" + chemin) + "\nend")
+for nomScript, chemin in [("Atelier", "client/Atelier/init.client.luau")]:
+    if os.path.exists(SRC + "/" + chemin):
+        out.append(f"SCRIPTS[\"{nomScript}\"] = function(script)\n" + ENTETE + lire(SRC + "/" + chemin) + "\nend")
 # Tests unitaires (tests/unitaires/*.luau), exécutés avant le scénario
 out.append(OUTILS_UNITAIRES)
 for f in sorted(glob.glob(ICI + "/unitaires/*.luau")):
     out.append("do\n" + ENTETE + lire(f) + "\nend")
 out.append("print((\"Unitaires : %d vérifications\"):format(U.compte))")
 out.append("M.avertissements = {} -- le scénario ne voit pas les avertissements des tests unitaires")
+out.append("table.clear(cache) -- le scénario recharge des modules neufs, liés à ses propres instances")
 out.append("do\n" + ENTETE + lire(sim + "scenario.luau") + "\nend")
 open(sim + "run.luau", "w", encoding="utf-8").write("\n".join(out))
