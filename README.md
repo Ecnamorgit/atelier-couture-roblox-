@@ -7,7 +7,7 @@ et le tissu découpé se voit tel quel sur la robe en 3D.
 Le jeu est en cours de refonte, sous-projet par sous-projet
 (spec : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`, plans : `docs/superpowers/plans/`).
 
-## État actuel (plan 3b)
+## État actuel (plan 3c)
 
 Jouable dans Studio, en solo, sans sauvegarde (l'état de la partie vit dans le client) :
 
@@ -22,10 +22,19 @@ Jouable dans Studio, en solo, sans sauvegarde (l'état de la partie vit dans le 
    dans le tissu exactement tel qu'il a été découpé.
 6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé
    pendant que le tissu tire ; vitesse tortue, normale ou lapin, découd-vite, assistance (note plafonnée à 85 %).
-   La qualité de la robe (droit-fil × couture, pondérée par la surface) s'affiche à la fin.
-7. La suite (décorations, photo et livraison) arrive au plan 3c ; serveur, boutiques et sauvegarde au plan 4.
+   Une pièce finie n'est rendue qu'avec « Pièce suivante » : la dernière couture se défait encore.
+7. **Décorations** : 10 objets (boutons, nœuds, fleurs, broche, perle, étoile, croix) et 5 garnitures (dentelles,
+   rubans, galon). On touche la robe pour poser, on tourne (Q/E), agrandit, supprime, annule ; une garniture
+   se pose point par point sur une pièce. Glisser sur la scène fait tourner la vue autour du mannequin.
+   Le coût s'affiche en direct ; ce qu'on retire est remboursé.
+8. **Présentation et livraison** : la cliente juge la robe (styles, qualité, couleur dominante, accessoires).
+   Acceptée : paie = base × (0,5 + qualité), et la robe part en vitrine. Refusée : les exigences ratées
+   s'affichent (avec le score actuel pour les styles) ; on retouche les décorations ou on abandonne.
+9. La suite : photo (décor, éclairage, capture) et cliente en personne au plan 3d ; serveur, boutiques et
+   sauvegarde au plan 4.
 
-« Recommencer la robe » demande une confirmation (deuxième appui) : le tissu déjà coupé est perdu.
+« Recommencer la robe » demande une confirmation (deuxième appui) : le tissu coupé et les décorations
+posées sont perdus.
 
 ## Installation
 
@@ -54,7 +63,8 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `EtatAtelier` | État de la commande et règles de chaque étape, relevé de couture vraisemblable, recette de la robe (repris par le serveur au plan 4) |
 - `src/client/Atelier/` (LocalScript `Atelier` et ses modules) : l'interface.
   `Session` fait le lien avec l'état ; `TableDecoupe` et `MachineCoudre` sont la logique pure de la table
-  de découpe et de la machine à coudre ; `Scene` tient le mannequin, la robe épinglée et la caméra du poste ;
+  de découpe, de la machine à coudre et de l'éditeur de décorations (`Decorateur`) ; `Scene` tient le
+  mannequin, la robe épinglée, l'aperçu des décorations, la vitrine et la caméra du poste ;
   un module `Ecran…` par étape.
 
 **Limite assumée (couture)** : le relevé de l'aiguille vient du client. `EtatAtelier` vérifie qu'il est
