@@ -49,7 +49,7 @@ while numero == nil do
 	joueur:GetAttributeChangedSignal("Boutique"):Wait()
 	numero = joueur:GetAttribute("Boutique")
 end
-local origine = if numero > 0 then Boutique.emplacement(numero) else CFrame.new()
+local origine = if numero > 0 then Boutique.emplacement(numero) else Boutique.HORS_RUE
 local scene = Scene.nouvelle(Workspace, { origine = origine })
 -- Les vitrines de la rue (la sienne et celles des voisins) : chaque robe est construite près de la caméra
 Vitrines.nouveau(Workspace:WaitForChild("Vitrines"), function()

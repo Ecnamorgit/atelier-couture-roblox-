@@ -49,6 +49,9 @@ rojo serve        # dans ce dossier, puis « Connect » depuis le plugin Rojo da
 rojo build -o AtelierCouture.rbxl
 ```
 
+Dans les paramètres du jeu publié, régler **Max Players à 8** : la rue compte 8 boutiques (un joueur de plus
+travaillerait hors de la rue, sans vitrine).
+
 Le fichier `AtelierCouture.rbxl` fourni est prêt à ouvrir. Après une modification du code, le régénérer avec
 `rojo build -o AtelierCouture.rbxl`. Le rendu 3D des robes utilise les API EditableMesh / EditableImage :
 dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plus) et avoir activé ces API.

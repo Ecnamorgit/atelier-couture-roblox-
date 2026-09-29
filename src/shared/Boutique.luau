@@ -22,6 +22,10 @@ Boutique.VITRINE = CFrame.new(7.5, 0.5, 32.5)
 -- Là où l'avatar du joueur apparaît : juste passé la porte, tourné vers l'atelier
 Boutique.ENTREE = CFrame.lookAt(Vector3.new(-6, 3, 33), Vector3.new(-6, 3, 40))
 
+-- Rue pleine (plus de 8 joueurs : régler Max Players à 8 dans les paramètres du jeu) : l'atelier du joueur
+-- sans boutique se place derrière une rangée, hors de la rue et de toute boutique
+Boutique.HORS_RUE = CFrame.new(0, 0, 45)
+
 -- Repère de la boutique i (1 à 4 : d'un côté de la rue, 5 à 8 : en face, tournées d'un demi-tour)
 function Boutique.emplacement(i)
 	assert(type(i) == "number" and i == math.floor(i) and i >= 1 and i <= Boutique.NOMBRE, "emplacement inconnu : " .. tostring(i))

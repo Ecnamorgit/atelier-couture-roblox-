@@ -47,6 +47,22 @@ for i = 1, Boutique.NOMBRE do
 	end
 end
 U.verifier(separees, "aucune boutique ne chevauche une autre")
+-- Rue pleine : l'atelier du joueur sans boutique se place hors de la rue, sans chevaucher aucune boutique
+local cHors = {}
+for _, x in ipairs({ -Boutique.LARGEUR / 2, Boutique.LARGEUR / 2 }) do
+	for _, z in ipairs({ Boutique.AVANT, Boutique.FOND }) do
+		table.insert(cHors, (Boutique.HORS_RUE * CFrame.new(x, 0, z)).Position)
+	end
+end
+local hors = boite(cHors)
+local libre = hors.minZ > Boutique.DEMI_RUE or hors.maxZ < -Boutique.DEMI_RUE
+for i = 1, Boutique.NOMBRE do
+	local b = boite(coins[i])
+	if hors.minX < b.maxX and b.minX < hors.maxX and hors.minZ < b.maxZ and b.minZ < hors.maxZ then
+		libre = false
+	end
+end
+U.verifier(libre, "rue pleine : l'atelier se place hors de la rue, sans chevaucher aucune boutique")
 local ok = pcall(Boutique.emplacement, Boutique.NOMBRE + 1)
 U.verifier(not ok, "pas de neuvième emplacement")
 
