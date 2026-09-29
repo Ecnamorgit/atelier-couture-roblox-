@@ -60,6 +60,16 @@ local tissus = {}
 for _, id in ipairs(ORDRE) do
 	tissus[id] = "coton_blanc"
 end
+-- Déblocages (sous-projet 2) : le serveur refuse une variante ou un tissu encore fermés
+local fermee = table.clone(CROQUIS)
+fermee.jupe = "jupe_evasee"
+local tissusFermee = { corsage_droit_devant = "coton_blanc", corsage_droit_dos = "coton_blanc", jupe_evasee_devant = "coton_blanc", jupe_evasee_dos = "coton_blanc" }
+r = appeler(joueur, "validerCroquis", fermee, tissusFermee)
+U.verifier(not r.ok and r.erreur == "Pas encore ouvert : Jupe longue évasée (Amitié de Victoire : 2)." and etatDe(joueur).etape == "carnet", "variante fermée refusée par le serveur")
+local enSoie = table.clone(tissus)
+enSoie.jupe_droite_dos = "soie_rouge"
+r = appeler(joueur, "validerCroquis", CROQUIS, enSoie)
+U.verifier(not r.ok and r.erreur == "Pas encore ouvert : Soie rouge (Prestige 5)." and etatDe(joueur).etape == "carnet", "tissu fermé refusé par le serveur")
 -- Un croquis avec un champ en trop : seules les quatre familles sont gardées sur le serveur (et renvoyées)
 local bourre = table.clone(CROQUIS)
 bourre.bourrage = string.rep("x", 1000)
@@ -71,8 +81,10 @@ for _, dm in ipairs({ 0, -5, 2.5, 1e9, "10" }) do
 	r = appeler(joueur, "acheter", "coton_blanc", dm)
 	U.verifier(not r.ok and r.erreur == "Longueur invalide.", "achat refusé : " .. tostring(dm) .. " dm")
 end
+r = appeler(joueur, "acheter", "soie_rouge", 5)
+U.verifier(not r.ok and r.erreur == "Pas encore ouvert : Soie rouge (Prestige 5)." and etatDe(joueur).stock.soie_rouge == nil, "achat d'un tissu fermé refusé")
 etatDe(joueur).argent = 5
-r = appeler(joueur, "acheter", "soie_rouge", 100)
+r = appeler(joueur, "acheter", "lin_noir", 100)
 U.verifier(not r.ok and r.erreur == "Pas assez d'argent." and etatDe(joueur).argent == 5, "achat trop cher refusé")
 etatDe(joueur).argent = 1000
 r = appeler(joueur, "acheter", "coton_blanc", 12)
@@ -141,6 +153,8 @@ end
 local argentAvant = etatDe(joueur).argent
 r = appeler(joueur, "decorer", trop)
 U.verifier(not r.ok and etatDe(joueur).argent == argentAvant and etatDe(joueur).etape == "decorations", "301 décorations refusées, rien facturé")
+r = appeler(joueur, "decorer", { { id = "croix_argent", piece = 1, copie = "unique", u = 0.5, v = 0.5, echelle = 1, angle = 0 } })
+U.verifier(not r.ok and r.erreur == "Pas encore ouvert : Croix d'argent (Amitié d'Inès : 4)." and etatDe(joueur).etape == "decorations", "accessoire fermé refusé par le serveur")
 U.verifier(appeler(joueur, "decorer", {}).ok, "robe présentée")
 etatDe(joueur).commande.exigences = { { type = "qualite", valeur = 0.1 } }
 r = appeler(joueur, "livrer")

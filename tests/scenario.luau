@@ -251,6 +251,15 @@ verifier(serveur:atelier(joueur).etat.commande.ajustement == 1 and serveur:ateli
 -- Carnet de croquis
 ---------------------------------------------------------------------------
 verifier(titre() == "1. Carnet de croquis", "mesures prises : le carnet")
+-- Pour la suite, une couturière confirmée : tout le catalogue ouvert (prestige et amitiés au plus haut)
+local etatServeur = serveur:atelier(joueur).etat
+etatServeur.prestige = 530
+for _, c in ipairs(Clientes.LISTE) do
+	etatServeur.clientes[c.id] = etatServeur.clientes[c.id] or { amitie = 0, vues = 0, derniere = 0 }
+	etatServeur.clientes[c.id].amitie = 25
+end
+requireModule(scriptClient.Session).courante:actualiser()
+verifier(requireModule(scriptClient.Session).courante.etat.prestige == 530, "la copie du client suit le serveur")
 verifierTailles("carnet")
 verifier(texte("Colette (taille M) veut") ~= nil, "le carnet dit qui commande, et sa taille")
 verifier(M.services.Workspace.AtelierLocal:FindFirstChild("Cliente") == clienteMesuree and clienteMesuree.Parent ~= nil, "mesures validées : la même cliente reste là (pas reconstruite)")

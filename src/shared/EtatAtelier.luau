@@ -11,6 +11,7 @@ local Notation = require(dossier:WaitForChild("Notation"))
 local Recette = require(dossier:WaitForChild("Recette"))
 local Clientes = require(dossier:WaitForChild("Clientes"))
 local Progression = require(dossier:WaitForChild("Progression"))
+local Deblocages = require(dossier:WaitForChild("Deblocages"))
 
 local EtatAtelier = {}
 EtatAtelier.__index = EtatAtelier
@@ -28,6 +29,16 @@ EtatAtelier.ETAPES = { "accueil", "mesures", "carnet", "achat", "decoupe", "epin
 
 local function refus(message)
 	return { ok = false, erreur = message }
+end
+
+-- Refus du premier élément encore fermé (déblocages : prestige ou amitié), ou nil
+local function fermes(self, genre, ids)
+	for _, id in ipairs(ids) do
+		if not Deblocages.ouvert(self, genre, id) then
+			return refus(("Pas encore ouvert : %s (%s)."):format(Deblocages.nom(genre, id), Deblocages.raison(genre, id)))
+		end
+	end
+	return nil
 end
 
 local function fini(n)
@@ -164,7 +175,7 @@ function EtatAtelier:nouvelleCommande(rng)
 	self.visites += 1
 	fiche.vues += 1
 	fiche.derniere = self.visites
-	self.commande = Commandes.generer(rng, Clientes.get(id))
+	self.commande = Commandes.generer(rng, Clientes.get(id), self)
 	self.commande.numero = self.visites -- la reconnaît d'une copie à l'autre (la scène garde la même cliente)
 	self.argent = math.max(self.argent, EtatAtelier.FILET)
 	self.croquis, self.tissus, self.coupees, self.coupons = nil, {}, {}, {}
@@ -240,6 +251,17 @@ function EtatAtelier:validerCroquis(croquis, tissus)
 		end
 		choix[id] = t
 	end
+	local variantes, tissusChoisis = {}, {}
+	for _, famille in ipairs(Catalogue.FAMILLES) do
+		table.insert(variantes, croquis[famille])
+	end
+	for _, id in ipairs(pieces) do
+		table.insert(tissusChoisis, choix[id])
+	end
+	local ferme = fermes(self, "variantes", variantes) or fermes(self, "tissus", tissusChoisis)
+	if ferme then
+		return ferme
+	end
 	-- Seules les quatre familles sont gardées : un champ en trop envoyé par le client ne reste pas sur le
 	-- serveur (ni dans chaque réponse, ni plus tard dans la sauvegarde)
 	local propre = {}
@@ -271,6 +293,10 @@ function EtatAtelier:acheter(idTissu, dm)
 	end
 	if not fini(dm) or dm ~= math.floor(dm) or dm < 1 or dm > EtatAtelier.ACHAT_MAX then
 		return refus("Longueur invalide.")
+	end
+	local ferme = fermes(self, "tissus", { idTissu })
+	if ferme then
+		return ferme
 	end
 	local prix = EtatAtelier.prix(idTissu, dm)
 	if prix > self.argent then
@@ -453,6 +479,14 @@ function EtatAtelier:decorer(liste)
 	if not ok then
 		return refus(erreur)
 	end
+	local ids = {}
+	for _, a in ipairs(liste) do
+		table.insert(ids, a.id)
+	end
+	local ferme = fermes(self, "accessoires", ids)
+	if ferme then
+		return ferme
+	end
 	local propres = {}
 	for i, a in ipairs(liste) do
 		propres[i] = copieAccessoire(a)
@@ -485,7 +519,8 @@ function EtatAtelier:bilan()
 	return bilan
 end
 
--- L'amitié de la cliente de la commande change (robe acceptée ou abandonnée) ; renvoie le détail pour le bilan
+-- L'amitié de la cliente de la commande change (robe acceptée ou abandonnée) ; renvoie le détail pour le bilan.
+-- Un abandon ne fait jamais perdre un niveau : ce qu'il a ouvert reste ouvert
 local function amitie(self, reussie, qualite)
 	local id = self.commande and self.commande.cliente
 	local fiche = id and self.clientes[id]
@@ -493,7 +528,8 @@ local function amitie(self, reussie, qualite)
 		return nil
 	end
 	local avant = fiche.amitie
-	fiche.amitie = math.max(0, avant + Progression.gainAmitie(reussie, qualite))
+	local plancher = Progression.SEUILS_AMITIE[Progression.niveauAmitie(avant) + 1]
+	fiche.amitie = math.max(plancher, avant + Progression.gainAmitie(reussie, qualite))
 	return { cliente = id, gain = fiche.amitie - avant, points = fiche.amitie, niveau = Progression.niveauAmitie(fiche.amitie), niveauAvant = Progression.niveauAmitie(avant) }
 end
 
