@@ -209,4 +209,13 @@ end
 serveur3:depart(retourPresse)
 Sauvegarde.depuisEtat = vraieDepuis
 U.verifier(notePendant == true and serveur3.departs[retourPresse.UserId] == nil, "départ noté pendant son écriture, puis effacé")
+local malchance = joueurNumero("Malchance", 708)
+serveur3:arrivee(malchance)
+local vraiEnregistrer = serveur3.enregistrer
+serveur3.enregistrer = function()
+	error("panne simulée")
+end
+local sansErreurDepart = pcall(serveur3.depart, serveur3, malchance)
+serveur3.enregistrer = vraiEnregistrer
+U.verifier(sansErreurDepart and serveur3:atelier(malchance) == nil and serveur3.departs[malchance.UserId] == nil, "erreur en écrivant au départ : atelier retiré, départ effacé, sans erreur")
 Commande.courante = courant

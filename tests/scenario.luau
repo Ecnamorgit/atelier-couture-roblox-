@@ -177,7 +177,11 @@ verifier(titre() == "1. Carnet de croquis", "la clochette ouvre le carnet")
 verifierTailles("carnet")
 verifier(texte("La cliente (taille") ~= nil, "la taille de la cliente est affichée")
 verifier(texte("Exigence1") ~= nil and texte("Exigence1").Text ~= "", "les exigences sont affichées")
-verifier(string.find(fenetre.Contenu.Metrage.Text, "Choisis les tissus", 1, true) == 1, "sans tissu : le métrage attend les tissus")
+local ligneMetrage = fenetre.Contenu.Droite:FindFirstChild("Metrage")
+verifier(ligneMetrage ~= nil and string.find(ligneMetrage.Text, "Choisis les tissus", 1, true) == 1, "sans tissu : le métrage attend les tissus, dans la colonne de droite")
+local derniereJauge = fenetre.Contenu.Droite["Jauge_" .. Catalogue.STYLES[#Catalogue.STYLES]]
+local hauteurDroite = fenetre.Size.Y.Offset + fenetre.Contenu.Size.Y.Offset + fenetre.Contenu.Droite.Size.Y.Offset -- (tailles relatives)
+verifier(ligneMetrage.AnchorPoint.Y == 1 and ligneMetrage.Position.Y.Scale == 1 and derniereJauge.Position.Y.Offset + derniereJauge.Size.Y.Offset < hauteurDroite + ligneMetrage.Position.Y.Offset - ligneMetrage.Size.Y.Offset, "la ligne du métrage est en bas de la colonne, sous les jauges, loin des boutons du carnet")
 -- Robe : décolleté en V, manches ballon, col Claudine, jupe trapèze
 for _, v in ipairs({ "corsage_v", "manches_ballon", "col_claudine", "jupe_trapeze" }) do
 	cliquer("Variante_" .. v)
@@ -234,15 +238,23 @@ local Metrage = requireModule(dossier.Metrage)
 local piecesRobe = requireModule(dossier.Patron).piecesDuCroquis({ corsage = "corsage_v", manches = "manches_ballon", col = "col_claudine", jupe = "jupe_trapeze" })
 local dmRobe = Metrage.conseil(piecesRobe)
 local prixRobe = EtatAtelier.prix("soie_rose_fleurs", dmRobe)
-verifier(fenetre.Contenu.Metrage.Text == ("Tissu à acheter : %d dm, %d po (tu as %d po)."):format(dmRobe, prixRobe, argent()), "métrage et coût en direct : " .. fenetre.Contenu.Metrage.Text)
+verifier(ligneMetrage.Text == ("Tissu à acheter : %d dm, %d po (tu as %d po)."):format(dmRobe, prixRobe, argent()), "métrage et coût en direct : " .. ligneMetrage.Text)
 -- Pas assez d'argent (copie du client appauvrie le temps du test) : la ligne dit ce qui manque, en rouge
 local etatCarnet = requireModule(scriptClient.Session).courante.etat
 local argentVrai = etatCarnet.argent
 etatCarnet.argent = prixRobe - 10
 cliquer("Variante_jupe_trapeze") -- même croquis : le carnet se redessine
-verifier(fenetre.Contenu.Metrage.Text == ("Tissu à acheter : %d dm, %d po — il te manque 10 po."):format(dmRobe, prixRobe) and fenetre.Contenu.Metrage.TextColor3 == requireModule(scriptClient.UiKit).COULEURS.erreur, "pas assez d'argent : ce qui manque, en rouge")
+verifier(ligneMetrage.Text == ("Tissu à acheter : %d dm, %d po — il te manque 10 po."):format(dmRobe, prixRobe) and ligneMetrage.TextColor3 == requireModule(scriptClient.UiKit).COULEURS.erreur, "pas assez d'argent : ce qui manque, en rouge")
 etatCarnet.argent = argentVrai
 cliquer("Variante_jupe_trapeze")
+-- L'état change sans action du carnet (réparé par le serveur) : la ligne suit
+serveur:atelier(joueur).etat.argent = argentVrai + 1000
+M.avancer(0.5)
+requireModule(scriptClient.Session).courante:actualiser()
+verifier(string.find(ligneMetrage.Text, ("(tu as %d po)"):format(argentVrai + 1000), 1, true) ~= nil, "l'argent change sans action du carnet : la ligne suit")
+serveur:atelier(joueur).etat.argent = argentVrai
+M.avancer(0.5)
+requireModule(scriptClient.Session).courante:actualiser()
 cliquer("Valider")
 
 ---------------------------------------------------------------------------
@@ -256,6 +268,8 @@ local ligne = fenetre.Contenu.Lignes:FindFirstChild("Ligne_soie_rose_fleurs")
 verifier(ligne ~= nil and #fenetre.Contenu:GetChildren() >= 3, "une ligne par tissu du croquis")
 local quantite = tonumber(ligne.Quantite.Text:match("^(%d+)"))
 verifier(quantite and quantite > 0, "quantité conseillée pré-remplie")
+local aideAchat = texte("métrage conseillé")
+verifier(aideAchat ~= nil and #aideAchat.Text <= 110, "l'aide de l'achat tient sur une ligne (" .. (aideAchat and #aideAchat.Text or 0) .. " caractères)")
 -- Aperçu du rouleau (toucher l'échantillon) : les pièces de ce tissu rangées comme le conseil les compte.
 -- La mémoire des images est pleine jusqu'à la découpe (silhouettes impossibles) : les pièces sont en papier uni.
 M.budget.images = 0
@@ -295,6 +309,10 @@ stockServeur.soie_rose_fleurs = quantite + 7
 M.avancer(0.5)
 requireModule(scriptClient.Session).courante:actualiser()
 verifier(texte("En stock : " .. (quantite + 7) .. " dm") ~= nil, "l'état change sans achat : la ligne suit")
+stockServeur.soie_rose_fleurs = 2
+M.avancer(0.5)
+requireModule(scriptClient.Session).courante:actualiser()
+verifier(ligne.Quantite.Text == (quantite - 2) .. " dm", "le stock baisse sans achat : la quantité proposée remonte d'autant")
 stockServeur.soie_rose_fleurs = quantite
 M.avancer(0.5)
 requireModule(scriptClient.Session).courante:actualiser()

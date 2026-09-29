@@ -42,8 +42,6 @@ return function(ctx)
 		end
 	end
 	local listePieces = UiKit.creer("Frame", { Name = "Pieces", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 190), Size = UDim2.new(1, 0, 1, -190), Parent = gauche })
-	-- En bas à gauche, à côté de « Valider » : le tissu à acheter pour ce croquis, et son coût
-	local metrage = UiKit.texte({ Name = "Metrage", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, -260, 0, 46), Parent = contenu })
 
 	-- Colonne de droite : commande, exigences, jauges
 	local droite = UiKit.arrondir(UiKit.creer("Frame", { Name = "Droite", BackgroundColor3 = C.panneau, Position = UDim2.new(1, -310, 0, 0), Size = UDim2.new(0, 310, 1, -56), Parent = contenu }), 10)
@@ -68,6 +66,8 @@ return function(ctx)
 		end
 		jauges[style] = { plage = plage, acquis = acquis }
 	end
+	-- Sous les jauges, en bas de la colonne : le tissu à acheter pour ce croquis, et son coût
+	local metrage = UiKit.texte({ Name = "Metrage", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 12, 1, -8), Size = UDim2.new(1, -24, 0, 46), Parent = droite })
 
 	-- Choix du tissu d'une pièce (par-dessus le carnet), filtrable par style. Un bouton sans texte, pas un
 	-- simple cadre : dans Roblox, un cadre (même Active) laisse passer l'appui aux boutons cachés dessous
@@ -236,5 +236,14 @@ return function(ctx)
 	end)
 
 	rafraichir()
-	return fermerChoix
+	-- L'état peut changer sans action du carnet (réparé par le serveur) : argent et stock suivent
+	local desabonner = session:surChangement(function(e)
+		if e.etape == "carnet" then
+			rafraichir()
+		end
+	end)
+	return function()
+		desabonner()
+		fermerChoix()
+	end
 end

@@ -218,7 +218,10 @@ end
 function Commande:depart(joueur)
 	local id = joueur.UserId
 	self.departs[id] = true -- un retour rapide sur ce serveur attend la fin du départ
-	pcall(self.enregistrer, self, joueur, true, Commande.ESSAIS_ECRITURE)
+	local ok, erreur = pcall(self.enregistrer, self, joueur, true, Commande.ESSAIS_ECRITURE)
+	if not ok then
+		warn(("[Atelier] %s : erreur en écrivant sa partie au départ : %s"):format(joueur.Name, tostring(erreur)))
+	end
 	self:retirer(joueur)
 	self.departs[id] = nil
 end

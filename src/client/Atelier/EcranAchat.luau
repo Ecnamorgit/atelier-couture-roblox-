@@ -16,7 +16,7 @@ return function(ctx)
 	local etat = session.etat
 
 	UiKit.texte({
-		Text = "Le métrage conseillé suffit si tu ranges bien tes pièces (touche un échantillon pour voir le rouleau). Le tissu en trop reste dans ton stock.",
+		Text = "Le métrage conseillé suffit si tu ranges bien tes pièces. Touche un échantillon pour voir le rouleau.",
 		TextSize = 14,
 		TextColor3 = C.texteDoux,
 		Size = UDim2.new(1, 0, 0, 22),
@@ -37,6 +37,7 @@ return function(ctx)
 	})
 	local lignes = {}
 	local quantites = {}
+	local stocksVus = {} -- stock de chaque tissu au dernier calcul de la quantité proposée
 	local function piecesDe(idTissu)
 		local ids = {}
 		for _, id in ipairs(etat:piecesDuCroquis()) do
@@ -127,7 +128,7 @@ return function(ctx)
 			UiKit.creer("Frame", { Name = "Pli", BackgroundColor3 = C.texte, BackgroundTransparency = 0.4, BorderSizePixel = 0, Position = UDim2.fromOffset(Catalogue.PLI * PX_APERCU - 1, 0), Size = UDim2.new(0, 2, 1, 0), ZIndex = 22, Parent = rouleau })
 		end
 		UiKit.texte({
-			Text = "Les pièces sont rangées en rangées, droit-fil parfait. À la table de découpe, tu les places toi-même : bien rangées, elles prennent moins de tissu.",
+			Text = "Les pièces sont posées rang par rang, au droit-fil. À la table de découpe, tu les places toi-même : bien serrées, elles prennent moins de tissu. Le tissu en trop reste dans ton stock.",
 			TextSize = 14,
 			TextColor3 = C.texteDoux,
 			Position = UDim2.fromOffset(14 * PX_APERCU + 30, 40),
@@ -150,7 +151,8 @@ return function(ctx)
 
 	for i, idTissu in ipairs(etat:tissusUtilises()) do
 		local t = Catalogue.tissu(idTissu)
-		quantites[idTissu] = math.max(0, conseil(idTissu) - (etat.stock[idTissu] or 0))
+		stocksVus[idTissu] = etat.stock[idTissu] or 0
+		quantites[idTissu] = math.max(0, conseil(idTissu) - stocksVus[idTissu])
 		local ligne = UiKit.arrondir(UiKit.creer("Frame", { Name = "Ligne_" .. idTissu, BackgroundColor3 = C.panneau, Position = UDim2.fromOffset(0, (i - 1) * HAUTEUR_LIGNE), Size = UDim2.new(1, -10, 0, 76), Parent = liste }), 10)
 		local echantillon = UiKit.arrondir(UiKit.creer("ImageButton", {
 			Name = "Apercu_" .. idTissu,
@@ -188,8 +190,6 @@ return function(ctx)
 			end
 			local r = session:acheter(idTissu, q)
 			if r.ok then
-				quantites[idTissu] = 0
-				majLigne(idTissu)
 				ctx.message(("Acheté : %d dm de %s (%d po)."):format(q, t.nom, r.prix), C.ok)
 			else
 				ctx.refus(r)
@@ -211,9 +211,14 @@ return function(ctx)
 			ctx.refus(r)
 		end
 	end)
-	-- L'état peut changer sans achat (réparé par le serveur) : les lignes suivent
+	-- Le stock change (achat, ou état réparé par le serveur) : la quantité proposée est ce qui manque encore
 	local desabonner = session:surChangement(function()
 		for idTissu in pairs(lignes) do
+			local stock = etat.stock[idTissu] or 0
+			if stock ~= stocksVus[idTissu] then
+				stocksVus[idTissu] = stock
+				quantites[idTissu] = math.max(0, conseil(idTissu) - stock)
+			end
 			majLigne(idTissu)
 		end
 	end)

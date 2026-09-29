@@ -253,7 +253,6 @@ end
 -- Met la scène d'accord avec l'état de l'atelier (derniere = dernière action réussie de la session).
 -- Peut attendre (création des maillages) : l'appeler dans une tâche à part pour ne pas bloquer l'interface.
 function Scene:synchroniser(etat, derniere)
-	self.etatSuivi, self.derniereSuivie = etat, derniere -- pour réessayer une pièce ratée
 	self:suivreCliente(etat, derniere)
 	if etat.etape ~= "photo" then
 		self:finirPhoto()
@@ -274,7 +273,8 @@ function Scene:synchroniser(etat, derniere)
 	-- Pièces épinglées
 	local recette = etat:recette()
 	self.recette = recette
-	local voulues = {}
+	local voulues = {} -- [idPiece] = pièce de la recette, pour chaque pièce épinglée
+	self.voulues = voulues
 	if recette then
 		for _, p in ipairs(recette.pieces) do
 			if etat.epinglees[p.id] then
@@ -300,7 +300,15 @@ function Scene:synchroniser(etat, derniere)
 		self:montrerDecorations(nil, {}, nil)
 	end
 	self:regarder(self.ouverte and Scene.POSTES[etat.etape] == true)
-	if not recette then
+	self:poserPieces()
+end
+
+-- Pose sur le mannequin les pièces épinglées qui n'y sont pas encore. Une pièce ratée faute de mémoire est
+-- oubliée et réessayée quelques secondes plus tard, seule : ni la cliente, ni la caméra, ni les
+-- décorations ne bougent (une prise de vue peut être en cours).
+function Scene:poserPieces()
+	local recette, voulues = self.recette, self.voulues
+	if not recette or not self.dossier.Parent then
 		return
 	end
 	for _, p in ipairs(recette.pieces) do
@@ -320,8 +328,8 @@ function Scene:synchroniser(etat, derniere)
 					ratee = true -- mémoire des maillages pleine
 				end
 			end
-			-- Pièce ratée : oubliée, et réessayée quelques secondes plus tard (une synchronisation en attente à
-			-- la fois ; entre-temps, une action du joueur la réessaie aussi)
+			-- Pièce ratée : oubliée, et réessayée quelques secondes plus tard (un essai en attente à la fois ;
+			-- entre-temps, une action du joueur la réessaie aussi)
 			if ratee and self.pieces[p.id] == entree then
 				for _, part in ipairs(entree.parts) do
 					part:Destroy()
@@ -331,9 +339,7 @@ function Scene:synchroniser(etat, derniere)
 					self.reessai = true
 					task.delay(Scene.ESSAI_PIECE, function()
 						self.reessai = false
-						if self.dossier.Parent then
-							self:synchroniser(self.etatSuivi, self.derniereSuivie)
-						end
+						self:poserPieces()
 					end)
 				end
 			end

@@ -119,7 +119,10 @@ M.budget.maillages = 0
 scene2:synchroniser(etat2)
 M.budget.maillages = 7
 U.verifier(#scene2.robe:GetChildren() == 0 and scene2.dossier:FindFirstChild("Mannequin") ~= nil, "mémoire pleine : pièce absente, scène intacte")
+scene2:cadrerPhoto(true) -- une prise de vue commence
 M.avancer(Scene.ESSAI_PIECE + 0.1) -- aucune action du joueur entre-temps (décorations, photo)
+U.verifier(camera.CFrame == scene2.origine * Scene.CAMERA_PHOTO, "le nouvel essai ne touche pas à la vue de la photo en cours")
+scene2:cadrerPhoto(false)
 U.verifier(scene2.robe:FindFirstChild("Piece_" .. PIECES[1] .. "_unique") ~= nil, "mémoire libérée : la pièce ratée est reconstruite peu après, sans attendre une action")
 
 scene2:detruire()
