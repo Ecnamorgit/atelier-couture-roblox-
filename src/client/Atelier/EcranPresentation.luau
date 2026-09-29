@@ -5,6 +5,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CaptureService = game:GetService("CaptureService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
+local Clientes = require(Couture:WaitForChild("Clientes"))
+local Progression = require(Couture:WaitForChild("Progression"))
 local Sons = require(script.Parent:WaitForChild("Sons"))
 
 local CHOIX = {
@@ -20,7 +22,8 @@ return function(ctx)
 	local bilan = etat:bilan() -- (la qualité tient compte de l'ajustement aux mesures de la cliente)
 	local reglages = { decor = "creme", lumiere = "jour", mannequin = "creme" }
 
-	UiKit.texte({ Text = "La cliente examine ta robe.", TextSize = 16, Size = UDim2.new(1, 0, 0, 24), Parent = contenu })
+	local libre = etat.commande.libre
+	UiKit.texte({ Text = if libre then "Ta robe libre est prête." else "La cliente examine ta robe.", TextSize = 16, Size = UDim2.new(1, 0, 0, 24), Parent = contenu })
 	UiKit.texte({
 		Name = "Qualite",
 		Text = ("Qualité de la robe : %d %% (ajustement %d %%)"):format(math.floor(bilan.qualite * 100 + 0.5), math.floor(bilan.ajustement * 100 + 0.5)),
@@ -30,7 +33,11 @@ return function(ctx)
 		Size = UDim2.new(1, 0, 0, 26),
 		Parent = contenu,
 	})
-	UiKit.texte({ Text = "Elle voulait :", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 0, 20), Parent = contenu })
+	if libre then
+		UiKit.texte({ Name = "PrixVente", Text = ("Prix de vente : %d po"):format(etat:prixVente()), Font = Enum.Font.GothamBold, TextSize = 16, Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 0, 22), Parent = contenu })
+	else
+		UiKit.texte({ Text = "Elle voulait :", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 0, 20), Parent = contenu })
+	end
 	for i, e in ipairs(etat.commande.exigences) do
 		UiKit.texte({ Text = "· " .. UiKit.exigence(e, Catalogue, bilan.styles), TextSize = 14, Position = UDim2.fromOffset(0, 58 + i * 22), Size = UDim2.new(1, 0, 0, 20), Parent = contenu })
 	end
@@ -133,13 +140,61 @@ return function(ctx)
 		end
 	end, 0.4)
 
-	-- Livrer met fin à la commande : loin de « Prendre la photo », et confirmé par un second appui
-	UiKit.boutonConfirme({ Name = "Livrer", Text = "Livrer la robe", Position = UDim2.fromOffset(0, 312), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
-		local r = session:livrer()
-		if not r.ok then
-			ctx.refus(r)
+	-- Livrer met fin à la commande : loin de « Prendre la photo », et confirmé par un second appui. Une robe
+	-- libre se vend (confirmé aussi) ou s'offre à une cliente déjà venue (choisie dans une liste)
+	if libre then
+		UiKit.boutonConfirme({ Name = "Vendre", Text = ("Vendre (%d po)"):format(etat:prixVente()), Position = UDim2.fromOffset(0, 312), Size = UDim2.new(0.5, -6, 0, 44), Parent = contenu }, function()
+			local r = session:vendre()
+			if not r.ok then
+				ctx.refus(r)
+			end
+		end, true)
+		local choix = UiKit.arrondir(UiKit.creer("TextButton", { Name = "ChoixCliente", Text = "", AutoButtonColor = false, Visible = false, BackgroundColor3 = C.panneau, Size = UDim2.new(1, 0, 1, 0), ZIndex = 20, Parent = contenu }), 10)
+		UiKit.texte({ Text = "Offrir la robe à :", Font = Enum.Font.GothamBold, Size = UDim2.new(1, -110, 0, 34), ZIndex = 21, Parent = choix })
+		UiKit.boutonDoux({ Name = "FermerChoixCliente", Text = "Annuler", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(100, 34), ZIndex = 21, Parent = choix }, function()
+			choix.Visible = false
+		end)
+		local n = 0
+		for _, c in ipairs(Clientes.LISTE) do
+			local fiche = etat.clientes[c.id]
+			if fiche and fiche.vues > 0 then
+				local score = 0
+				for _, style in ipairs(c.styles) do
+					score = math.max(score, bilan.styles[style] or 0)
+				end
+				UiKit.boutonDoux({
+					Name = "Offrir_" .. c.id,
+					Text = ("%s · amitié +%d"):format(c.nom, Progression.gainCadeau(score)),
+					TextSize = 14,
+					Position = UDim2.fromOffset(0, 42 + n * 44),
+					Size = UDim2.new(1, -6, 0, 38),
+					ZIndex = 21,
+					Parent = choix,
+				}, function()
+					local r = session:offrir(c.id)
+					if not r.ok then
+						choix.Visible = false
+						ctx.refus(r)
+					end
+				end)
+				n += 1
+			end
 		end
-	end, true)
+		UiKit.boutonDoux({ Name = "Offrir", Text = "Offrir à…", Position = UDim2.new(0.5, 0, 0, 312), Size = UDim2.new(0.5, -6, 0, 44), Parent = contenu }, function()
+			if n == 0 then
+				ctx.message("Aucune cliente n'est encore venue.", C.texteDoux)
+				return
+			end
+			choix.Visible = true
+		end)
+	else
+		UiKit.boutonConfirme({ Name = "Livrer", Text = "Livrer la robe", Position = UDim2.fromOffset(0, 312), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
+			local r = session:livrer()
+			if not r.ok then
+				ctx.refus(r)
+			end
+		end, true)
+	end
 	UiKit.boutonDoux({ Name = "RetourDecorations", Text = "Retour aux décorations", TextSize = 14, Position = UDim2.fromOffset(0, 364), Size = UDim2.new(1, -6, 0, 32), Parent = contenu }, function()
 		local r = session:retourDecorations()
 		if not r.ok then

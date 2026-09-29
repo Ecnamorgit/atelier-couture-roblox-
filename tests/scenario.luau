@@ -186,6 +186,7 @@ local function serveurLent(...)
 	pendantAttente = { visible = fenetre.Message.Visible, texte = fenetre.Message.Text, couleur = fenetre.Message.TextColor3 }
 	return brancheServeur(...)
 end
+verifier(fenetre.Contenu:FindFirstChild("RobeLibre") == nil, "aucune commande livrée : pas encore de robe libre")
 remoteAtelier.OnServerInvoke = serveurLent
 cliquer("Clochette")
 remoteAtelier.OnServerInvoke = brancheServeur
@@ -902,8 +903,10 @@ local etatClient = requireModule(scriptClient.Session).courante.etat
 local idVignette = "corsage_v_devant"
 local tissuVignette, placeVignette = etatClient.tissus[idVignette], table.clone(etatClient.coupees[idVignette])
 local imageAvant = Vignettes.piece(idVignette, tissuVignette, placeVignette, 256)
--- Prestige 45 avant la livraison : elle fait passer au niveau 3 (les satins et la dentelle noire s'ouvrent)
+-- Prestige 45 avant la livraison : elle fait passer au niveau 3 (les satins et la dentelle noire s'ouvrent) ;
+-- une livraison déjà faite : celle-ci est la deuxième, les robes libres s'ouvrent
 serveur:atelier(joueur).etat.prestige = 45
+serveur:atelier(joueur).etat.livraisons = 1
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe acceptée : payée")
@@ -924,6 +927,60 @@ verifier(#robe:GetChildren() == 0 and #decorations:GetChildren() == 0 and camera
 verifier(laCliente.Parent ~= nil and laCliente.Head.Bulle.Texte.Text == Clientes.get("colette").repliques.merci, "Colette remercie")
 M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
 verifier(laCliente.Parent == nil, "puis elle s'en va")
+
+---------------------------------------------------------------------------
+-- Robes libres (après deux commandes livrées) : une taille, pas de cliente ; à la photo, vendre ou offrir
+---------------------------------------------------------------------------
+do -- (les variables de cette partie restent dans ce bloc : Luau limite un bloc à 200 variables locales)
+verifier(boutonNomme("RobeLibre") ~= nil, "deux commandes livrées : « Robe libre » à l'accueil")
+cliquer("RobeLibre")
+cliquer("RobeLibre_M")
+verifier(titre() == "1. Carnet de croquis" and texte("Robe libre (taille M) : à ton idée.") ~= nil, "robe libre : droit au carnet, sans exigence")
+verifier(scene:FindFirstChild("Cliente") == nil and serveur:atelier(joueur).etat.commande.libre, "robe libre : personne n'entre")
+cliquer("Tissu_corsage_droit_devant")
+verifier(boutonNomme("Tissu_toile_jute") ~= nil and texte("Gratuit · Décontracté") ~= nil, "la toile de jute est gratuite")
+cliquer("FermerChoix")
+-- La robe menée jusqu'à la photo sur le serveur (coupée, épinglée, cousue), sans repasser par tous les postes
+local function robeLibreALaPhoto(tissu)
+	local e = serveur:atelier(joueur).etat
+	e.croquis = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
+	e.tissus = {}
+	for _, id in ipairs(e:piecesDuCroquis()) do
+		e.tissus[id] = tissu
+		e.coupees[id] = { x = 0, y = 0, angle = 0 }
+		e.epinglees[id] = true
+		e.coutures[id] = 0.9
+	end
+	e.commande.matieres = if tissu == "toile_jute" then 0 else 10
+	e.etape = "photo"
+	requireModule(scriptClient.Session).courante:actualiser()
+end
+robeLibreALaPhoto("coton_blanc")
+local prixLibre = serveur:atelier(joueur).etat:prixVente()
+verifier(fenetre.Contenu.PrixVente.Text == ("Prix de vente : %d po"):format(prixLibre) and boutonNomme("Vendre").Text == ("Vendre (%d po)"):format(prixLibre), "à la photo : le prix de vente, « Vendre (" .. prixLibre .. " po) »")
+verifier(fenetre.Contenu:FindFirstChild("Livrer") == nil, "une robe libre ne se livre pas")
+cliquer("Offrir")
+verifier(boutonNomme("Offrir_colette") ~= nil and fenetre.Contenu.ChoixCliente:FindFirstChild("Offrir_ines") == nil, "offrir : seulement aux clientes déjà venues")
+cliquer("FermerChoixCliente")
+verifier(not fenetre.Contenu.ChoixCliente.Visible, "annuler : le choix se ferme")
+local avantVente = argent()
+cliquer("Vendre")
+cliquer("Vendre")
+verifier(titre() == "Atelier de couture" and argent() == avantVente + prixLibre and texte(("Robe vendue ! +%d pièces d'or"):format(prixLibre)) ~= nil, "robe vendue : le prix dans la caisse, annoncé")
+verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_achat" and serveur:atelier(joueur).etat.ventes == 1, "vendue : la caisse sonne")
+M.avancer(1)
+verifier(maVitrine:GetAttribute("Recette") == requireModule(dossier.Recette).encoder(serveur:atelier(joueur).etat.robes[1]), "la robe vendue part en vitrine")
+-- La suivante, en toile de jute, offerte à Colette
+local amitieColette = serveur:atelier(joueur).etat.clientes.colette.amitie
+cliquer("RobeLibre")
+cliquer("RobeLibre_S")
+verifier(texte("Robe libre (taille S) : à ton idée.") ~= nil, "une autre robe libre, taille S")
+robeLibreALaPhoto("toile_jute")
+cliquer("Offrir")
+cliquer("Offrir_colette")
+verifier(titre() == "Atelier de couture" and texte("Colette adore la robe que tu lui offres !") ~= nil and texte("Amitié de Colette : +") ~= nil, "offerte à Colette : l'accueil l'annonce")
+verifier(serveur:atelier(joueur).etat.clientes.colette.amitie > amitieColette, "son amitié monte")
+end
 -- La touche E sonne la clochette, fenêtre ouverte seulement (comme au comptoir)
 local toucheE = { KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }
 cliquer("Fermer")

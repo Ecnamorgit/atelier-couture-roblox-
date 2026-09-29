@@ -204,7 +204,7 @@ end)
 UiKit.surClic = function()
 	Sons.jouer("clic")
 end
-local SONS_ACTIONS = { nouvelleCommande = "clochette", acheter = "achat", couper = "couper", epingler = "epingler", abandonner = "echec" }
+local SONS_ACTIONS = { nouvelleCommande = "clochette", acheter = "achat", couper = "couper", epingler = "epingler", abandonner = "echec", vendre = "achat", offrir = "reussite" }
 session:surAction(function(nom, reponse)
 	if nom == "livrer" then
 		Sons.jouer(if reponse.reussie then "reussite" else "echec")

@@ -301,8 +301,8 @@ function Commande:traiter(joueur, action, ...)
 	if reponse.ok then
 		if action == "etat" and self.sauvegarde and not a.sauvable then
 			reponse.avertissement = SANS_SAUVEGARDE
-		elseif action == "livrer" and reponse.reussie then
-			self:exposer(joueur) -- la robe livrée part en vitrine
+		elseif (action == "livrer" and reponse.reussie) or action == "vendre" or action == "offrir" then
+			self:exposer(joueur) -- la robe livrée (ou vendue, ou offerte) part en vitrine
 		end
 	end
 	return reponse
