@@ -133,12 +133,14 @@ function UiKit.couleur(c)
 	return Color3.fromRGB(c[1], c[2], c[3])
 end
 
--- Texte lisible d'une exigence de commande
-function UiKit.exigence(e, Catalogue)
+-- Texte lisible d'une exigence de commande ; styles (facultatif) : scores actuels de la robe,
+-- ajoutés aux exigences de style pour savoir ce qu'il reste à faire
+function UiKit.exigence(e, Catalogue, styles)
+	local actuel = styles and e.style and (" (actuel : %d)"):format(math.floor(styles[e.style] + 0.5)) or ""
 	if e.type == "min" then
-		return ("Au moins %d en %s"):format(e.valeur, Catalogue.NOMS_STYLES[e.style])
+		return ("Au moins %d en %s"):format(e.valeur, Catalogue.NOMS_STYLES[e.style]) .. actuel
 	elseif e.type == "max" then
-		return ("Au plus %d en %s"):format(e.valeur, Catalogue.NOMS_STYLES[e.style])
+		return ("Au plus %d en %s"):format(e.valeur, Catalogue.NOMS_STYLES[e.style]) .. actuel
 	elseif e.type == "qualite" then
 		return ("Qualité d'au moins %d %%"):format(math.floor(e.valeur * 100 + 0.5))
 	elseif e.type == "teinte" then

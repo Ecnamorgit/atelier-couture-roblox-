@@ -369,18 +369,115 @@ for k = 3, 6 do
 end
 
 ---------------------------------------------------------------------------
--- Robe cousue, recommencer
+-- Décorations
 ---------------------------------------------------------------------------
-verifier(titre() == "La robe est cousue !", "écran de suite après la dernière couture")
-verifier(fenetre.AnchorPoint.X == 1 and #robe:GetChildren() == 8, "la robe cousue est visible sur le mannequin")
-verifier(texte("Qualité de la robe :") ~= nil, "la qualité de la robe est affichée")
-verifierTailles("robe cousue")
 verifier(ratee ~= nil and ratee < 20, "la couture ratée est mal notée : " .. tostring(ratee))
-cliquer("Recommencer")
-verifier(titre() == "La robe est cousue !", "un appui sur « Recommencer » ne suffit pas")
-cliquer("Recommencer")
-verifier(titre() == "1. Carnet de croquis", "recommencer ramène au carnet avec la même commande")
-verifier(#robe:GetChildren() == 0 and camera.CameraType == Enum.CameraType.Custom, "robe retirée du mannequin, caméra rendue au joueur")
+verifier(titre() == "6. Décorations", "robe cousue : les décorations")
+verifier(fenetre.AnchorPoint.X == 1 and #robe:GetChildren() == 8, "panneau à droite, la robe cousue sur le mannequin")
+verifierTailles("décorations")
+local SessionModule = requireModule(scriptClient.Session)
+local ScenePoste = requireModule(scriptClient.Scene)
+local PatronModule = requireModule(dossier.Patron)
+local PolygoneModule = requireModule(dossier.Polygone)
+local etatJeu = SessionModule.courante.etat
+local contenuD = fenetre.Contenu
+local decorations = scene.Decorations
+local ACCENT = Color3.fromRGB(214, 76, 128)
+-- La cliente veut une croix d'argent : sans elle, la robe sera refusée
+etatJeu.commande.exigences = { { type = "accessoire", id = "croix_argent" }, { type = "min", style = "romantique", valeur = 1 } }
+-- La palette ne montre que des rangées entières (une rangée coupée attirerait les clics à côté)
+local palette = contenuD.Palette
+verifier(palette.Size.Y.Offset % 44 == 0, "palette : rangées entières")
+-- Point de la robe (monde) à la place (u, v) d'une pièce
+local function point3D(id, copie, u, v)
+	local b = PolygoneModule.boite(Catalogue.piece(id).contour)
+	local pos = PatronModule.point(id, copie, b.minX + u * (b.maxX - b.minX), b.minY + v * (b.maxY - b.minY), etatJeu.commande.mesures)
+	return ScenePoste.CADRE * (pos * Catalogue.STUDS_PAR_DM)
+end
+-- Toucher la scène : le rayon du faux Roblox renvoie l'impact préparé
+local function toucherScene(impact)
+	M.impacts = { impact }
+	local appui = { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(200, 250, 0) }
+	M.avancer(0.5)
+	UIS.InputBegan:Fire(appui, false)
+	UIS.InputEnded:Fire(appui, false)
+end
+local function toucherRobe(nomPart, id, copie, u, v)
+	toucherScene({ Instance = robe[nomPart], Position = point3D(id, copie, u, v), Normal = Vector3.new(0, 0, -1) })
+end
+local function centre(groupe)
+	local somme, n = Vector3.new(0, 0, 0), 0
+	for _, d in ipairs(groupe:GetChildren()) do
+		somme += d.CFrame.Position
+		n += 1
+	end
+	return somme / n
+end
+verifier(contenuD.Cout.Text == "Coût : 0 po", "rien posé : rien à payer")
+toucherRobe("Piece_corsage_v_devant_unique", "corsage_v_devant", "unique", 0.5, 0.4)
+verifier(#decorations:GetChildren() == 0 and fenetre.Message.Visible, "toucher la robe sans décoration choisie : un message")
+cliquer("Deco_noeud_satin")
+verifier(boutonNomme("Deco_noeud_satin").BackgroundColor3 == ACCENT, "nœud de satin choisi dans la palette")
+toucherRobe("Piece_corsage_v_devant_unique", "corsage_v_devant", "unique", 0.5, 0.4)
+verifier(#decorations:GetChildren() == 1 and contenuD.Cout.Text == "Coût : 3 po", "nœud posé sur le corsage : 3 po")
+local noeud = decorations:GetChildren()[1]
+verifier((centre(noeud) - point3D("corsage_v_devant", "unique", 0.5, 0.4)).Magnitude < 0.3, "le nœud est là où l'on a touché")
+local tailleAvant = noeud:GetChildren()[1].Size
+cliquer("Agrandir")
+verifier(decorations:GetChildren()[1]:GetChildren()[1].Size.X > tailleAvant.X, "le nœud sélectionné grandit")
+cliquer("Tourner15")
+verifier(contenuD.Cout.Text == "Coût : 3 po", "tourner ou agrandir ne coûte rien")
+-- Garniture point par point
+cliquer("Deco_ruban_rose")
+toucherRobe("Piece_jupe_trapeze_devant_unique", "jupe_trapeze_devant", "unique", 0.1, 0.9)
+toucherRobe("Piece_jupe_trapeze_devant_unique", "jupe_trapeze_devant", "unique", 0.9, 0.9)
+verifier(boutonNomme("FinirGarniture").Visible, "garniture en cours : bouton pour la finir")
+cliquer("FinirGarniture")
+local coutRuban = tonumber(contenuD.Cout.Text:match("(%d+) po"))
+verifier(#decorations:GetChildren() == 2 and coutRuban and coutRuban > 3, "ruban posé le long de la jupe : " .. contenuD.Cout.Text)
+-- Toucher une décoration la sélectionne ; supprimer, puis annuler
+local partNoeud = decorations:GetChildren()[1]:GetChildren()[1]
+toucherScene({ Instance = partNoeud, Position = partNoeud.CFrame.Position, Normal = Vector3.new(0, 0, -1) })
+cliquer("Supprimer")
+verifier(#decorations:GetChildren() == 1 and contenuD.Cout.Text == ("Coût : %d po"):format(coutRuban - 3), "nœud touché puis supprimé")
+cliquer("Annuler")
+verifier(#decorations:GetChildren() == 2 and contenuD.Cout.Text == ("Coût : %d po"):format(coutRuban), "annuler : le nœud revient")
+-- Glisser sur la scène fait tourner la vue autour du mannequin (sans rien poser)
+local glisse = { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(100, 300, 0) }
+UIS.InputBegan:Fire(glisse, false)
+UIS.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseMovement, Position = Vector3.new(220, 300, 0) }, false)
+UIS.InputEnded:Fire(glisse, false)
+verifier(camera.CFrame ~= ScenePoste.CAMERA and #decorations:GetChildren() == 2, "glisser fait tourner la vue, sans rien poser")
+
+---------------------------------------------------------------------------
+-- Présentation, refus, retouche, livraison
+---------------------------------------------------------------------------
+local avantDeco = argent()
+cliquer("Presenter")
+verifier(titre() == "7. Présentation" and argent() == avantDeco - coutRuban, "présenter : décorations payées")
+verifier(camera.CFrame == ScenePoste.CAMERA, "la cliente voit la robe de face")
+verifier(texte("Au moins 1 en Romantique (actuel :") ~= nil, "le score actuel est affiché à côté d'une exigence de style")
+verifier(#decorations:GetChildren() == 2, "la robe est présentée avec ses décorations")
+verifierTailles("présentation")
+cliquer("RetourDecorations")
+verifier(titre() == "6. Décorations" and #decorations:GetChildren() == 2 and contenuD.Cout.Text == "Coût : 0 po", "retour aux décorations : déjà payées")
+cliquer("Presenter")
+cliquer("Livrer")
+verifier(titre() == "La cliente refuse la robe" and texte("Avec : Croix d'argent") ~= nil, "sans la croix d'argent : robe refusée, exigence ratée affichée")
+verifierTailles("refus")
+cliquer("Retoucher")
+verifier(titre() == "6. Décorations", "retouche : retour aux décorations")
+cliquer("Deco_croix_argent")
+toucherRobe("Piece_corsage_v_devant_unique", "corsage_v_devant", "unique", 0.5, 0.7)
+cliquer("Presenter")
+local avantLivraison = argent()
+cliquer("Livrer")
+verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe acceptée : payée")
+verifier(texte("La cliente est ravie") ~= nil, "l'accueil annonce la paie")
+verifier(scene.Vitrines.Socle:GetAttribute("Recette") ~= nil, "la robe livrée part en vitrine")
+verifier(#robe:GetChildren() == 0 and #decorations:GetChildren() == 0 and camera.CameraType == Enum.CameraType.Custom, "atelier libéré, caméra rendue au joueur")
+cliquer("Clochette")
+verifier(titre() == "1. Carnet de croquis", "nouvelle cliente")
 
 ---------------------------------------------------------------------------
 -- Robe en six tissus : la mise en page tient (lignes d'achat, onglets de la découpe)

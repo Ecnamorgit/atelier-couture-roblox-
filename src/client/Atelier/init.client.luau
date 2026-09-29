@@ -13,7 +13,9 @@ local ECRANS = {
 	decoupe = require(script:WaitForChild("EcranDecoupe")),
 	epinglage = require(script:WaitForChild("EcranEpinglage")),
 	couture = require(script:WaitForChild("EcranCouture")),
-	decorations = require(script:WaitForChild("EcranSuite")),
+	decorations = require(script:WaitForChild("EcranDecorations")),
+	photo = require(script:WaitForChild("EcranPresentation")),
+	refus = require(script:WaitForChild("EcranRefus")),
 }
 local TITRES = {
 	accueil = "Atelier de couture",
@@ -22,10 +24,12 @@ local TITRES = {
 	decoupe = "3. Table de découpe",
 	epinglage = "4. Épinglage",
 	couture = "5. Couture",
-	decorations = "La robe est cousue !",
+	decorations = "6. Décorations",
+	photo = "7. Présentation",
+	refus = "La cliente refuse la robe",
 }
 -- Postes autour du mannequin : la fenêtre devient un panneau à droite pour laisser voir la robe
-local EN_PANNEAU = { epinglage = true, decorations = true }
+local EN_PANNEAU = { epinglage = true, decorations = true, photo = true, refus = true }
 
 local C = UiKit.COULEURS
 local joueur = Players.LocalPlayer
@@ -180,7 +184,7 @@ local function afficher()
 		disposer(EN_PANNEAU[etat.etape] == true)
 		etapeAffichee = etat.etape
 		titre.Text = TITRES[etat.etape] or etat.etape
-		fermerEcran = ECRANS[etat.etape]({ session = session, contenu = contenu, fenetre = fenetre, message = afficherMessage, UiKit = UiKit })
+		fermerEcran = ECRANS[etat.etape]({ session = session, contenu = contenu, fenetre = fenetre, scene = scene, message = afficherMessage, UiKit = UiKit })
 	end
 end
 session:surChangement(afficher)

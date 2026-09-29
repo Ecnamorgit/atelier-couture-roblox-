@@ -10,7 +10,8 @@ Session.__index = Session
 
 -- graine : pour des commandes reproductibles (tests) ; sinon aléatoire
 function Session.nouvelle(graine)
-	local self = setmetatable({ etat = EtatAtelier.nouveau(), rng = Random.new(graine), ecouteurs = {} }, Session)
+	local self = setmetatable({ etat = EtatAtelier.nouveau(), rng = Random.new(graine), ecouteurs = {}, derniere = nil }, Session)
+	Session.courante = self -- la session du joueur (tests du scénario, débogage dans Studio)
 	return self
 end
 
@@ -25,9 +26,11 @@ function Session:surChangement(f)
 	end
 end
 
+-- derniere = { action, reponse } de la dernière action réussie (l'accueil affiche la dernière livraison)
 local function agir(self, nom, ...)
 	local reponse = self.etat[nom](self.etat, ...)
 	if reponse.ok then
+		self.derniere = { action = nom, reponse = reponse }
 		for _, f in ipairs(table.clone(self.ecouteurs)) do
 			f(self.etat)
 		end
@@ -58,6 +61,21 @@ function Session:epingler(idPiece)
 end
 function Session:rendreCouture(idPiece, ecarts, duree, assistance)
 	return agir(self, "rendreCouture", idPiece, ecarts, duree, assistance)
+end
+function Session:decorer(liste)
+	return agir(self, "decorer", liste)
+end
+function Session:retourDecorations()
+	return agir(self, "retourDecorations")
+end
+function Session:livrer()
+	return agir(self, "livrer")
+end
+function Session:retoucher()
+	return agir(self, "retoucher")
+end
+function Session:abandonner()
+	return agir(self, "abandonner")
 end
 function Session:recommencer()
 	return agir(self, "recommencer")
