@@ -158,6 +158,46 @@ function Patron.point(id, copie, x, y, mesures)
 	return position, dehors
 end
 
+-- Place (u, v) sur le patron (boîte normalisée, comme les accessoires) du point de la surface le plus
+-- proche de « point » (repère du corps, dm), et la distance en dm. Sert à poser une décoration là où
+-- l'on touche la robe 3D : recherche sur une grille dans la pièce, puis affinée autour du meilleur point.
+local GRILLE_UV = 24
+function Patron.versUV(id, copie, point, mesures)
+	local contour = Patron.def(id).contour
+	local b = Polygone.boite(contour)
+	local l, h = b.maxX - b.minX, b.maxY - b.minY
+	local function distance(u, v)
+		return (Patron.point(id, copie, b.minX + u * l, b.minY + v * h, mesures) - point).Magnitude
+	end
+	local meilleurU, meilleurV, meilleure = 0.5, 0.5, math.huge
+	for i = 0, GRILLE_UV do
+		for j = 0, GRILLE_UV do
+			local u, v = i / GRILLE_UV, j / GRILLE_UV
+			if Polygone.contient(contour, b.minX + u * l, b.minY + v * h) then
+				local d = distance(u, v)
+				if d < meilleure then
+					meilleurU, meilleurV, meilleure = u, v, d
+				end
+			end
+		end
+	end
+	local pas = 1 / GRILLE_UV
+	for _ = 1, 6 do
+		local bu, bv = meilleurU, meilleurV
+		for di = -2, 2 do
+			for dj = -2, 2 do
+				local u, v = math.clamp(bu + di * pas / 2, 0, 1), math.clamp(bv + dj * pas / 2, 0, 1)
+				local d = distance(u, v)
+				if d < meilleure then
+					meilleurU, meilleurV, meilleure = u, v, d
+				end
+			end
+		end
+		pas /= 2
+	end
+	return meilleurU, meilleurV, meilleure
+end
+
 -- Normale exacte de la surface au point (x, y) du patron, tournée vers l'extérieur
 -- (sert à poser les accessoires à plat sur le tissu)
 function Patron.normale(id, copie, x, y, mesures)

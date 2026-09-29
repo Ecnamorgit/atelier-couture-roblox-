@@ -191,3 +191,18 @@ coupee = ConstructeurRobe.construire(zigzag, cadre, M.services.Workspace, {
 })
 U.verifier(coupee.Parent == nil and #coupee:GetChildren() == 1, "robe détruite pendant la génération : construction arrêtée")
 U.verifier(M.editables.maillages == 0 and M.editables.images == 0, "aucun objet modifiable laissé par l'arrêt")
+
+-- Décorations : un accessoire seul, pour l'aperçu pendant qu'on le pose (même place que dans la robe)
+local seul = Instance.new("Folder")
+seul.Parent = M.services.Workspace
+local recetteSeule = exemple()
+local noeudSeul = ConstructeurRobe.accessoire(recetteSeule, recetteSeule.accessoires[1], cadre, seul)
+U.verifier(noeudSeul ~= nil and noeudSeul.Parent == seul and noeudSeul.Name == "Accessoire_noeud_satin", "accessoire seul construit sous le parent donné")
+local centreSeul = Vector3.new(0, 0, 0)
+for _, p in ipairs(noeudSeul:GetChildren()) do
+	centreSeul += p.CFrame.Position
+end
+centreSeul /= #noeudSeul:GetChildren()
+U.verifier((centreSeul - centreNoeud).Magnitude < 1e-6, "accessoire seul : même place que dans la robe complète")
+local dentelleSeule = ConstructeurRobe.accessoire(recetteSeule, recetteSeule.accessoires[3], cadre, seul)
+U.verifier(#dentelleSeule:GetChildren() == #dentelle:GetChildren(), "garniture seule : même ruban")

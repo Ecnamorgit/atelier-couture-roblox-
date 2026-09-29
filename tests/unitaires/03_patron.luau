@@ -165,3 +165,36 @@ for id, def in pairs(Catalogue.Pieces) do
 		end
 	end
 end
+
+-- Décorations : un point touché sur la robe 3D (repère du corps) redonne sa place (u, v) sur le patron
+local mesuresL = Catalogue.TAILLES.L
+local rngUV = Random.new(5)
+local essais, pires = 0, 0
+for _, cas in ipairs({
+	{ "corsage_v_devant", "unique" },
+	{ "manche_ballon", "gauche" },
+	{ "manche_ballon", "droite" },
+	{ "jupe_evasee_dos", "unique" },
+	{ "col_claudine", "droite" },
+}) do
+	local id, copie = cas[1], cas[2]
+	local b = Polygone.boite(Catalogue.piece(id).contour)
+	local trouves = 0
+	while trouves < 12 do
+		local u0, v0 = rngUV:NextNumber(0.05, 0.95), rngUV:NextNumber(0.05, 0.95)
+		local x, y = b.minX + u0 * (b.maxX - b.minX), b.minY + v0 * (b.maxY - b.minY)
+		if Polygone.contient(Catalogue.piece(id).contour, x, y) then
+			trouves += 1
+			local p = Patron.point(id, copie, x, y, mesuresL)
+			local u, v, ecart = Patron.versUV(id, copie, p, mesuresL)
+			local q = Patron.point(id, copie, b.minX + u * (b.maxX - b.minX), b.minY + v * (b.maxY - b.minY), mesuresL)
+			essais += 1
+			if (q - p).Magnitude > 0.05 or ecart > 0.05 then
+				pires += 1
+			end
+		end
+	end
+end
+U.verifier(essais == 60 and pires == 0, ("point touché → (u, v) à moins de 0,05 dm près : %d ratés sur %d"):format(pires, essais))
+local _, _, loin = Patron.versUV("corsage_droit_devant", "unique", Vector3.new(0, 30, 0), mesuresL)
+U.verifier(loin > 10, "un point loin de la pièce : grand écart (la touche n'est pas sur cette pièce)")

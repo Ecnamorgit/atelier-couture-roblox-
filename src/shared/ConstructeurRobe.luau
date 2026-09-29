@@ -225,6 +225,14 @@ local function construireAccessoire(recette, a, cadre, parent, souffler)
 	return groupe
 end
 
+-- Un accessoire seul (aperçu pendant les décorations) : a = accessoire de la recette (même format),
+-- posé exactement comme dans la robe complète. Retourne le Model « Accessoire_<id> », parenté.
+function ConstructeurRobe.accessoire(recette, a, cadre, parent)
+	return construireAccessoire(recette, a, cadre, parent, function()
+		return true
+	end)
+end
+
 ---------------------------------------------------------------------------
 -- Robe complète
 ---------------------------------------------------------------------------
