@@ -763,6 +763,15 @@ function methodes.CaptureScreenshot(_, rappel)
 	end
 	rappel("rbxtemp://capture/" .. M.captures)
 end
+-- Sons : Play et Stop ; M.sonsJoues garde le nom des sons lancés, dans l'ordre
+function methodes.Play(self)
+	rawget(self, "__props").IsPlaying = true
+	M.sonsJoues = M.sonsJoues or {}
+	table.insert(M.sonsJoues, self.Name)
+end
+function methodes.Stop(self)
+	rawget(self, "__props").IsPlaying = false
+end
 -- M.echecGalerie simule une galerie indisponible
 function methodes.PromptSaveCapturesToGallery(_, captures, rappel)
 	if M.echecGalerie then
@@ -877,6 +886,7 @@ function M.initialiser()
 		"Lighting",
 		"CaptureService",
 		"HttpService",
+		"SoundService",
 	}) do
 		local s = nouvelleInstance(nom)
 		s.Parent = game

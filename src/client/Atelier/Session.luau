@@ -99,6 +99,9 @@ local function agir(self, nom, ...)
 	local action = reponse.ok and nom ~= "etat"
 	if action then
 		self.derniere = { action = nom, reponse = reponse }
+		if self.annonce then
+			pcall(self.annonce, nom, reponse) -- (sons de l'interface) : ne peut rien bloquer
+		end
 	end
 	if action or change then
 		prevenir(self)
@@ -125,6 +128,11 @@ end
 -- attente(actif) est appelée au début (vrai) et à la fin (faux) de chaque appel au serveur (indicateur)
 function Session:surAttente(f)
 	self.attente = f
+end
+
+-- f(nom, reponse) est appelée après chaque action réussie du joueur (sons de l'interface)
+function Session:surAction(f)
+	self.annonce = f
 end
 
 -- Appelle f(etat) après chaque action réussie ; renvoie une fonction pour se désabonner
