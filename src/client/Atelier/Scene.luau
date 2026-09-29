@@ -30,6 +30,7 @@ Scene.VITRINE = CFrame.new(7, 0.5, 52)
 -- La cliente attend en retrait à côté du mannequin (à gauche à l'écran), tournée vers la caméra ; pieds au sol
 Scene.CLIENTE = CFrame.lookAt(Vector3.new(4.6, 0, 42), Vector3.new(-1.1, 0, 34.6))
 Scene.DUREE_ADIEU = 3 -- secondes avant qu'elle s'en aille, une fois la commande finie
+Scene.PRES_CLIENTE = 3.5 -- studs : la vue qui tourne passe près d'elle, elle s'efface pour ne pas boucher la vue
 Scene.PAROLES = {
 	carnet = "Bonjour ! J'aurais besoin d'une robe.",
 	photo = "Voyons voir…",
@@ -427,6 +428,24 @@ function Scene:regarder(actif)
 		camera.CameraType = Enum.CameraType.Custom
 		self.cameraFixe = false
 		self.controles(true)
+	end
+	self:effacerCliente()
+end
+
+-- La caméra du poste tout près de la cliente (vue qui tourne pendant les décorations) : elle s'efface,
+-- comme l'avatar du joueur quand la caméra s'en approche ; visible sinon
+function Scene:effacerCliente()
+	local camera = Workspace.CurrentCamera
+	local racine = self.cliente and self.cliente:FindFirstChild("HumanoidRootPart")
+	if not racine then
+		return
+	end
+	local proche = self.cameraFixe and camera ~= nil
+		and (camera.CFrame.Position - racine.CFrame.Position).Magnitude < Scene.PRES_CLIENTE
+	for _, d in ipairs(self.cliente:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.LocalTransparencyModifier = proche and 1 or 0
+		end
 	end
 end
 

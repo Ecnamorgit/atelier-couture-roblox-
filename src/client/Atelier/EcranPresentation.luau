@@ -67,8 +67,9 @@ return function(ctx)
 		end
 	end
 
-	-- Aperçu de la photo prise
-	local apercu = UiKit.arrondir(UiKit.creer("Frame", { Name = "Apercu", Visible = false, BackgroundColor3 = C.panneau, Size = UDim2.new(1, 0, 1, 0), ZIndex = 20, Parent = contenu }), 10)
+	-- Aperçu de la photo prise. Un bouton sans texte, pas un simple cadre : dans Roblox, un cadre (même
+	-- Active) laisse passer l'appui aux boutons cachés dessous (« Livrer la robe »…)
+	local apercu = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Apercu", Text = "", AutoButtonColor = false, Visible = false, BackgroundColor3 = C.panneau, Size = UDim2.new(1, 0, 1, 0), ZIndex = 20, Parent = contenu }), 10)
 	local image = UiKit.creer("ImageLabel", { Name = "Image", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Fit, Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 300), ZIndex = 21, Parent = apercu })
 	UiKit.bouton({ Name = "EnregistrerPhoto", Text = "Enregistrer dans la galerie", TextSize = 16, Position = UDim2.fromOffset(0, 312), Size = UDim2.new(1, -6, 0, 42), ZIndex = 21, Parent = apercu }, function()
 		CaptureService:PromptSaveCapturesToGallery({ image.Image }, function(resultats)

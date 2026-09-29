@@ -132,6 +132,36 @@ U.verifier(etat:nouvelleCommande(Random.new(8)).ok, "commande suivante prête")
 scene:synchroniser(etat, nil)
 U.verifier(compterClientes() == 1, "la cliente suivante entre normalement")
 
+-- La vue qui tourne autour du mannequin (décorations) passe près d'elle : elle s'efface pour ne pas
+-- boucher la vue (comme l'avatar du joueur quand la caméra s'en approche)
+local function effacee()
+	for _, d in ipairs(scene.cliente:GetDescendants()) do
+		if d:IsA("BasePart") and d.LocalTransparencyModifier ~= 1 then
+			return false
+		end
+	end
+	return true
+end
+local camera = Workspace.CurrentCamera
+scene:regarder(true)
+U.verifier(not effacee(), "de face, la cliente est visible")
+local plusPres, tousJustes = math.huge, true
+for _ = 1, 72 do
+	scene:orbiter(5)
+	local distance = (camera.CFrame.Position - scene.cliente.HumanoidRootPart.CFrame.Position).Magnitude
+	plusPres = math.min(plusPres, distance)
+	if effacee() ~= (distance < Scene.PRES_CLIENTE) then
+		tousJustes = false
+	end
+end
+U.verifier(plusPres < Scene.PRES_CLIENTE, "la vue qui tourne passe bien près d'elle (" .. plusPres .. " studs)")
+U.verifier(tousJustes, "effacée exactement quand la caméra est tout près d'elle, visible sinon")
+U.verifier(scene.orbite == 0 and not effacee(), "un tour complet : de face, visible de nouveau")
+scene:orbiter(235)
+scene:regarder(false)
+U.verifier(not effacee(), "caméra rendue au joueur : la cliente est visible")
+scene:orbiter(-235)
+
 ---------------------------------------------------------------------------
 -- Photo : décor, lumière, couleur du mannequin, puis tout est rétabli
 ---------------------------------------------------------------------------
