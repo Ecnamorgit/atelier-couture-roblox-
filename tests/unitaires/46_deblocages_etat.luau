@@ -21,6 +21,25 @@ U.verifier(Commandes.plafond(1) == 5 and Commandes.plafond(2) == 6 and Commandes
 U.verifier(not Commandes.realisable({ { type = "accessoire", id = "croix_argent" } }, Deblocages.ouverts({ prestige = 0, clientes = {} })), "un accessoire fermé : commande irréalisable")
 U.verifier(Commandes.realisable({ { type = "accessoire", id = "croix_argent" } }), "sans restriction : réalisable")
 
+-- Arrondis : un score qui vaut 30 à l'affichage (29,999999999999996) remplit « au moins 30 » ; 0,8 à l'arrondi près
+-- vaut le point d'amitié d'une belle robe
+local Notation = U.module("Notation")
+local Progression = U.module("Progression")
+local presque = { styles = { gothique = 30 - 4e-15, chic = 10 + 4e-15 }, qualite = 1, teinte = "noir", accessoires = {} }
+U.verifier(Notation.verifierExigences({ { type = "min", style = "gothique", valeur = 30 } }, presque), "au moins 30 : 29,999999999999996 suffit (arrondi)")
+U.verifier(Notation.verifierExigences({ { type = "max", style = "chic", valeur = 10 } }, presque), "au plus 10 : 10,000000000000004 passe (arrondi)")
+U.verifier(Progression.gainAmitie(true, 0.79999999999999993) == 3, "qualité 0,8 à l'arrondi près : le point d'amitié d'une belle robe")
+
+-- Le repli (après 30 tirages ratés) est lui aussi réalisable avec ce qui est ouvert, pour chaque cliente à son arrivée
+local essais = Commandes.ESSAIS
+Commandes.ESSAIS = 0
+for _, c in ipairs(Clientes.LISTE) do
+	local progres = { prestige = ({ 0, 20, 50, 100 })[c.prestige], clientes = {} }
+	local repli = Commandes.generer(Random.new(1), c, progres)
+	U.verifier(#repli.exigences == 1 and Commandes.realisable(repli.exigences, Deblocages.ouverts(progres)), c.id .. " : le repli est réalisable dès son arrivée (" .. tostring(repli.exigences[1].style) .. " " .. tostring(repli.exigences[1].valeur) .. ")")
+end
+Commandes.ESSAIS = essais
+
 -- Chaque cliente, dès son arrivée (son prestige atteint) : ses commandes sont réalisables avec ce qui est ouvert
 local SEUILS = { 0, 20, 50, 100 }
 for _, c in ipairs(Clientes.LISTE) do

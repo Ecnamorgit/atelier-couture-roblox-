@@ -61,8 +61,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    chaque cliente (niveaux 2 et 4) ouvre une variante ou un accessoire de son style. Rien n'est sauvegardé :
    tout se déduit du prestige et des amitiés. Les commandes ne demandent que ce qui est ouvert, et leurs
    exigences de style montent avec le prestige. L'accueil annonce ce qui vient de s'ouvrir.
-   **Équilibrage** (simulé par les tests) : un joueur moyen (qualité 0,8) atteint le prestige 2 à la 2e robe,
-   le 5 à la 16e, et tout est ouvert vers la 45e.
+   **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8) atteint le
+   prestige 2 à la 3e robe au plus tard, le 5 vers la 16e, et tout est ouvert vers la 46e (médianes).
 9. La suite : robes libres à vendre ou à offrir (plan 5c), courrier et carnet d'adresses (plan 5d).
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »

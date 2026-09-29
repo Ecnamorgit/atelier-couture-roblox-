@@ -62,9 +62,12 @@ local function choisir(etat)
 	return meilleur
 end
 
-local e = EtatAtelier.nouveau()
-local rng = Random.new(2026)
 local robeSimple = EtatAtelier.prix("coton_blanc", Metrage.conseil(Patron.piecesDuCroquis({ corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" })))
+-- Une partie simulée (graine de ses tirages) : robe du prestige 2 et du prestige 5, robe où tout est ouvert
+-- (math.huge si jamais), argent au plus bas, commandes livrées
+local function simuler(graine)
+local e = EtatAtelier.nouveau()
+local rng = Random.new(graine)
 local niveauA, toutOuvertA = {}, nil
 local plusPauvre, livrees = math.huge, 0
 for n = 1, ROBES do
@@ -105,10 +108,35 @@ for n = 1, ROBES do
 		toutOuvertA = n
 	end
 end
-local bilan = ("%d robes livrées sur %d ; prestige 2 à la robe %s, 5 à la %s ; tout ouvert à la %s ; au plus bas %d po"):format(livrees, ROBES, tostring(niveauA[2]), tostring(niveauA[5]), tostring(toutOuvertA), plusPauvre)
+return { prestige2 = niveauA[2] or math.huge, prestige5 = niveauA[5] or math.huge, toutOuvert = toutOuvertA or math.huge, plusPauvre = plusPauvre, livrees = livrees }
+end
+
+-- Vingt parties : les tirages changent d'une partie à l'autre, l'équilibrage se juge sur l'ensemble
+local PARTIES = 20
+local parties = {}
+for graine = 1, PARTIES do
+	parties[graine] = simuler(graine)
+end
+local function serie(cle)
+	local valeurs = {}
+	for _, p in ipairs(parties) do
+		table.insert(valeurs, p[cle])
+	end
+	table.sort(valeurs)
+	return valeurs, valeurs[math.ceil(#valeurs / 2)]
+end
+local p2 = serie("prestige2")
+local p5, medianeP5 = serie("prestige5")
+local tout, medianeTout = serie("toutOuvert")
+local pauvres = serie("plusPauvre")
+local livrees = serie("livrees")
+local function texte(v)
+	return if v == math.huge then "jamais" else tostring(v)
+end
+local bilan = ("%d parties de %d robes : prestige 2 à la robe %s au plus tard ; 5 de la %s à la %s (médiane %s) ; tout ouvert de la %s à la %s (médiane %s) ; au plus bas %d po"):format(PARTIES, ROBES, texte(p2[#p2]), texte(p5[1]), texte(p5[#p5]), texte(medianeP5), texte(tout[1]), texte(tout[#tout]), texte(medianeTout), pauvres[1])
 print("Équilibrage : " .. bilan)
-U.verifier(niveauA[2] ~= nil and niveauA[2] <= 3, "prestige 2 en trois robes au plus (" .. bilan .. ")")
-U.verifier(niveauA[5] ~= nil and niveauA[5] >= 12 and niveauA[5] <= 20, "prestige 5 entre la 12e et la 20e robe (" .. bilan .. ")")
-U.verifier(toutOuvertA ~= nil and toutOuvertA >= 30 and toutOuvertA <= 50, "tout le catalogue ouvert entre la 30e et la 50e robe (" .. bilan .. ")")
-U.verifier(plusPauvre >= robeSimple, "l'argent ne descend jamais sous le prix d'une robe simple (" .. bilan .. ")")
-U.verifier(livrees >= ROBES * 0.7, "un joueur moyen livre la plupart de ses commandes (" .. bilan .. ")")
+U.verifier(p2[#p2] <= 3, "prestige 2 en trois robes au plus, dans chaque partie (" .. bilan .. ")")
+U.verifier(p5[1] >= 12 and p5[#p5] <= 20, "prestige 5 entre la 12e et la 20e robe, dans chaque partie (" .. bilan .. ")")
+U.verifier(medianeTout >= 30 and medianeTout <= 50, "tout le catalogue ouvert entre la 30e et la 50e robe, en médiane (" .. bilan .. ")")
+U.verifier(pauvres[1] >= robeSimple, "l'argent ne descend jamais sous le prix d'une robe simple (" .. bilan .. ")")
+U.verifier(livrees[1] >= ROBES * 0.7, "un joueur moyen livre la plupart de ses commandes, dans chaque partie (" .. bilan .. ")")

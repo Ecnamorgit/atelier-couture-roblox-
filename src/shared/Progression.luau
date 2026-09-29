@@ -27,7 +27,7 @@ end
 -- Points d'amitié d'une commande : robe acceptée +2 (+1 si sa qualité atteint 80 %), abandonnée −1
 function Progression.gainAmitie(reussie, qualite)
 	if reussie then
-		return 2 + (qualite >= Progression.QUALITE_BONUS and 1 or 0)
+		return 2 + (qualite >= Progression.QUALITE_BONUS - 1e-9 and 1 or 0) -- (à l'arrondi près)
 	end
 	return -1
 end

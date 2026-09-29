@@ -10,7 +10,7 @@ local Progression = require(dossier:WaitForChild("Progression"))
 local Commandes = {}
 
 local NOMS_TAILLES = { "S", "M", "L" }
-local ESSAIS = 30
+Commandes.ESSAIS = 30 -- tirages avant le repli
 
 -- Toutes les combinaisons de variantes du carnet (3 × 3 × 3 × 4 = 108)
 local function croquisPossibles()
@@ -110,14 +110,32 @@ function Commandes.generer(rng, cliente, progres)
 	local ouverts = progres and Deblocages.ouverts(progres)
 	local plafond = progres and Commandes.plafond(Progression.niveauPrestige(progres.prestige)) or 7
 	local exigences
-	for _ = 1, ESSAIS do
+	for _ = 1, Commandes.ESSAIS do
 		local candidat = tirerExigences(rng, cliente, plafond, ouverts)
 		if Commandes.realisable(candidat, ouverts) then
 			exigences = candidat
 			break
 		end
 	end
-	exigences = exigences or { { type = "min", style = cliente and cliente.styles[1] or "decontracte", valeur = 20 } }
+	-- Repli : un seul style demandé, à 20 puis à 10 ; ceux de la cliente d'abord, puis les autres ; toujours
+	-- réalisable avec ce qui est ouvert
+	if not exigences then
+		local styles = cliente and table.clone(cliente.styles) or {}
+		for _, s in ipairs(Catalogue.STYLES) do
+			if not table.find(styles, s) then
+				table.insert(styles, s)
+			end
+		end
+		for _, valeur in ipairs({ 20, 10 }) do
+			for _, s in ipairs(styles) do
+				local candidat = { { type = "min", style = s, valeur = valeur } }
+				if not exigences and Commandes.realisable(candidat, ouverts) then
+					exigences = candidat
+				end
+			end
+		end
+		exigences = exigences or { { type = "qualite", valeur = 0.5 } }
+	end
 	if cliente then
 		return { cliente = cliente.id, taille = cliente.taille, exigences = exigences }
 	end
