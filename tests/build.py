@@ -49,17 +49,22 @@ out.append("""requireModule = function(ms)
 	end
 	return cache[nom]
 end""")
-# Modules partagés et modules du client (sauf le script de démarrage) : chargés automatiquement
-modules = sorted(glob.glob(SRC + "/shared/*.luau")) + sorted(
-    c for c in glob.glob(SRC + "/client/Atelier/*.luau") if not os.path.basename(c).startswith("init."))
+# Modules partagés, du client et du serveur (sauf les scripts de démarrage) : chargés automatiquement
+def sansDemarrage(dossier):
+    return sorted(c for c in glob.glob(SRC + dossier + "/*.luau") if not os.path.basename(c).startswith("init."))
+modules = sorted(glob.glob(SRC + "/shared/*.luau")) + sansDemarrage("/client/Atelier") + sansDemarrage("/server")
+# Un seul espace de noms dans la simulation : deux modules ne peuvent pas porter le même nom
+doublons = sorted({nom(c) for c in modules if [nom(m) for m in modules].count(nom(c)) > 1})
+assert not doublons, "modules de même nom : " + ", ".join(doublons)
 for chemin in modules:
     out.append(f"MODULES[\"{nom(chemin)}\"] = function(script)\n" + ENTETE + lire(chemin) + "\nend")
 out.append("local NOMS_MODULES = { " + ", ".join(f"\"{nom(c)}\"" for c in modules) + " }")
 # Noms séparés pour le scénario : modules partagés (ReplicatedStorage.Couture) et modules du client (enfants du LocalScript)
 out.append("local NOMS_PARTAGES = { " + ", ".join(f"\"{nom(c)}\"" for c in modules if "/shared/" in c.replace("\\", "/")) + " }")
 out.append("local NOMS_CLIENT = { " + ", ".join(f"\"{nom(c)}\"" for c in modules if "/client/" in c.replace("\\", "/")) + " }")
+out.append("local NOMS_SERVEUR = { " + ", ".join(f"\"{nom(c)}\"" for c in modules if "/server/" in c.replace("\\", "/")) + " }")
 out.append("local SCRIPTS = {}")
-for nomScript, chemin in [("Atelier", "client/Atelier/init.client.luau")]:
+for nomScript, chemin in [("Atelier", "client/Atelier/init.client.luau"), ("Serveur", "server/init.server.luau")]:
     if os.path.exists(SRC + "/" + chemin):
         out.append(f"SCRIPTS[\"{nomScript}\"] = function(script)\n" + ENTETE + lire(SRC + "/" + chemin) + "\nend")
 # Tests unitaires (tests/unitaires/*.luau), exécutés avant le scénario

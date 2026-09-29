@@ -70,6 +70,11 @@
         "$path": "src/shared"
       }
     },
+    "ServerScriptService": {
+      "Atelier": {
+        "$path": "src/server"
+      }
+    },
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Atelier": {
