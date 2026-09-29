@@ -1,6 +1,6 @@
 -- EtatAtelier : état d'un joueur à l'atelier et étapes de la commande en cours.
--- Logique pure, sans instance Roblox : le client s'en sert en local (plan 3),
--- puis le serveur la reprend derrière les échanges réseau (plan 4), où elle fait foi.
+-- Logique pure, sans instance Roblox. Le serveur la tient pour chaque joueur et elle y fait foi ;
+-- le client en garde une copie, rechargée après chaque action (exporter / charger).
 -- Chaque action renvoie { ok = true, ... } ou { ok = false, erreur = "…" } et ne lève jamais d'erreur.
 local dossier = script.Parent
 local Catalogue = require(dossier:WaitForChild("Catalogue"))
@@ -29,6 +29,39 @@ end
 local function fini(n)
 	return type(n) == "number" and n == n and n ~= math.huge and n ~= -math.huge
 end
+
+-- Copie profonde de données simples (tables, nombres, textes, booléens)
+local function copie(v)
+	if type(v) ~= "table" then
+		return v
+	end
+	local c = {}
+	for k, x in pairs(v) do
+		c[k] = copie(x)
+	end
+	return c
+end
+
+-- Égalité profonde de données simples
+local function pareil(a, b)
+	if type(a) ~= "table" or type(b) ~= "table" then
+		return a == b
+	end
+	for k, x in pairs(a) do
+		if not pareil(x, b[k]) then
+			return false
+		end
+	end
+	for k in pairs(b) do
+		if a[k] == nil then
+			return false
+		end
+	end
+	return true
+end
+
+-- Champs de l'état échangés avec le serveur (les rouleaux à part : ce sont des objets Coupon)
+local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes" }
 
 function EtatAtelier.nouveau(argent)
 	return setmetatable({
@@ -427,6 +460,46 @@ function EtatAtelier:recommencer()
 	self.argent = math.max(self.argent, EtatAtelier.FILET) -- jamais bloqué sans argent ni tissu
 	self.etape = "carnet"
 	return { ok = true }
+end
+
+local function rouleauxExportes(coupons)
+	local out = {}
+	for idTissu, coupon in pairs(coupons) do
+		out[idTissu] = { longueur = coupon.longueur, poses = copie(coupon.poses) }
+	end
+	return out
+end
+
+-- L'état en données simples, sans métatable : ce que le serveur envoie au client après chaque action.
+-- Les rouleaux deviennent { longueur, poses }.
+function EtatAtelier:exporter()
+	local d = {}
+	for _, cle in ipairs(CHAMPS) do
+		d[cle] = copie(self[cle])
+	end
+	d.coupons = rouleauxExportes(self.coupons)
+	return d
+end
+
+-- Remplace l'état par un état exporté, sur place : les écrans gardent le même objet. Ce qui n'a pas
+-- changé garde sa table (la scène reconnaît ainsi la même commande d'une action à l'autre).
+function EtatAtelier:charger(d)
+	for _, cle in ipairs(CHAMPS) do
+		if not pareil(self[cle], d[cle]) then
+			self[cle] = copie(d[cle])
+		end
+	end
+	if not pareil(rouleauxExportes(self.coupons), d.coupons) then
+		self.coupons = {}
+		for idTissu, r in pairs(d.coupons) do
+			local coupon = Coupon.nouveau(r.longueur)
+			for idPiece, pose in pairs(r.poses) do
+				coupon:poser(idPiece, pose)
+			end
+			self.coupons[idTissu] = coupon
+		end
+	end
+	return self
 end
 
 return EtatAtelier
