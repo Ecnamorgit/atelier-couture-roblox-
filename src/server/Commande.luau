@@ -76,13 +76,15 @@ local ACTIONS = {
 	end,
 }
 
--- options (facultatif) : { sauvegarde = Sauvegarde, horloge = fonction, attendre = fonction }
+-- options (facultatif) : { sauvegarde = Sauvegarde, horloge = fonction, attendre = fonction,
+-- vitrine = function(joueur, recette?) } (vitrine : montre la dernière robe livrée du joueur, ou rien)
 function Commande.nouvelle(options)
 	options = options or {}
 	local self = setmetatable({
 		ateliers = {}, -- [joueur] = { etat = EtatAtelier, rng = Random, sauvable = bool, debloques = table? }
 		limiteur = Limiteur.nouveau(Commande.APPELS_PAR_SECONDE, 1),
 		sauvegarde = options.sauvegarde,
+		vitrine = options.vitrine,
 		horloge = options.horloge or os.clock,
 		attendre = options.attendre or task.wait,
 	}, Commande)
@@ -101,11 +103,24 @@ function Commande:atelier(joueur)
 	return a
 end
 
+-- Montre la dernière robe livrée du joueur dans sa vitrine (une panne de la vitrine ne gêne pas l'atelier)
+function Commande:exposer(joueur)
+	local a = self.ateliers[joueur]
+	if not self.vitrine or not a then
+		return
+	end
+	local ok, erreur = pcall(self.vitrine, joueur, a.etat.robes[1])
+	if not ok then
+		warn(("[Atelier] %s : vitrine non mise à jour : %s"):format(joueur.Name, tostring(erreur)))
+	end
+end
+
 -- Arrivée d'un joueur : lit sa partie (peut attendre, jusqu'à 15 s si un autre serveur la tient). Si la
 -- lecture échoue, il joue une partie neuve qui ne sera jamais écrite (sa vraie partie reste intacte).
 function Commande:arrivee(joueur)
 	if not self.sauvegarde then
 		self:atelier(joueur)
+		self:exposer(joueur)
 		return
 	end
 	local partie, statut = self.sauvegarde:charger(joueur.UserId)
@@ -125,6 +140,7 @@ function Commande:arrivee(joueur)
 		sauvable = statut == "ok",
 		debloques = partie and partie.debloques,
 	}
+	self:exposer(joueur)
 end
 
 -- Écrit la partie d'un joueur (et rend son verrou, si liberer), en « essais » tentatives (1 par défaut ;
@@ -217,6 +233,8 @@ function Commande:traiter(joueur, action, ...)
 		reponse.etat = Commande.instantane(a.etat)
 		if action == "etat" and self.sauvegarde and not a.sauvable then
 			reponse.avertissement = SANS_SAUVEGARDE
+		elseif action == "livrer" and reponse.reussie then
+			self:exposer(joueur) -- la robe livrée part en vitrine
 		end
 	end
 	return reponse

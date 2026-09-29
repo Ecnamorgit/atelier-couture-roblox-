@@ -116,6 +116,12 @@ verifier(argent() == 150, "150 pièces d'or au départ")
 local parties = M.magasins.AtelierCouture_v2
 local cleJoueur = "joueur_" .. joueur.UserId
 verifier(parties.donnees[cleJoueur].version == 99 and serveur:atelier(joueur) ~= nil and not serveur:atelier(joueur).sauvable, "partie illisible : le joueur joue sans sauvegarde")
+-- La rue : le serveur a construit la boutique du joueur à l'emplacement qu'il lui a donné
+local numeroBoutique = joueur:GetAttribute("Boutique")
+local maBoutique = M.services.Workspace.Rue:FindFirstChild("Boutique_" .. tostring(numeroBoutique))
+verifier(numeroBoutique == 1 and maBoutique ~= nil and maBoutique:GetAttribute("Proprietaire") == joueur.UserId, "le serveur a construit la boutique du joueur dans la rue")
+local maVitrine = M.services.Workspace.Vitrines:FindFirstChild("Vitrine_" .. numeroBoutique)
+verifier(maVitrine ~= nil and maVitrine:GetAttribute("Recette") == nil, "sa vitrine, sur la rue, est vide")
 verifier(fenetre.Message.Visible and string.find(fenetre.Message.Text, "sauvegardée", 1, true) ~= nil, "le joueur est prévenu que sa partie ne sera pas sauvegardée")
 verifierTailles("accueil")
 cliquer("Fermer")
@@ -553,6 +559,7 @@ cliquer("Livrer")
 verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe acceptée : payée")
 verifier(texte("La cliente est ravie") ~= nil, "l'accueil annonce la paie")
 verifier(scene.Vitrines.Socle:GetAttribute("Recette") ~= nil, "la robe livrée part en vitrine")
+verifier(maVitrine:GetAttribute("Recette") == requireModule(dossier.Recette).encoder(serveur:atelier(joueur).etat.robes[1]), "la robe livrée part dans la vitrine de la boutique, sur la rue")
 verifier(#robe:GetChildren() == 0 and #decorations:GetChildren() == 0 and camera.CameraType == Enum.CameraType.Custom, "atelier libéré, caméra rendue au joueur")
 verifier(laCliente.Parent ~= nil and laCliente.Head.Bulle.Texte.Text == ScenePoste.PAROLES.merci, "la cliente remercie")
 M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
@@ -647,11 +654,12 @@ verifier(etatJeu.argent == argentServeur and titre() == "3. Table de découpe", 
 -- Sauvegarde : la partie illisible n'est jamais écrite ; au retour, la partie est lue, puis écrite
 -- régulièrement, au départ et à l'arrêt du serveur, et la commande reprend au retour suivant
 ---------------------------------------------------------------------------
+local robeLivree = serveur:atelier(joueur).etat.robes[1]
 M.avancer(serveur.PERIODE_SAUVEGARDE + 1)
 M.services.Players.PlayerRemoving:Fire(joueur)
 verifier(parties.donnees[cleJoueur].version == 99 and parties.donnees[cleJoueur].argent == 5000 and serveur.ateliers[joueur] == nil, "partie illisible : jamais écrite, ni régulièrement ni au départ")
 -- La mise à jour arrive : la partie devient lisible
-parties.donnees[cleJoueur] = { version = 2, argent = 5000, stock = {}, debloques = {}, recettes = {} }
+parties.donnees[cleJoueur] = { version = 2, argent = 5000, stock = {}, debloques = {}, recettes = { robeLivree } }
 M.services.Players.PlayerAdded:Fire(joueur)
 verifier(parties.donnees[cleJoueur].verrou.jobId == "serveur-scenario" and serveur:atelier(joueur).etat.argent == 5000, "retour du joueur : partie lue, verrou pris")
 M.avancer(0.5)
@@ -660,8 +668,10 @@ M.avancer(serveur.PERIODE_SAUVEGARDE + 1)
 verifier(parties.donnees[cleJoueur].enCours ~= nil and parties.donnees[cleJoueur].enCours.etape == "carnet", "sauvegarde régulière : la commande en cours")
 M.services.Players.PlayerRemoving:Fire(joueur)
 verifier(parties.donnees[cleJoueur].verrou.t == 0 and serveur.ateliers[joueur] == nil, "départ du joueur : partie écrite, verrou rendu")
+verifier(M.services.Workspace.Rue:FindFirstChild("Boutique_1") == nil and M.services.Workspace.Vitrines:FindFirstChild("Vitrine_1") == nil, "départ du joueur : sa boutique est retirée de la rue")
 M.services.Players.PlayerAdded:Fire(joueur)
 verifier(serveur:atelier(joueur) ~= nil and serveur:atelier(joueur).etat.etape == "carnet", "retour suivant : la commande reprend")
+verifier(M.services.Workspace.Rue:FindFirstChild("Boutique_1") ~= nil and M.services.Workspace.Vitrines.Vitrine_1:GetAttribute("Recette") ~= nil, "retour : sa boutique est reconstruite, sa dernière robe en vitrine")
 M.fermeture()
 verifier(parties.donnees[cleJoueur].verrou.t == 0 and parties.donnees[cleJoueur].enCours.etape == "carnet", "arrêt du serveur : partie écrite, verrou rendu")
 
