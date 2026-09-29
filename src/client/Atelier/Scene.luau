@@ -6,6 +6,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Patron = require(Couture:WaitForChild("Patron"))
@@ -28,6 +29,7 @@ Scene.POSTES = { epinglage = true, couture = true, decorations = true, photo = t
 Scene.CLIENTE = CFrame.lookAt(Vector3.new(4.6, 0, 42), Vector3.new(-1.1, 0, 34.6))
 Scene.DUREE_ADIEU = 3 -- secondes avant qu'elle s'en aille, une fois la commande finie
 Scene.PRES_CLIENTE = 3.5 -- studs : la vue qui tourne passe près d'elle, elle s'efface pour ne pas boucher la vue
+Scene.PERIODE_AVATARS = 0.2 -- secondes entre deux regards sur les visiteurs, pendant la caméra du poste
 Scene.PAROLES = {
 	carnet = "Bonjour ! J'aurais besoin d'une robe.",
 	photo = "Voyons voir…",
@@ -109,6 +111,17 @@ function Scene.nouvelle(parent, options)
 		champOrigine = nil, -- champ de la caméra, gardé le temps de la prise de vue
 		controles = options and options.controles or controlesDuJoueur,
 	}, Scene)
+	-- Les visiteurs vont et viennent : on les regarde régulièrement pendant la caméra du poste
+	local cumul = 0
+	self.connexionAvatars = RunService.RenderStepped:Connect(function(dt)
+		cumul += dt
+		if cumul >= Scene.PERIODE_AVATARS then
+			cumul = 0
+			if self.cameraFixe then
+				self:effacerAvatars()
+			end
+		end
+	end)
 	return self
 end
 
@@ -410,6 +423,7 @@ function Scene:regarder(actif)
 		self.controles(true)
 	end
 	self:effacerCliente()
+	self:effacerAvatars()
 end
 
 -- La caméra du poste tout près de la cliente (vue qui tourne pendant les décorations) : elle s'efface,
@@ -429,9 +443,30 @@ function Scene:effacerCliente()
 	end
 end
 
+-- Pendant la caméra du poste, les autres joueurs entrés dans la boutique sont effacés (pour ce joueur
+-- seulement) : ils cacheraient la robe et entreraient dans la photo. L'avatar du joueur est laissé à Roblox,
+-- dont les caméras règlent sa transparence.
+function Scene:effacerAvatars()
+	local moi = Players.LocalPlayer
+	for _, j in ipairs(Players:GetPlayers()) do
+		local avatar = j ~= moi and j.Character
+		local racine = avatar and avatar:FindFirstChild("HumanoidRootPart")
+		if racine then
+			local p = self.origine:PointToObjectSpace(racine.CFrame.Position)
+			local dedans = math.abs(p.X) <= Boutique.LARGEUR / 2 + 1 and p.Z >= Boutique.AVANT - 1 and p.Z <= Boutique.FOND + 1
+			for _, d in ipairs(avatar:GetDescendants()) do
+				if d:IsA("BasePart") then
+					d.LocalTransparencyModifier = if self.cameraFixe and dedans then 1 else 0
+				end
+			end
+		end
+	end
+end
+
 function Scene:detruire()
 	self:finirPhoto()
 	self:regarder(false)
+	self.connexionAvatars:Disconnect()
 	self.pieces = {}
 	self.dossier:Destroy()
 end
