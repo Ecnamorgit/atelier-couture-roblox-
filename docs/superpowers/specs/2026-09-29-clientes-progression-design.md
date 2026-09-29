@@ -43,7 +43,8 @@ ou les offrir ; des invitations par courrier. Ce sous-projet les reproduit, avec
 4. Une robe libre se vend (plus cher avec la qualité et le prestige) ou s'offre à une cliente (amitié).
 5. Le serveur fait foi : mesures plausibles, déblocages vérifiés à chaque action, prix et points calculés chez lui.
 6. Équilibrage vérifié par simulation : un joueur moyen (qualité 0,8) atteint le prestige 2 en 3 robes, le 5 en
-   15 environ, et tout est ouvert vers 40 robes (4 à 5 heures).
+   15 à 20, et tout est ouvert vers 60 robes (une robe libre sur quatre ; les cadeaux et le courrier permettent
+   d'aller plus vite). Amendé au plan 5c : la cible de 40 robes supposait trop peu de robes libres.
 
 ## 2. Les clientes
 
@@ -187,9 +188,10 @@ ou les offrir ; des invitations par courrier. Ce sous-projet les reproduit, avec
   offrir hors robe libre, offrir à une inconnue).
 - **Scénario** : première visite avec mesures, puis retour avec reprise ; une robe libre vendue, une offerte ; un
   déblocage de prestige qui apparaît dans le carnet ; une lettre acceptée.
-- **Équilibrage** : un joueur simulé (qualité 0,8, tissus les moins chers qui satisfont la commande) enchaîne 40 robes
-  (commandes, et une robe libre de toile de jute vendue toutes les 4) : prestige 2 en 3 robes au plus, 5 entre
-  12 et 20 robes, tout ouvert entre 30 et 50 ; l'argent ne descend jamais sous le prix d'une robe simple.
+- **Équilibrage** : un joueur simulé (qualité 0,8, tissus les moins chers qui satisfont la commande) enchaîne 90 robes
+  (commandes, et une robe libre de toile de jute vendue toutes les 4), sur vingt parties : prestige 2 en 3 robes au
+  plus, 5 entre 12 et 20 robes en médiane, tout ouvert entre 50 et 80 en médiane (amendé au plan 5c) ; l'argent ne descend
+  jamais sous le prix d'une robe simple.
 
 ## 11. Découpage en plans
 
