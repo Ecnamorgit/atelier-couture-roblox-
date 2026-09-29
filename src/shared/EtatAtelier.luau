@@ -20,7 +20,7 @@ EtatAtelier.TOLERANCE_MESURES = 2 -- mesures de couture en plus ou en moins acce
 EtatAtelier.DUREE_MIN = 0.9 -- part de la durée minimale d'une couture (trajet / vitesse maximale)
 -- Étapes du plan 3b (le plan 3c ajoute la photo et la livraison après les décorations)
 EtatAtelier.ROBES_GARDEES = 10 -- robes livrées gardées, la plus récente en vitrine (spec §6)
-EtatAtelier.ETAPES = { "accueil", "carnet", "achat", "decoupe", "epinglage", "couture", "decorations", "photo", "refus" }
+EtatAtelier.ETAPES = { "accueil", "mesures", "carnet", "achat", "decoupe", "epinglage", "couture", "decorations", "photo", "refus" }
 
 local function refus(message)
 	return { ok = false, erreur = message }
@@ -61,7 +61,7 @@ local function pareil(a, b)
 end
 
 -- Champs de l'état échangés avec le serveur (les rouleaux à part : ce sont des objets Coupon)
-local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes" }
+local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites" }
 
 function EtatAtelier.nouveau(argent)
 	return setmetatable({
@@ -77,6 +77,12 @@ function EtatAtelier.nouveau(argent)
 		coutures = {}, -- [idPiece] = note de couture (0 à 1)
 		accessoires = {}, -- décorations posées, au format de la recette
 		robes = {}, -- recettes des robes livrées, la plus récente en premier
+		-- Sous-projet 2 : fiche de chaque cliente venue ([id] = { amitie, vues, derniere, mesures?, ajustement? }),
+		-- points de prestige, robes livrées, visites (numéro de la dernière, pour savoir qui revient)
+		clientes = {},
+		prestige = 0,
+		livraisons = 0,
+		visites = 0,
 	}, EtatAtelier)
 end
 
