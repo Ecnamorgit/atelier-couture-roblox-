@@ -21,12 +21,25 @@ end
 function U.proche(a, b, tol)
 	return math.abs(a - b) <= (tol or 1e-6)
 end
--- Passe une commande (état de l'atelier ou session) et prend les mesures exactes de la cliente : la plupart
--- des tests commencent au carnet
+-- Ouvre tout le catalogue d'un état de l'atelier (prestige et amitiés au plus haut) : pour les tests qui ne
+-- portent pas sur les déblocages
+function U.toutOuvrir(etat)
+	etat.prestige = 530
+	for _, c in ipairs(U.module("Clientes").LISTE) do
+		local fiche = etat.clientes[c.id] or { amitie = 0, vues = 0, derniere = 0 }
+		fiche.amitie = math.max(fiche.amitie, 25)
+		etat.clientes[c.id] = fiche
+	end
+end
+-- Passe une commande (état de l'atelier ou session) et prend les mesures exactes de la cliente ; hors session
+-- distante (où le serveur fait foi), tout le catalogue est ouvert : la plupart des tests commencent au carnet
 function U.commander(x, ...)
 	local r = x:nouvelleCommande(...)
 	if r.ok then
 		local etat = x.etat or x
+		if not x.remote then
+			U.toutOuvrir(etat)
+		end
 		x:mesurer(U.module("Clientes").get(etat.commande.cliente).mesures)
 	end
 	return r

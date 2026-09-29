@@ -234,10 +234,10 @@ function Notation.prevision(e, croquis, choix, fourchette, ajustement)
 		return "non" -- la qualité est multipliée par l'ajustement : celle-ci est hors d'atteinte
 	elseif e.type == "min" then
 		local f = fourchette[e.style]
-		return f.min >= e.valeur and "ok" or (f.max < e.valeur and "non" or "?")
+		return f.min >= e.valeur - 1e-9 and "ok" or (f.max < e.valeur - 1e-9 and "non" or "?")
 	elseif e.type == "max" then
 		local f = fourchette[e.style]
-		return f.max <= e.valeur and "ok" or (f.min > e.valeur and "non" or "?")
+		return f.max <= e.valeur + 1e-9 and "ok" or (f.min > e.valeur + 1e-9 and "non" or "?")
 	elseif e.type == "teinte" then
 		local pieces = {}
 		for _, id in ipairs(Patron.piecesDuCroquis(croquis)) do
@@ -303,10 +303,10 @@ function Notation.verifierExigences(exigences, bilan)
 	local ratees = {}
 	for i, e in ipairs(exigences) do
 		local ok
-		if e.type == "min" then
-			ok = bilan.styles[e.style] >= e.valeur
+		if e.type == "min" then -- (à l'arrondi près : un score qui s'affiche 30 vaut 30)
+			ok = bilan.styles[e.style] >= e.valeur - 1e-9
 		elseif e.type == "max" then
-			ok = bilan.styles[e.style] <= e.valeur
+			ok = bilan.styles[e.style] <= e.valeur + 1e-9
 		elseif e.type == "qualite" then
 			ok = bilan.qualite >= e.valeur - 1e-9
 		elseif e.type == "teinte" then

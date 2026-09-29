@@ -11,12 +11,15 @@ local Notation = require(dossier:WaitForChild("Notation"))
 local Recette = require(dossier:WaitForChild("Recette"))
 local Clientes = require(dossier:WaitForChild("Clientes"))
 local Progression = require(dossier:WaitForChild("Progression"))
+local Deblocages = require(dossier:WaitForChild("Deblocages"))
 
 local EtatAtelier = {}
 EtatAtelier.__index = EtatAtelier
 
 EtatAtelier.ARGENT_DEPART = 150
 EtatAtelier.FILET = 20 -- argent minimal garanti à chaque nouvelle commande
+EtatAtelier.ACOMPTE = 0.25 -- part de la base versée quand la cliente passe commande
+EtatAtelier.PIECES_ACOMPTE = 4 -- la base de l'acompte est celle de la robe la plus simple (quatre pièces)
 EtatAtelier.ACHAT_MAX = 100 -- dm par achat
 EtatAtelier.TOLERANCE_MESURES = 2 -- mesures de couture en plus ou en moins acceptées (spec §6)
 EtatAtelier.DUREE_MIN = 0.9 -- part de la durée minimale d'une couture (trajet / vitesse maximale)
@@ -28,6 +31,16 @@ EtatAtelier.ETAPES = { "accueil", "mesures", "carnet", "achat", "decoupe", "epin
 
 local function refus(message)
 	return { ok = false, erreur = message }
+end
+
+-- Refus du premier élément encore fermé (déblocages : prestige ou amitié), ou nil
+local function fermes(self, genre, ids)
+	for _, id in ipairs(ids) do
+		if not Deblocages.ouvert(self, genre, id) then
+			return refus(Deblocages.message(genre, id))
+		end
+	end
+	return nil
 end
 
 local function fini(n)
@@ -164,13 +177,16 @@ function EtatAtelier:nouvelleCommande(rng)
 	self.visites += 1
 	fiche.vues += 1
 	fiche.derniere = self.visites
-	self.commande = Commandes.generer(rng, Clientes.get(id))
+	self.commande = Commandes.generer(rng, Clientes.get(id), self)
 	self.commande.numero = self.visites -- la reconnaît d'une copie à l'autre (la scène garde la même cliente)
-	self.argent = math.max(self.argent, EtatAtelier.FILET)
+	-- L'acompte : un quart de la base, versé tout de suite, déduit de la paie ; gardé en cas d'abandon
+	local acompte = math.floor(EtatAtelier.ACOMPTE * Notation.base(EtatAtelier.PIECES_ACOMPTE, #self.commande.exigences))
+	self.commande.acompte = acompte
+	self.argent = math.max(self.argent, EtatAtelier.FILET) + acompte
 	self.croquis, self.tissus, self.coupees, self.coupons = nil, {}, {}, {}
 	self.epinglees, self.coutures, self.accessoires = {}, {}, {}
 	self.etape = "mesures"
-	return { ok = true, commande = self.commande, cliente = id, premiereVisite = fiche.vues == 1 }
+	return { ok = true, commande = self.commande, cliente = id, premiereVisite = fiche.vues == 1, acompte = acompte }
 end
 
 -- Mesures prises au ruban (dm) : trois nombres dans les bornes d'une recette, à moins de 1,5 dm des vraies.
@@ -240,6 +256,17 @@ function EtatAtelier:validerCroquis(croquis, tissus)
 		end
 		choix[id] = t
 	end
+	local variantes, tissusChoisis = {}, {}
+	for _, famille in ipairs(Catalogue.FAMILLES) do
+		table.insert(variantes, croquis[famille])
+	end
+	for _, id in ipairs(pieces) do
+		table.insert(tissusChoisis, choix[id])
+	end
+	local ferme = fermes(self, "variantes", variantes) or fermes(self, "tissus", tissusChoisis)
+	if ferme then
+		return ferme
+	end
 	-- Seules les quatre familles sont gardées : un champ en trop envoyé par le client ne reste pas sur le
 	-- serveur (ni dans chaque réponse, ni plus tard dans la sauvegarde)
 	local propre = {}
@@ -271,6 +298,10 @@ function EtatAtelier:acheter(idTissu, dm)
 	end
 	if not fini(dm) or dm ~= math.floor(dm) or dm < 1 or dm > EtatAtelier.ACHAT_MAX then
 		return refus("Longueur invalide.")
+	end
+	local ferme = fermes(self, "tissus", { idTissu })
+	if ferme then
+		return ferme
 	end
 	local prix = EtatAtelier.prix(idTissu, dm)
 	if prix > self.argent then
@@ -453,6 +484,14 @@ function EtatAtelier:decorer(liste)
 	if not ok then
 		return refus(erreur)
 	end
+	local ids = {}
+	for _, a in ipairs(liste) do
+		table.insert(ids, a.id)
+	end
+	local ferme = fermes(self, "accessoires", ids)
+	if ferme then
+		return ferme
+	end
 	local propres = {}
 	for i, a in ipairs(liste) do
 		propres[i] = copieAccessoire(a)
@@ -485,7 +524,8 @@ function EtatAtelier:bilan()
 	return bilan
 end
 
--- L'amitié de la cliente de la commande change (robe acceptée ou abandonnée) ; renvoie le détail pour le bilan
+-- L'amitié de la cliente de la commande change (robe acceptée ou abandonnée) ; renvoie le détail pour le bilan.
+-- Un abandon ne fait jamais perdre un niveau : ce qu'il a ouvert reste ouvert
 local function amitie(self, reussie, qualite)
 	local id = self.commande and self.commande.cliente
 	local fiche = id and self.clientes[id]
@@ -493,7 +533,8 @@ local function amitie(self, reussie, qualite)
 		return nil
 	end
 	local avant = fiche.amitie
-	fiche.amitie = math.max(0, avant + Progression.gainAmitie(reussie, qualite))
+	local plancher = Progression.SEUILS_AMITIE[Progression.niveauAmitie(avant) + 1]
+	fiche.amitie = math.max(plancher, avant + Progression.gainAmitie(reussie, qualite))
 	return { cliente = id, gain = fiche.amitie - avant, points = fiche.amitie, niveau = Progression.niveauAmitie(fiche.amitie), niveauAvant = Progression.niveauAmitie(avant) }
 end
 
@@ -518,8 +559,14 @@ function EtatAtelier:livrer()
 		self.etape = "refus"
 		return { ok = true, reussie = false, ratees = ratees, bilan = bilan }
 	end
+	local avant = { prestige = self.prestige, clientes = {} } -- pour dire ce que la livraison a ouvert
+	for id, f in pairs(self.clientes) do
+		avant.clientes[id] = { amitie = f.amitie }
+	end
 	local paie = Notation.paie(#recette.pieces, #self.commande.exigences, bilan.qualite)
-	self.argent += paie
+	local acompte = self.commande.acompte or 0
+	local verse = math.max(0, paie - acompte) -- l'acompte est déjà dans la caisse
+	self.argent += verse
 	local gainAmitie = amitie(self, true, bilan.qualite)
 	local niveauAvant = Progression.niveauPrestige(self.prestige)
 	local gainPrestige = Progression.prestigeLivraison(paie)
@@ -531,7 +578,8 @@ function EtatAtelier:livrer()
 		self.robes[k] = nil
 	end
 	terminer(self)
-	return { ok = true, reussie = true, paie = paie, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige }
+	local nouveaux = Deblocages.nouveaux(avant, self)
+	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige, nouveaux = nouveaux }
 end
 
 -- Après un refus : retoucher (retour aux décorations) ou abandonner (ni paie ni vitrine)

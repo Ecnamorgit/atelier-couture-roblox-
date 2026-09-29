@@ -9,7 +9,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 `docs/superpowers/specs/2026-09-29-clientes-progression-design.md` pour les clientes et la progression ;
 plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 2 en cours : plan 5a, les clientes)
+## État actuel (sous-projet 2 en cours : plans 5a et 5b, les clientes, le prestige et les déblocages)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -21,7 +21,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    au-dessus de la tête), avec 1 à 3 exigences tirées de ses styles préférés et de sa teinte. Six clientes, qui
    reviennent : Colette, Margot et Salomé aux trois premières commandes ; Hélène, Inès et Victoire quand le
    prestige de l'atelier atteint 2, 3 puis 4 ; ensuite, celle qu'on n'a pas vue depuis le plus longtemps. Chacune
-   parle par une bulle, avec ses propres mots (présentation, arrivée, merci, déception).
+   parle par une bulle, avec ses propres mots (présentation, arrivée, merci, déception). En passant commande,
+   elle verse un **acompte** (un quart de la base d'une robe simple), déduit de la paie ; gardé si on abandonne.
    **Mesures** : à sa première visite, on la mesure. Sa silhouette est dessinée à ses vraies mesures ; on règle
    trois rubans (poitrine, taille, hanches) jusqu'au bord de la silhouette, en glissant ou avec − et + (0,1 dm
    près). Le serveur refuse un ruban à plus de 1,5 dm de la vraie mesure. Quand elle revient, « Reprendre ses
@@ -29,7 +30,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    (100 % jusqu'à 0,2 dm d'écart par tour, puis moins, 50 % au pire) multiplie la qualité de la robe.
 2. **Carnet de croquis** : corsage, manches, col et jupe au choix ; un tissu par pièce (24 tissus, filtre par style).
    Les jauges de style, l'état des exigences, le métrage et le coût du tissu à acheter se mettent à jour en
-   direct.
+   direct. Ce qui n'est pas encore ouvert est grisé, avec ce qu'il faut pour l'ouvrir (« Prestige 3 »,
+   « Amitié d'Hélène : 2 ») ; le serveur le refuse aussi.
 3. **Achat** : métrage conseillé par tissu, quantité réglable, coût au mètre ; toucher l'échantillon d'un tissu
    montre le rouleau conseillé, avec les pièces rangées dessus.
 4. **Table de découpe** : les pièces du patron se glissent (souris ou doigt) et se tournent (boutons, R, molette
@@ -52,9 +54,16 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    score actuel pour les styles) ; on retouche les décorations ou on abandonne.
    **Amitié et prestige** : une robe acceptée vaut +2 d'amitié avec la cliente (+1 de plus à 80 % de qualité),
    un abandon −1 ; niveaux 0 à 5 (seuils 3, 7, 12, 18, 25). Elle rapporte aussi du prestige à l'atelier
-   (paie / 10) ; niveaux 1 à 8. L'accueil annonce ce qui a été gagné.
-9. La suite : prestige et déblocages (plan 5b), robes libres à vendre ou à offrir (plan 5c), courrier et
-   carnet d'adresses (plan 5d).
+   (paie / 10) ; niveaux 1 à 8. L'accueil annonce ce qui a été gagné, et montre la jauge de prestige
+   (« Prestige 3 — 62 / 100 »). Un abandon ne fait jamais perdre un niveau d'amitié.
+   **Déblocages** : au départ, cotons et lins, huit variantes et six accessoires. Le prestige ouvre les laines (2),
+   les satins (3), les velours (4) et les soies (5), le ruban noir (2) et la dentelle noire (3) ; l'amitié de
+   chaque cliente (niveaux 2 et 4) ouvre une variante ou un accessoire de son style. Rien n'est sauvegardé :
+   tout se déduit du prestige et des amitiés. Les commandes ne demandent que ce qui est ouvert, et leurs
+   exigences de style montent avec le prestige. L'accueil annonce ce qui vient de s'ouvrir.
+   **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8) atteint le
+   prestige 2 à la 3e robe au plus tard, le 5 vers la 16e, et tout est ouvert vers la 46e (médianes).
+9. La suite : robes libres à vendre ou à offrir (plan 5c), courrier et carnet d'adresses (plan 5d).
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
@@ -101,6 +110,7 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Coupon`, `Metrage` | Rouleau de découpe (pli, chevauchements) et métrage conseillé |
   | `Notation`, `Commandes` | Droit-fil, couture, qualité, styles, exigences, paie, ajustement aux mesures ; commandes réalisables, d'après les goûts de la cliente |
   | `Clientes`, `Progression` | Les six clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux |
+  | `Deblocages` | Ce qui est fermé au départ et ce qui l'ouvre (prestige, amitié) ; ce qu'une livraison vient d'ouvrir |
   | `Pixels` | Motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron |
   | `Recette` | Recette d'une robe en JSON et validation complète (filtre du serveur au plan 4) |
   | `Maillage`, `Mannequin`, `Editables`, `ConstructeurRobe`, `Vitrines` | Robe 3D, mannequin, vitrines |

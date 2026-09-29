@@ -8,6 +8,7 @@ local Notation = require(Couture:WaitForChild("Notation"))
 local Metrage = require(Couture:WaitForChild("Metrage"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Clientes = require(Couture:WaitForChild("Clientes"))
+local Deblocages = require(Couture:WaitForChild("Deblocages"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 
 local NOMS_FAMILLES = { corsage = "Corsage", manches = "Manches", col = "Col", jupe = "Jupe" }
@@ -37,6 +38,10 @@ return function(ctx)
 				Size = UDim2.fromOffset(106, 38),
 				Parent = gauche,
 			}, function()
+				if not Deblocages.ouvert(etat, "variantes", v.id) then
+					ctx.message(Deblocages.message("variantes", v.id), C.texteDoux)
+					return
+				end
 				croquis[famille] = v.id
 				rafraichir()
 			end)
@@ -107,7 +112,9 @@ return function(ctx)
 			end
 			for _, t in ipairs(Catalogue.Tissus) do
 				if not filtre or (t.style[filtre] or 0) > 0 then
-					local carte = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Tissu_" .. t.id, Text = "", AutoButtonColor = true, BackgroundColor3 = C.panneau, ZIndex = 12, Parent = grille }), 8)
+					local ouvert = Deblocages.ouvert(etat, "tissus", t.id)
+					local carte = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Tissu_" .. t.id, Text = "", AutoButtonColor = ouvert, BackgroundColor3 = if ouvert then C.panneau else C.ferme, ZIndex = 12, Parent = grille }), 8)
+					carte:SetAttribute("Ferme", not ouvert)
 					local motif = Vignettes.motif(t.id)
 					local echantillon = UiKit.arrondir(UiKit.creer("ImageLabel", {
 						BackgroundColor3 = UiKit.couleur(t.motif.couleurs[1]),
@@ -133,8 +140,17 @@ return function(ctx)
 					for k = 1, math.min(2, #styles) do
 						table.insert(etiquettes, Catalogue.NOMS_STYLES[styles[k].s])
 					end
-					UiKit.texte({ Text = ("%d po/m · %s"):format(t.prix, table.concat(etiquettes, ", ")), TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(72, 50), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
+					if ouvert then
+						UiKit.texte({ Text = ("%d po/m · %s"):format(t.prix, table.concat(etiquettes, ", ")), TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(72, 50), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
+					else
+						UiKit.texte({ Name = "Raison", Text = Deblocages.raison("tissus", t.id), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(72, 50), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
+						echantillon.ImageTransparency, echantillon.BackgroundTransparency = 0.6, 0.6
+					end
 					carte.Activated:Connect(function()
+						if not Deblocages.ouvert(etat, "tissus", t.id) then
+							ctx.message(Deblocages.message("tissus", t.id), C.texteDoux)
+							return
+						end
 						for _, id in ipairs(pieces) do
 							tissus[id] = t.id
 						end
@@ -163,6 +179,7 @@ return function(ctx)
 			local choisie = croquis[Catalogue.variante(id).famille] == id
 			b.BackgroundColor3 = choisie and C.accent or C.secondaire
 			b.TextColor3 = choisie and Color3.new(1, 1, 1) or C.texte
+			UiKit.griser(b, not Deblocages.ouvert(etat, "variantes", id))
 		end
 		-- Pièces du croquis et leur tissu
 		listePieces:ClearAllChildren()

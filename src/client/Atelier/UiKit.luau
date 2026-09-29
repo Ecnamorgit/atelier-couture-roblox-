@@ -11,6 +11,7 @@ UiKit.COULEURS = {
 	ok = Color3.fromRGB(70, 160, 100),
 	alerte = Color3.fromRGB(230, 140, 40),
 	erreur = Color3.fromRGB(210, 60, 60),
+	ferme = Color3.fromRGB(226, 220, 223), -- un élément du catalogue pas encore ouvert
 }
 UiKit.LARGEUR, UiKit.HAUTEUR = 900, 560 -- taille de référence de la fenêtre (mise à l'échelle sur petit écran)
 UiKit.LARGEUR_PANNEAU = 380 -- fenêtre rangée à droite pendant les postes autour du mannequin
@@ -89,6 +90,15 @@ function UiKit.bouton(props, auClic, calme)
 end
 
 -- Bouton secondaire (fond clair)
+-- Un élément du catalogue pas encore ouvert (déblocages) : grisé, marqué par l'attribut « Ferme »
+function UiKit.griser(bouton, ferme)
+	bouton:SetAttribute("Ferme", ferme)
+	if ferme then
+		bouton.BackgroundColor3 = UiKit.COULEURS.ferme
+		bouton.TextColor3 = UiKit.COULEURS.texteDoux
+	end
+end
+
 function UiKit.boutonDoux(props, auClic, calme)
 	return UiKit.bouton(fusionner({ BackgroundColor3 = UiKit.COULEURS.secondaire, TextColor3 = UiKit.COULEURS.texte }, props), auClic, calme)
 end

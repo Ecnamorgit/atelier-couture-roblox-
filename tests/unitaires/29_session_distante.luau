@@ -72,8 +72,12 @@ U.verifier(not r.ok and r.erreur == "Longueur invalide." and notifications == av
 cote().argent = 5
 session.etat.argent = 99999
 M.avancer(1)
-r = session:acheter("soie_rouge", 100)
+r = session:acheter("lin_noir", 100)
 U.verifier(not r.ok and r.erreur == "Pas assez d'argent.", "argent modifié chez le client : le serveur refuse quand même")
+session.etat.prestige = 530
+M.avancer(1)
+r = session:acheter("soie_rouge", 1)
+U.verifier(not r.ok and r.erreur == "Pas encore ouvert : Soie rouge (Prestige 5)." and session.etat.prestige == 0, "prestige modifié chez le client : le serveur refuse, la copie est réparée")
 cote().argent = 500
 session:actualiser()
 U.verifier(session.etat.argent == 500, "actualiser : l'état revient à celui du serveur")
