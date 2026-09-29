@@ -188,6 +188,15 @@ end
 function Session:livrer()
 	return agir(self, "livrer")
 end
+function Session:nouvelleRobeLibre(taille)
+	return agir(self, "nouvelleRobeLibre", taille)
+end
+function Session:vendre()
+	return agir(self, "vendre")
+end
+function Session:offrir(idCliente)
+	return agir(self, "offrir", idCliente)
+end
 function Session:retoucher()
 	return agir(self, "retoucher")
 end

@@ -20,6 +20,8 @@ EtatAtelier.ARGENT_DEPART = 150
 EtatAtelier.FILET = 20 -- argent minimal garanti à chaque nouvelle commande
 EtatAtelier.ACOMPTE = 0.25 -- part de la base versée quand la cliente passe commande
 EtatAtelier.PIECES_ACOMPTE = 4 -- la base de l'acompte est celle de la robe la plus simple (quatre pièces)
+EtatAtelier.LIBRES_APRES = 2 -- les robes libres s'ouvrent après deux commandes livrées
+EtatAtelier.MAIN_OEUVRE = 6 -- pièces d'or par pièce posée, dans le prix de vente d'une robe libre
 EtatAtelier.ACHAT_MAX = 100 -- dm par achat
 EtatAtelier.TOLERANCE_MESURES = 2 -- mesures de couture en plus ou en moins acceptées (spec §6)
 EtatAtelier.DUREE_MIN = 0.9 -- part de la durée minimale d'une couture (trajet / vitesse maximale)
@@ -78,7 +80,7 @@ local function pareil(a, b)
 end
 
 -- Champs de l'état échangés avec le serveur (les rouleaux à part : ce sont des objets Coupon)
-local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites" }
+local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites", "ventes" }
 
 function EtatAtelier.nouveau(argent)
 	return setmetatable({
@@ -95,11 +97,12 @@ function EtatAtelier.nouveau(argent)
 		accessoires = {}, -- décorations posées, au format de la recette
 		robes = {}, -- recettes des robes livrées, la plus récente en premier
 		-- Sous-projet 2 : fiche de chaque cliente venue ([id] = { amitie, vues, derniere, mesures?, ajustement? }),
-		-- points de prestige, robes livrées, visites (numéro de la dernière, pour savoir qui revient)
+		-- points de prestige, robes livrées, visites (numéro de la dernière, pour savoir qui revient), robes vendues
 		clientes = {},
 		prestige = 0,
 		livraisons = 0,
 		visites = 0,
+		ventes = 0,
 	}, EtatAtelier)
 end
 
@@ -163,6 +166,28 @@ local function consommer(self)
 		self.stock[idTissu] = math.max(0, (self.stock[idTissu] or 0) - coupon:longueurUtilisee())
 	end
 	self.coupons = {}
+end
+
+-- Une robe libre (prêt-à-porter) : ni cliente ni exigence ni acompte ; une taille standard, dont le mannequin
+-- prend les mesures. On va droit au carnet ; à la photo, on la vend ou on l'offre. Ouverte après deux commandes
+-- livrées.
+function EtatAtelier:nouvelleRobeLibre(taille)
+	if self.etape ~= "accueil" then
+		return refus("Une commande est déjà en cours.")
+	end
+	if self.livraisons < EtatAtelier.LIBRES_APRES then
+		return refus("Les robes libres s'ouvrent après deux commandes livrées.")
+	end
+	if type(taille) ~= "string" or not Catalogue.TAILLES[taille] then
+		return refus("Taille inconnue.")
+	end
+	self.visites += 1 -- (un numéro pour la reconnaître d'une copie à l'autre)
+	self.commande = { libre = true, taille = taille, mesures = table.clone(Catalogue.TAILLES[taille]), exigences = {}, numero = self.visites }
+	self.argent = math.max(self.argent, EtatAtelier.FILET)
+	self.croquis, self.tissus, self.coupees, self.coupons = nil, {}, {}, {}
+	self.epinglees, self.coutures, self.accessoires = {}, {}, {}
+	self.etape = "carnet"
+	return { ok = true, commande = self.commande }
 end
 
 -- La clochette : une cliente vient (Clientes.prochaine) avec une commande tirée de ses goûts. On prend
@@ -350,6 +375,14 @@ function EtatAtelier:couper(idPiece, placement)
 	end
 	self.coupees[idPiece] = coupon.poses[idPiece]
 	if #self:piecesAPoser() == 0 then
+		if self.commande.libre then
+			-- le prix des matières d'une robe libre : le tissu entamé de chaque rouleau
+			local matieres = 0
+			for idTissu, c in pairs(self.coupons) do
+				matieres += EtatAtelier.prix(idTissu, c:longueurUtilisee())
+			end
+			self.commande.matieres = matieres
+		end
 		consommer(self)
 		self.etape = "epinglage"
 	end
@@ -552,6 +585,9 @@ function EtatAtelier:livrer()
 	if self.etape ~= "photo" then
 		return refus("Ce n'est pas le moment de livrer.")
 	end
+	if self.commande.libre then
+		return refus("Une robe libre se vend ou s'offre.")
+	end
 	local recette = self:recette()
 	local bilan = self:bilan()
 	local reussie, ratees = Notation.verifierExigences(self.commande.exigences, bilan)
@@ -580,6 +616,77 @@ function EtatAtelier:livrer()
 	terminer(self)
 	local nouveaux = Deblocages.nouveaux(avant, self)
 	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige, nouveaux = nouveaux }
+end
+
+-- Robes libres : le prestige et les amitiés avant la vente ou le cadeau (pour dire ce qui s'ouvre), le prestige
+-- gagné, la robe gardée en vitrine
+local function progres(self)
+	local avant = { prestige = self.prestige, clientes = {} }
+	for id, f in pairs(self.clientes) do
+		avant.clientes[id] = { amitie = f.amitie }
+	end
+	return avant
+end
+local function gagnerPrestige(self, gain)
+	local niveauAvant = Progression.niveauPrestige(self.prestige)
+	self.prestige += gain
+	return { gain = gain, points = self.prestige, niveau = Progression.niveauPrestige(self.prestige), niveauAvant = niveauAvant }
+end
+local function garderRobe(self, recette)
+	table.insert(self.robes, 1, recette)
+	for k = #self.robes, EtatAtelier.ROBES_GARDEES + 1, -1 do
+		self.robes[k] = nil
+	end
+end
+
+-- Prix de vente d'une robe libre : (matières + décorations + main d'œuvre) × (0,5 + qualité), plus le bonus de
+-- prestige (6 % par niveau au-delà du premier)
+function EtatAtelier:prixVente()
+	local recette = self:recette()
+	local base = (self.commande.matieres or 0) + EtatAtelier.prixDecorations(recette.pieces, self.accessoires) + EtatAtelier.MAIN_OEUVRE * #recette.pieces
+	local bonus = Progression.bonusVente(Progression.niveauPrestige(self.prestige))
+	return math.round(base * (0.5 + self:bilan().qualite) * (1 + bonus))
+end
+
+-- Vendre la robe libre : le prix, du prestige (prix / 15) ; elle part en vitrine
+function EtatAtelier:vendre()
+	if self.etape ~= "photo" or not self.commande.libre then
+		return refus("Seule une robe libre se vend, une fois présentée.")
+	end
+	local avant = progres(self)
+	local recette, bilan, prix = self:recette(), self:bilan(), self:prixVente()
+	self.argent += prix
+	self.ventes += 1
+	local prestige = gagnerPrestige(self, Progression.prestigeVente(prix))
+	garderRobe(self, recette)
+	terminer(self)
+	return { ok = true, prix = prix, bilan = bilan, prestige = prestige, nouveaux = Deblocages.nouveaux(avant, self) }
+end
+
+-- Offrir la robe libre à une cliente déjà venue : son amitié monte selon le score de son style préféré le plus
+-- haut (+1 à +4), le prestige de 2 ; pas d'argent. La robe part en vitrine
+function EtatAtelier:offrir(idCliente)
+	if self.etape ~= "photo" or not self.commande.libre then
+		return refus("Seule une robe libre s'offre, une fois présentée.")
+	end
+	local cliente = type(idCliente) == "string" and Clientes.get(idCliente)
+	local fiche = cliente and self.clientes[cliente.id]
+	if not fiche or fiche.vues == 0 then
+		return refus("On n'offre une robe qu'à une cliente déjà venue.")
+	end
+	local avant = progres(self)
+	local recette, bilan = self:recette(), self:bilan()
+	local score = 0
+	for _, style in ipairs(cliente.styles) do
+		score = math.max(score, bilan.styles[style] or 0)
+	end
+	local amitieAvant = fiche.amitie
+	fiche.amitie += Progression.gainCadeau(score)
+	local gainAmitie = { cliente = cliente.id, gain = fiche.amitie - amitieAvant, points = fiche.amitie, niveau = Progression.niveauAmitie(fiche.amitie), niveauAvant = Progression.niveauAmitie(amitieAvant) }
+	local prestige = gagnerPrestige(self, Progression.PRESTIGE_CADEAU)
+	garderRobe(self, recette)
+	terminer(self)
+	return { ok = true, cliente = cliente.id, bilan = bilan, amitie = gainAmitie, prestige = prestige, nouveaux = Deblocages.nouveaux(avant, self) }
 end
 
 -- Après un refus : retoucher (retour aux décorations) ou abandonner (ni paie ni vitrine)

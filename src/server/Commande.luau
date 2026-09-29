@@ -72,6 +72,15 @@ local ACTIONS = {
 	livrer = function(a)
 		return a.etat:livrer()
 	end,
+	nouvelleRobeLibre = function(a, taille)
+		return a.etat:nouvelleRobeLibre(taille)
+	end,
+	vendre = function(a)
+		return a.etat:vendre()
+	end,
+	offrir = function(a, idCliente)
+		return a.etat:offrir(idCliente)
+	end,
 	retoucher = function(a)
 		return a.etat:retoucher()
 	end,
