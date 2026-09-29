@@ -132,17 +132,19 @@ local function memesMesures(a, b)
 end
 
 -- Ce que dit la cliente de la commande à cette étape : une cliente qui revient a ses propres répliques
--- (présentation à sa première visite, puis son arrivée ; sa déception au refus)
+-- (présentation à sa première visite, son arrivée les fois suivantes ; sa déception au refus). À sa première
+-- visite, au carnet, elle dit simplement ce qu'elle veut (son « Me revoilà ! » n'aurait pas de sens)
 local function replique(etat)
 	local fiche = etat.commande.cliente and Clientes.get(etat.commande.cliente)
 	if not fiche then
 		return Scene.PAROLES[etat.etape]
 	end
+	local visite = etat.clientes[fiche.id]
+	local revient = visite ~= nil and visite.vues > 1
 	if etat.etape == "mesures" then
-		local visite = etat.clientes[fiche.id]
-		return if visite and visite.vues > 1 then fiche.repliques.arrivee else fiche.repliques.presentation
+		return if revient then fiche.repliques.arrivee else fiche.repliques.presentation
 	elseif etat.etape == "carnet" then
-		return fiche.repliques.arrivee
+		return if revient then fiche.repliques.arrivee else Scene.PAROLES.carnet
 	elseif etat.etape == "refus" then
 		return fiche.repliques.deception
 	end
@@ -152,9 +154,12 @@ end
 -- La cliente en personne : elle entre avec la commande, parle selon l'étape, salue puis s'en va
 function Scene:suivreCliente(etat, derniere)
 	local commande = etat.commande
-	if commande and self.clienteCommande ~= commande then
+	-- La commande est reconnue à son numéro : la copie du client est remplacée à chaque réponse du serveur
+	-- (mesures prises…), et la cliente ne doit pas être reconstruite pour autant
+	local cle = commande and (commande.numero or commande)
+	if commande and self.clienteCommande ~= cle then
 		-- Notée avant la construction, qui attend Roblox : une synchronisation pendant ce temps ne la refait pas
-		self.clienteCommande = commande
+		self.clienteCommande = cle
 		if self.cliente then
 			self.cliente:Destroy()
 			self.cliente = nil
@@ -164,7 +169,7 @@ function Scene:suivreCliente(etat, derniere)
 			self.partante = nil
 		end
 		local modele = Cliente.construire(commande, self.origine * Scene.CLIENTE, self.dossier)
-		if self.clienteCommande ~= commande then
+		if self.clienteCommande ~= cle then
 			-- La commande a pris fin (ou changé) pendant la construction
 			if modele then
 				modele:Destroy()

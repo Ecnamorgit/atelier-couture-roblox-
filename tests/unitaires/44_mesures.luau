@@ -111,3 +111,8 @@ e.clientes.colette.amitie = 10
 e.etape = "refus"
 r = e:abandonner()
 U.verifier(e.clientes.colette.amitie == 9 and r.amitie.gain == -1 and r.amitie.niveau == 2, "abandon : −1 d'amitié")
+
+-- Au carnet : une exigence de qualité au-delà de l'ajustement est déjà perdue, et c'est dit
+local qualite90 = { type = "qualite", valeur = 0.9 }
+U.verifier(Notation.prevision(qualite90, {}, {}, {}, 0.85) == "non", "qualité 90 % demandée, ajustement 85 % : perdue d'avance")
+U.verifier(Notation.prevision(qualite90, {}, {}, {}, 0.95) == "?" and Notation.prevision(qualite90, {}, {}, {}) == "?", "ajustement suffisant (ou inconnu) : on verra à la couture")

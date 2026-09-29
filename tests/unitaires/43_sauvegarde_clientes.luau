@@ -63,4 +63,32 @@ U.verifier(Sauvegarde.versEtat(p2).etape == "accueil", "commande d'une cliente i
 local p3 = Sauvegarde.depuisEtat(enAttente)
 p3.enCours.etape = "carnet" -- au carnet, sans mesures : impossible à jouer
 U.verifier(Sauvegarde.versEtat(p3).etape == "accueil", "commande au carnet sans mesures : abandonnée")
+
+-- Fiche perdue d'une cliente en cours de mesures : recréée, on peut la mesurer
+local p4 = M.transmettre(Sauvegarde.depuisEtat(enAttente))
+p4.clientes.colette = "abîmée"
+local relue4 = Sauvegarde.versEtat(p4)
+U.verifier(relue4.etape == "mesures" and relue4.clientes.colette ~= nil and relue4.clientes.colette.vues >= 1, "fiche perdue d'une cliente aux mesures : recréée")
+U.verifier(relue4:mesurer(Clientes.get("colette").mesures).ok and relue4.etape == "carnet", "… et on la mesure")
+-- Commande aux mesures sans cliente : abandonnée (personne à mesurer)
+local p5 = M.transmettre(Sauvegarde.depuisEtat(enAttente))
+p5.enCours.commande.cliente = nil
+U.verifier(Sauvegarde.versEtat(p5).etape == "accueil", "commande aux mesures sans cliente : abandonnée")
+-- Ajustement illisible ou impossible : commande abandonnée
+local mesuree = EtatAtelier.nouveau()
+mesuree.commande = { cliente = "colette", taille = "M", exigences = { { type = "min", style = "romantique", valeur = 30 } }, mesures = { poitrine = 8.9, taille = 7.1, hanches = 9.5 }, ajustement = 1 }
+mesuree.etape = "carnet"
+mesuree.clientes.colette = { amitie = 0, vues = 1, derniere = 1 }
+U.verifier(Sauvegarde.versEtat(M.transmettre(Sauvegarde.depuisEtat(mesuree))).etape == "carnet", "commande mesurée : relue")
+for _, a in ipairs({ "x", true, 5, -1, 0.2 }) do
+	local p = M.transmettre(Sauvegarde.depuisEtat(mesuree))
+	p.enCours.commande.ajustement = a
+	U.verifier(Sauvegarde.versEtat(p).etape == "accueil", "ajustement illisible ou impossible (" .. tostring(a) .. ") : commande abandonnée")
+end
+-- Mesures dans les bornes mais impossibles (taille plus grande que la poitrine) : oubliées, commande abandonnée
+local p6 = M.transmettre(Sauvegarde.depuisEtat(mesuree))
+p6.enCours.commande.mesures = { poitrine = 7, taille = 7.5, hanches = 9 }
+p6.clientes.colette.mesures, p6.clientes.colette.ajustement = { poitrine = 7, taille = 7.5, hanches = 9 }, 1
+local relue6 = Sauvegarde.versEtat(p6)
+U.verifier(relue6.etape == "accueil" and relue6.clientes.colette.mesures == nil, "mesures impossibles (taille > poitrine) : oubliées, commande abandonnée")
 U.verifier(Clientes.get("colette") ~= nil, "(la cliente existe)")

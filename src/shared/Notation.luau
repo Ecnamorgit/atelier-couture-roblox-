@@ -229,8 +229,10 @@ end
 
 -- Prévision du carnet pour une exigence : "ok", "non", ou "?" (dépend des tissus encore à choisir,
 -- de la couture ou des décorations). fourchette = Notation.fourchette(croquis, choix, imposés).
-function Notation.prevision(e, croquis, choix, fourchette)
-	if e.type == "min" then
+function Notation.prevision(e, croquis, choix, fourchette, ajustement)
+	if e.type == "qualite" and ajustement and e.valeur > ajustement then
+		return "non" -- la qualité est multipliée par l'ajustement : celle-ci est hors d'atteinte
+	elseif e.type == "min" then
 		local f = fourchette[e.style]
 		return f.min >= e.valeur and "ok" or (f.max < e.valeur and "non" or "?")
 	elseif e.type == "max" then

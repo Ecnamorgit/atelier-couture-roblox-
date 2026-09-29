@@ -219,9 +219,14 @@ return function(ctx)
 		end
 		local SYMBOLES = { ok = "✓", non = "×", ["?"] = "…" }
 		local COULEURS_STATUT = { ok = C.ok, non = C.erreur, ["?"] = C.texteDoux }
+		local ajustement = etat.commande.ajustement
 		for i, e in ipairs(etat.commande.exigences) do
-			local statut = Notation.prevision(e, croquis, choixPieces, fourchette)
-			lignesExigences[i].Text = SYMBOLES[statut] .. "  " .. UiKit.exigence(e, Catalogue)
+			local statut = Notation.prevision(e, croquis, choixPieces, fourchette, ajustement)
+			local texte = UiKit.exigence(e, Catalogue)
+			if e.type == "qualite" and ajustement and ajustement < 1 then
+				texte ..= (" (ajustement %d %%)"):format(math.floor(ajustement * 100 + 0.5))
+			end
+			lignesExigences[i].Text = SYMBOLES[statut] .. "  " .. texte
 			lignesExigences[i].TextColor3 = COULEURS_STATUT[statut]
 		end
 	end

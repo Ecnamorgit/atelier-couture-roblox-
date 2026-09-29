@@ -165,6 +165,7 @@ function EtatAtelier:nouvelleCommande(rng)
 	fiche.vues += 1
 	fiche.derniere = self.visites
 	self.commande = Commandes.generer(rng, Clientes.get(id))
+	self.commande.numero = self.visites -- la reconnaît d'une copie à l'autre (la scène garde la même cliente)
 	self.argent = math.max(self.argent, EtatAtelier.FILET)
 	self.croquis, self.tissus, self.coupees, self.coupons = nil, {}, {}, {}
 	self.epinglees, self.coutures, self.accessoires = {}, {}, {}
@@ -183,6 +184,9 @@ function EtatAtelier:mesurer(prises)
 		return refus(MESURE_INVALIDE)
 	end
 	local cliente = Clientes.get(self.commande.cliente)
+	if not cliente then
+		return refus("Aucune cliente à mesurer.")
+	end
 	local propres = {}
 	for _, cle in ipairs({ "poitrine", "taille", "hanches" }) do
 		local v = prises[cle]
@@ -198,7 +202,8 @@ function EtatAtelier:mesurer(prises)
 	end
 	local ajustement = Notation.ajustement(cliente.mesures, propres)
 	self.commande.mesures, self.commande.ajustement = propres, ajustement
-	local fiche = self.clientes[cliente.id]
+	local fiche = self.clientes[cliente.id] or { amitie = 0, vues = 1, derniere = self.visites }
+	self.clientes[cliente.id] = fiche
 	fiche.mesures, fiche.ajustement = copie(propres), ajustement
 	self.etape = "carnet"
 	return { ok = true, ajustement = ajustement }

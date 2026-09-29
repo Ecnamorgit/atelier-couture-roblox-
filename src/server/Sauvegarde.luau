@@ -63,24 +63,30 @@ local function exigenceLisible(e)
 	return false
 end
 
--- Des mesures (dm) dans les bornes d'une recette
+-- Des mesures (dm) dans les bornes d'une recette, la taille pas plus large que la poitrine ni les hanches
+-- (comme les exigent la prise de mesures et la recette)
 local function mesuresLisibles(m)
 	local function borne(v, bornes)
 		return nombre(v, nil) ~= nil and v >= bornes[1] and v <= bornes[2]
 	end
 	return type(m) == "table" and borne(m.poitrine, Recette.POITRINE) and borne(m.taille, Recette.TAILLE) and borne(m.hanches, Recette.HANCHES)
+		and m.taille <= m.poitrine and m.taille <= m.hanches
 end
 
--- Une commande sauvegardée qu'on peut jouer jusqu'au bout : taille et cliente connues, mesures dans les bornes
--- d'une recette (sauf à l'étape des mesures, où elles ne sont pas encore prises), 1 à 3 exigences lisibles
+-- Une commande sauvegardée qu'on peut jouer jusqu'au bout : taille et cliente connues (une cliente à mesurer à
+-- l'étape des mesures), mesures lisibles (sauf à l'étape des mesures, où elles ne sont pas encore prises),
+-- ajustement entre 50 et 100 %, 1 à 3 exigences lisibles
 local function commandeLisible(c, etape)
 	if type(c) ~= "table" or type(c.taille) ~= "string" or not Catalogue.TAILLES[c.taille] then
 		return false
 	end
-	if c.cliente ~= nil and not Clientes.get(c.cliente) then
+	if (c.cliente ~= nil or etape == "mesures") and not Clientes.get(c.cliente) then
 		return false
 	end
 	if not (etape == "mesures" and c.mesures == nil) and not mesuresLisibles(c.mesures) then
+		return false
+	end
+	if c.ajustement ~= nil and not (nombre(c.ajustement, nil) and c.ajustement >= 0.5 and c.ajustement <= 1) then
 		return false
 	end
 	if type(c.exigences) ~= "table" or #c.exigences < 1 or #c.exigences > 3 then
@@ -221,6 +227,11 @@ function Sauvegarde.versEtat(partie)
 		etat:charger(d)
 		assert(table.find(EtatAtelier.ETAPES, etat.etape), "étape inconnue")
 		assert(etat.etape == "accueil" or commandeLisible(etat.commande, etat.etape), "commande illisible")
+		-- La fiche de la cliente de la commande, si elle a été perdue : recréée (sa visite en cours compte)
+		local id = etat.commande and etat.commande.cliente
+		if id and not etat.clientes[id] then
+			etat.clientes[id] = { amitie = 0, vues = 1, derniere = etat.visites }
+		end
 		etat:piecesDuCroquis() -- lit le croquis
 		for _, idTissu in pairs(etat.tissus) do
 			assert(Catalogue.tissu(idTissu), "tissu inconnu")

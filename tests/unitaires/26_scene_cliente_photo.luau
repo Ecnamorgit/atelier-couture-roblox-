@@ -71,7 +71,11 @@ local cliente = scene.dossier:FindFirstChild("Cliente")
 U.verifier(cliente ~= nil, "la clochette fait entrer la cliente")
 U.verifier(math.abs(pieds(cliente) - Scene.CLIENTE.Position.Y) < 1e-6, "elle a les pieds au sol")
 local colette = Clientes.get(etat.commande.cliente)
-U.verifier(colette.id == "colette" and bulle(cliente) == colette.repliques.arrivee, "au carnet, Colette dit ce qu'elle veut, avec ses mots")
+U.verifier(colette.id == "colette" and bulle(cliente) == Scene.PAROLES.carnet, "première visite, au carnet : Colette dit ce qu'elle veut")
+etat.clientes.colette.vues = 2
+scene:synchroniser(etat, nil)
+U.verifier(bulle(cliente) == colette.repliques.arrivee, "elle revient : au carnet, ses mots à elle")
+etat.clientes.colette.vues = 1
 etat.etape = "achat"
 scene:synchroniser(etat, nil)
 U.verifier(scene.dossier:FindFirstChild("Cliente") == cliente and bulle(cliente) == nil, "pendant le travail : la même cliente, silencieuse")

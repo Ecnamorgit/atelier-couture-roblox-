@@ -116,7 +116,7 @@ return function(ctx)
 		end
 	end, 0.4)
 	if fiche and fiche.mesures then
-		UiKit.texte({ Text = "Ses mesures sont déjà dans ton carnet.", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(LARGEUR + 30, 380), Size = UDim2.fromOffset(330, 22), Parent = contenu })
+		UiKit.texte({ Text = ("Déjà mesurée (ajustement %d %%)."):format(math.floor((fiche.ajustement or 1) * 100 + 0.5)), TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(LARGEUR + 30, 380), Size = UDim2.fromOffset(330, 22), Parent = contenu })
 		UiKit.boutonDoux({ Name = "ReprendreMesures", Text = "Reprendre ses mesures", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, LARGEUR + 30, 1, 0), Size = UDim2.fromOffset(240, 46), Parent = contenu }, function()
 			local r = session:reprendreMesures()
 			if not r.ok then
