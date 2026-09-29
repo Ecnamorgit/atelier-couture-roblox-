@@ -141,6 +141,22 @@ function Pixels.imagePiece(motif, idPiece, placement, copie, plafond)
 	return buf, largeur, hauteur
 end
 
+-- Rend transparent tout ce qui est hors du contour de la pièce (sur place) : l'image de imagePiece
+-- devient la pièce découpée telle qu'on la voit dans l'interface. Retourne le même buffer.
+function Pixels.decouper(buf, largeur, hauteur, idPiece)
+	local contour = Catalogue.piece(idPiece).contour
+	local b = Polygone.boite(contour)
+	local l, h = b.maxX - b.minX, b.maxY - b.minY
+	for j = 0, hauteur - 1 do
+		local y = b.minY + (j + 0.5) / hauteur * h
+		for i = 0, largeur - 1 do
+			if not Polygone.contient(contour, b.minX + (i + 0.5) / largeur * l, y) then
+				buffer.writeu8(buf, (j * largeur + i) * 4 + 3, 0)
+			end
+		end
+	end
+	return buf
+end
 
 ---------------------------------------------------------------------------
 -- Silhouette d'un patron en papier (table de découpe) : papier translucide, contour foncé

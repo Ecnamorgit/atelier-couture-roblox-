@@ -89,3 +89,33 @@ local silB, lb, hb = Pixels.silhouette("jupe_evasee_devant")
 local cxB, cyB = math.floor(lb / 2), math.floor(hb / 2)
 U.verifier(alpha(silB, lb, cxB + 20, cyB + 20) == 255, "pièce en biais : flèche en diagonale")
 U.verifier(alpha(silB, lb, cxB, cyB - 40) == 170, "pièce en biais : pas de flèche verticale")
+
+-- Pièce découpée pour l'interface : le vrai tissu dans le contour, transparent autour
+local Polygone = U.module("Polygone")
+local motifSoie = Pixels.motif("soie_rose_fleurs")
+local plein, lp, hp = Pixels.imagePiece(motifSoie, "manche_ballon", { x = 3, y = 2, angle = 30 }, "gauche", 64)
+local reference = buffer.create(buffer.len(plein))
+buffer.copy(reference, 0, plein)
+U.verifier(Pixels.decouper(plein, lp, hp, "manche_ballon") == plein, "découpe sur place")
+local _, _, bm = Pixels.taillePiece("manche_ballon", 64)
+local contourManche = Catalogue.piece("manche_ballon").contour
+local dedans, dehors, fautes = 0, 0, 0
+for j = 0, hp - 1 do
+	local y = bm.minY + (j + 0.5) / hp * (bm.maxY - bm.minY)
+	for i = 0, lp - 1 do
+		local x = bm.minX + (i + 0.5) / lp * (bm.maxX - bm.minX)
+		local k = (j * lp + i) * 4
+		if Polygone.contient(contourManche, x, y) then
+			dedans += 1
+			if buffer.readu32(plein, k) ~= buffer.readu32(reference, k) then
+				fautes += 1
+			end
+		else
+			dehors += 1
+			if buffer.readu8(plein, k + 3) ~= 0 then
+				fautes += 1
+			end
+		end
+	end
+end
+U.verifier(dedans > 0 and dehors > 0 and fautes == 0, "dans le contour : pixel du tissu ; autour : transparent (" .. fautes .. " fautes)")
