@@ -254,6 +254,8 @@ Pour chaque pièce, **qualité = droit-fil × couture**.
 ### Maillage d'une pièce
 
 - Le contour 2D est quadrillé (12 × 16 cases pour la robe en cours, 6 × 8 pour une vitrine).
+  **Décision du commanditaire (29 septembre 2026)** : les encoches (décolleté en V, bretelles) sont approchées en escalier,
+  à une case près, au lieu d'être découpées exactement.
   Seuls les triangles à l'intérieur du contour sont gardés, et le contour est ajouté exactement.
 - Chaque point (u, v) du patron passe par la fonction d'`enroulement` de sa famille, paramétrée
   par les mesures :
@@ -414,6 +416,12 @@ Un lieu de test privé publié, joué sur son téléphone, avec les mesures remo
    équilibrage des prix et des jauges, README.
 
 ## 9. Objectifs de performance
+
+> **Décision du commanditaire (29 septembre 2026).** Les mesures du spike et du banc du plan 2 donnent environ 0,6 s par
+> robe complète sur PC, à cause des appels asynchrones de Roblox. C'est **accepté**, à condition que la génération soit étalée
+> (une pièce par image, pauses pendant les accessoires) et masquée par l'animation de couture. L'objectif de 200 ms
+> ci-dessous reste une cible d'optimisation, pas une condition de livraison.
+
 
 | Mesure | PC | Téléphone moyen |
 |---|---|---|
