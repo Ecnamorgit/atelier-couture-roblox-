@@ -6,6 +6,7 @@ local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Pixels = require(Couture:WaitForChild("Pixels"))
 local Editables = require(Couture:WaitForChild("Editables"))
+local Patron = require(Couture:WaitForChild("Patron"))
 
 local Vignettes = {}
 Vignettes.ESSAI_APRES = 5 -- secondes avant de réessayer une image qui n'a pas pu être créée
@@ -45,6 +46,18 @@ end
 function Vignettes.silhouette(idPiece)
 	return figer("silhouette:" .. idPiece, function()
 		return Pixels.silhouette(idPiece, 128)
+	end)
+end
+
+-- Pièce découpée : le vrai tissu tel qu'il était sous la pièce sur la table, transparent autour.
+-- placement = { x, y, angle } sur le rouleau ; plafond = côté maximal de l'image (128 px par défaut).
+function Vignettes.piece(idPiece, idTissu, placement, plafond)
+	plafond = plafond or 128
+	local cle = ("piece:%s:%s:%s:%s:%s:%d"):format(idPiece, idTissu, placement.x, placement.y, placement.angle, plafond)
+	return figer(cle, function()
+		local copie = Patron.copies(idPiece)[1]
+		local buf, l, h = Pixels.imagePiece(Pixels.motif(idTissu), idPiece, placement, copie, plafond)
+		return Pixels.decouper(buf, l, h, idPiece), l, h
 	end)
 end
 

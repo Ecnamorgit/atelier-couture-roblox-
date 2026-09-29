@@ -87,6 +87,10 @@ local function construirePiece(p, copie, mesures, cadre, finesse)
 	return part
 end
 
+-- Une pièce seule (épinglage) : p = { id, tissu, x, y, angle }, copie = "unique" | "gauche" | "droite".
+-- Retourne la MeshPart sans parent, ou nil si la mémoire des maillages est pleine.
+ConstructeurRobe.piece = construirePiece
+
 ---------------------------------------------------------------------------
 -- Accessoires
 ---------------------------------------------------------------------------
