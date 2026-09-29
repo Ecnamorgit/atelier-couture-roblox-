@@ -47,3 +47,7 @@ U.verifier(Progression.niveauAmitie(0) == 0 and Progression.niveauAmitie(2) == 0
 U.verifier(Progression.niveauPrestige(0) == 1 and Progression.niveauPrestige(19) == 1 and Progression.niveauPrestige(20) == 2 and Progression.niveauPrestige(530) == 8 and Progression.niveauPrestige(9999) == 8, "niveaux de prestige 1 à 8")
 U.verifier(Progression.gainAmitie(true, 0.79) == 2 and Progression.gainAmitie(true, 0.8) == 3 and Progression.gainAmitie(false, 1) == -1, "amitié : +2, +1 pour une belle robe, −1 pour un abandon")
 U.verifier(Progression.prestigeLivraison(124) == 12 and Progression.prestigeLivraison(125) == 13, "prestige : un dixième de la paie, arrondi")
+U.verifier(Progression.prestigeVente(37) == 2 and Progression.prestigeVente(38) == 3, "robe vendue : un quinzième du prix, arrondi")
+U.verifier(U.proche(Progression.bonusVente(1), 0) and U.proche(Progression.bonusVente(8), 0.42), "bonus de vente : +6 % par niveau au-delà du premier, +42 % au niveau 8")
+U.verifier(Progression.gainCadeau(29) == 1 and Progression.gainCadeau(30) == 2 and Progression.gainCadeau(59) == 2 and Progression.gainCadeau(60) == 3 and Progression.gainCadeau(80) == 4 and Progression.gainCadeau(150) == 4, "cadeau : +1 à +4 selon le score de son style préféré")
+U.verifier(Progression.PRESTIGE_CADEAU == 2, "cadeau : +2 de prestige")

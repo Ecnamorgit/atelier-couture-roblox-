@@ -11,10 +11,10 @@ for _, t in ipairs(Catalogue.Tissus) do
 	if ouverts.tissus[t.id] then
 		table.insert(tissusOuverts, t.id)
 	end
-	local attendu = t.matiere == "coton" or t.matiere == "lin"
-	U.verifier((ouverts.tissus[t.id] == true) == attendu, t.id .. " : ouvert au départ seulement en coton ou en lin")
+	local attendu = t.matiere == "coton" or t.matiere == "lin" or t.matiere == "jute"
+	U.verifier((ouverts.tissus[t.id] == true) == attendu, t.id .. " : ouvert au départ seulement en coton, en lin ou en jute")
 end
-U.verifier(#tissusOuverts == 8, "huit tissus au départ")
+U.verifier(#tissusOuverts == 9, "neuf tissus au départ (dont la toile de jute)")
 local VARIANTES_DEPART = { "corsage_droit", "corsage_v", "manches_sans", "manches_ballon", "col_sans", "col_claudine", "jupe_droite", "jupe_trapeze" }
 for _, v in ipairs(Catalogue.Variantes) do
 	U.verifier((ouverts.variantes[v.id] == true) == (table.find(VARIANTES_DEPART, v.id) ~= nil), v.id .. " : ouverte au départ ou par l'amitié")

@@ -154,6 +154,9 @@ end
 -- La cliente en personne : elle entre avec la commande, parle selon l'étape, salue puis s'en va
 function Scene:suivreCliente(etat, derniere)
 	local commande = etat.commande
+	if commande and commande.libre then
+		commande = nil -- une robe libre : pas de cliente
+	end
 	-- La commande est reconnue à son numéro : la copie du client est remplacée à chaque réponse du serveur
 	-- (mesures prises…), et la cliente ne doit pas être reconstruite pour autant
 	local cle = commande and (commande.numero or commande)

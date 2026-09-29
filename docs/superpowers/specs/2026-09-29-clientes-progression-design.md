@@ -42,8 +42,13 @@ ou les offrir ; des invitations par courrier. Ce sous-projet les reproduit, avec
    variantes. Ce qui est fermé se voit, grisé, avec ce qu'il faut pour l'ouvrir.
 4. Une robe libre se vend (plus cher avec la qualité et le prestige) ou s'offre à une cliente (amitié).
 5. Le serveur fait foi : mesures plausibles, déblocages vérifiés à chaque action, prix et points calculés chez lui.
-6. Équilibrage vérifié par simulation : un joueur moyen (qualité 0,8) atteint le prestige 2 en 3 robes, le 5 en
-   15 environ, et tout est ouvert vers 40 robes (4 à 5 heures).
+6. Équilibrage vérifié par simulation : un joueur moyen (qualité 0,8, une robe libre de jute vendue sur quatre)
+   atteint le prestige 2 en 3 robes, le 5 vers la 19e robe, et tout est ouvert vers la 60e (environ 6 à 7 heures).
+   Amendé au plan 5c. La cible d'origine (tout ouvert vers 40 robes, 4 à 5 heures) était intenable avec les
+   formules de cette spec : une robe de jute vendue rapporte environ 2 de prestige et aucune amitié, et seules
+   les commandes font monter l'amitié. En offrant ces robes à la cliente la moins avancée au lieu de les vendre,
+   la simulation ouvre tout vers la 48e robe (mesuré à la relecture du plan 5c) : les cadeaux restent le chemin
+   rapide.
 
 ## 2. Les clientes
 
@@ -109,7 +114,9 @@ ou les offrir ; des invitations par courrier. Ce sous-projet les reproduit, avec
 
 ### Prestige
 
-- Points : robe livrée acceptée : arrondi(paie / 10) ; robe vendue : arrondi(prix / 15) ; cadeau : +2.
+- Points : robe livrée acceptée : arrondi(paie / 10) ; robe vendue : arrondi(main d'œuvre / 15), la part de la
+  main d'œuvre dans le prix de vente, sans matières ni décorations (amendé au plan 5c : le prestige ne s'achète
+  pas en décorant) ; cadeau : +2.
 - Niveaux 1 à 8 aux seuils 0, 20, 50, 100, 170, 260, 380, 530.
 - Bonus de vente : +6 % par niveau au-delà du premier (+42 % au niveau 8).
 
@@ -187,9 +194,11 @@ ou les offrir ; des invitations par courrier. Ce sous-projet les reproduit, avec
   offrir hors robe libre, offrir à une inconnue).
 - **Scénario** : première visite avec mesures, puis retour avec reprise ; une robe libre vendue, une offerte ; un
   déblocage de prestige qui apparaît dans le carnet ; une lettre acceptée.
-- **Équilibrage** : un joueur simulé (qualité 0,8, tissus les moins chers qui satisfont la commande) enchaîne 40 robes
-  (commandes, et une robe libre de toile de jute vendue toutes les 4) : prestige 2 en 3 robes au plus, 5 entre
-  12 et 20 robes, tout ouvert entre 30 et 50 ; l'argent ne descend jamais sous le prix d'une robe simple.
+- **Équilibrage** : un joueur simulé (qualité 0,8, tissus les moins chers qui satisfont la commande) enchaîne 90 robes
+  (commandes, et une robe libre de toile de jute vendue toutes les 4), sur vingt parties : prestige 2 en 3 robes au
+  plus dans chaque partie, 5 entre 12 et 20 robes en médiane (la borne de chaque partie, relâchée au plan 5c, est
+  la 25e robe), tout ouvert entre 50 et 80 en médiane (amendé au plan 5c, voir le critère 6) ; l'argent ne
+  descend jamais sous le prix d'une robe simple.
 
 ## 11. Découpage en plans
 

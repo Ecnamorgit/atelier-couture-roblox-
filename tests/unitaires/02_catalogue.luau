@@ -70,12 +70,25 @@ for _, t in ipairs(Catalogue.TEINTES) do
 	teintes[t] = true
 end
 local vus = {}
-U.verifier(#Catalogue.Tissus == 24, "24 tissus")
+U.verifier(#Catalogue.Tissus == 25, "25 tissus (dont la toile de jute)")
+local jute = Catalogue.tissu("toile_jute")
+U.verifier(jute ~= nil and jute.prix == 0 and jute.teinte == "brun" and Catalogue.MATIERES[jute.matiere] ~= nil, "la toile de jute : gratuite, brune, rendue comme un tissu")
+local plusFaible = math.huge
+for _, t in ipairs(Catalogue.Tissus) do
+	if t.id ~= "toile_jute" then
+		local total = 0
+		for _, pts in pairs(t.style) do
+			total += pts
+		end
+		plusFaible = math.min(plusFaible, total)
+	end
+end
+U.verifier((jute.style.decontracte or 0) > 0 and (jute.style.decontracte or 0) < plusFaible, "la toile de jute : un style à peine marqué (décontracté)")
 for _, t in ipairs(Catalogue.Tissus) do
 	U.verifier(not vus[t.id], "tissu en double : " .. t.id)
 	vus[t.id] = true
 	U.verifier(teintes[t.teinte] == true, t.id .. " : teinte connue")
-	U.verifier(t.prix >= 4 and t.prix <= 20, t.id .. " : prix entre 4 et 20")
+	U.verifier((t.prix >= 4 and t.prix <= 20) or (t.id == "toile_jute" and t.prix == 0), t.id .. " : prix entre 4 et 20 (la toile de jute est gratuite)")
 	U.verifier(Catalogue.MATIERES[t.matiere] ~= nil, t.id .. " : matière connue")
 	stylesValides(t.style, t.id)
 	for _, c in ipairs(t.motif.couleurs) do

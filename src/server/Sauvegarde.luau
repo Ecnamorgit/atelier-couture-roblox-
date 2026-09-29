@@ -75,10 +75,15 @@ end
 
 -- Une commande sauvegardée qu'on peut jouer jusqu'au bout : taille et cliente connues (une cliente à mesurer à
 -- l'étape des mesures), mesures lisibles (sauf à l'étape des mesures, où elles ne sont pas encore prises),
--- ajustement entre 50 et 100 %, acompte entier et raisonnable, 1 à 3 exigences lisibles
+-- ajustement entre 50 et 100 %, acompte entier et raisonnable, 1 à 3 exigences lisibles. Une robe libre : ni
+-- cliente ni exigence, mesures de sa taille, prix des matières raisonnable
 local function commandeLisible(c, etape)
 	if type(c) ~= "table" or type(c.taille) ~= "string" or not Catalogue.TAILLES[c.taille] then
 		return false
+	end
+	if c.libre ~= nil then
+		return c.libre == true and c.cliente == nil and etape ~= "mesures" and type(c.exigences) == "table" and next(c.exigences) == nil
+			and mesuresLisibles(c.mesures) and (c.matieres == nil or (nombre(c.matieres, nil) and c.matieres >= 0 and c.matieres <= 100000))
 	end
 	if (c.cliente ~= nil or etape == "mesures") and not Clientes.get(c.cliente) then
 		return false
@@ -159,6 +164,7 @@ function Sauvegarde.depuisEtat(etat, debloques)
 		prestige = d.prestige,
 		livraisons = d.livraisons,
 		visites = d.visites,
+		ventes = d.ventes,
 	}
 	if d.etape ~= "accueil" then
 		partie.enCours = {}
@@ -192,6 +198,7 @@ function Sauvegarde.versEtat(partie)
 		return math.max(0, math.floor(nombre(v, 0)))
 	end
 	base.prestige, base.livraisons, base.visites = entier(partie.prestige), entier(partie.livraisons), entier(partie.visites)
+	base.ventes = entier(partie.ventes)
 	-- Fiches des clientes : clientes connues seulement ; des mesures impossibles sont oubliées (on remesurera)
 	for id, f in pairs(type(partie.clientes) == "table" and partie.clientes or {}) do
 		if type(id) == "string" and Clientes.get(id) and type(f) == "table" then

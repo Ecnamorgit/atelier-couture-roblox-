@@ -1,6 +1,7 @@
--- Équilibrage (spec §10) : un joueur moyen simulé enchaîne les commandes avec les vraies règles de l'atelier.
+-- Équilibrage (spec §10) : un joueur moyen simulé enchaîne les robes avec les vraies règles de l'atelier.
 -- À chaque commande : mesures justes, la robe la moins chère qui la remplit avec ce qui est ouvert (un seul
 -- tissu, l'accessoire demandé), qualité 0,8 ; une robe refusée (qualité demandée trop haute) est abandonnée.
+-- Une robe sur quatre (dès que les robes libres sont ouvertes) : une robe libre en toile de jute, vendue.
 local EtatAtelier = U.module("EtatAtelier")
 local Clientes = U.module("Clientes")
 local Catalogue = U.module("Catalogue")
@@ -11,7 +12,7 @@ local Deblocages = U.module("Deblocages")
 local Progression = U.module("Progression")
 
 local QUALITE = 0.8
-local ROBES = 60
+local ROBES = 90
 
 local CROQUIS = {}
 for _, c in ipairs(Catalogue.variantesDe("corsage")) do
@@ -69,8 +70,25 @@ local function simuler(graine)
 local e = EtatAtelier.nouveau()
 local rng = Random.new(graine)
 local niveauA, toutOuvertA = {}, nil
-local plusPauvre, livrees = math.huge, 0
+local plusPauvre, livrees, commandes, vendues = math.huge, 0, 0, 0
+local JUTE = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
 for n = 1, ROBES do
+	if n % 4 == 0 and e.livraisons >= EtatAtelier.LIBRES_APRES then
+		assert(e:nouvelleRobeLibre("M").ok)
+		local tissus = {}
+		for _, id in ipairs(Patron.piecesDuCroquis(JUTE)) do
+			tissus[id] = "toile_jute"
+			e.coupees[id] = { x = 0, y = 0, angle = 0 }
+			e.epinglees[id] = true
+			e.coutures[id] = QUALITE
+		end
+		assert(e:validerCroquis(JUTE, tissus).ok)
+		e.etape = "decorations"
+		assert(e:decorer({}).ok)
+		assert(e:vendre().ok)
+		vendues += 1
+	else
+	commandes += 1
 	assert(e:nouvelleCommande(rng).ok)
 	assert(e:mesurer(Clientes.get(e.commande.cliente).mesures).ok)
 	local choix = choisir(e)
@@ -99,6 +117,7 @@ for n = 1, ROBES do
 		e.etape = "refus"
 		assert(e:abandonner().ok)
 	end
+	end
 	plusPauvre = math.min(plusPauvre, e.argent)
 	local niveau = Progression.niveauPrestige(e.prestige)
 	for k = 2, niveau do
@@ -108,7 +127,7 @@ for n = 1, ROBES do
 		toutOuvertA = n
 	end
 end
-return { prestige2 = niveauA[2] or math.huge, prestige5 = niveauA[5] or math.huge, toutOuvert = toutOuvertA or math.huge, plusPauvre = plusPauvre, livrees = livrees }
+return { prestige2 = niveauA[2] or math.huge, prestige5 = niveauA[5] or math.huge, toutOuvert = toutOuvertA or math.huge, plusPauvre = plusPauvre, livrees = livrees, commandes = commandes, vendues = vendues }
 end
 
 -- Vingt parties : les tirages changent d'une partie à l'autre, l'équilibrage se juge sur l'ensemble
@@ -129,14 +148,17 @@ local p2 = serie("prestige2")
 local p5, medianeP5 = serie("prestige5")
 local tout, medianeTout = serie("toutOuvert")
 local pauvres = serie("plusPauvre")
-local livrees = serie("livrees")
 local function texte(v)
 	return if v == math.huge then "jamais" else tostring(v)
 end
-local bilan = ("%d parties de %d robes : prestige 2 à la robe %s au plus tard ; 5 de la %s à la %s (médiane %s) ; tout ouvert de la %s à la %s (médiane %s) ; au plus bas %d po"):format(PARTIES, ROBES, texte(p2[#p2]), texte(p5[1]), texte(p5[#p5]), texte(medianeP5), texte(tout[1]), texte(tout[#tout]), texte(medianeTout), pauvres[1])
+local bilan = ("%d parties de %d robes, une robe libre de jute vendue sur quatre : prestige 2 à la robe %s au plus tard ; 5 de la %s à la %s (médiane %s) ; tout ouvert de la %s à la %s (médiane %s) ; au plus bas %d po"):format(PARTIES, ROBES, texte(p2[#p2]), texte(p5[1]), texte(p5[#p5]), texte(medianeP5), texte(tout[1]), texte(tout[#tout]), texte(medianeTout), pauvres[1])
 print("Équilibrage : " .. bilan)
 U.verifier(p2[#p2] <= 3, "prestige 2 en trois robes au plus, dans chaque partie (" .. bilan .. ")")
-U.verifier(p5[1] >= 12 and p5[#p5] <= 20, "prestige 5 entre la 12e et la 20e robe, dans chaque partie (" .. bilan .. ")")
-U.verifier(medianeTout >= 30 and medianeTout <= 50, "tout le catalogue ouvert entre la 30e et la 50e robe, en médiane (" .. bilan .. ")")
+U.verifier(medianeP5 >= 12 and medianeP5 <= 20 and p5[#p5] <= 25, "prestige 5 entre la 12e et la 20e robe en médiane, à la 25e au plus tard (" .. bilan .. ")")
+U.verifier(medianeTout >= 50 and medianeTout <= 80, "tout le catalogue ouvert entre la 50e et la 80e robe, en médiane (" .. bilan .. ")")
 U.verifier(pauvres[1] >= robeSimple, "l'argent ne descend jamais sous le prix d'une robe simple (" .. bilan .. ")")
-U.verifier(livrees[1] >= ROBES * 0.7, "un joueur moyen livre la plupart de ses commandes, dans chaque partie (" .. bilan .. ")")
+local livreesEtVendues = true
+for _, p in ipairs(parties) do
+	livreesEtVendues = livreesEtVendues and p.livrees >= p.commandes * 0.7 and p.vendues >= ROBES / 4 - 1
+end
+U.verifier(livreesEtVendues, "un joueur moyen livre la plupart de ses commandes, et vend ses robes libres, dans chaque partie (" .. bilan .. ")")

@@ -189,12 +189,16 @@ Catalogue.Tissus = {
 		{ type = "degrade", couleurs = { { 200, 150, 40 }, { 250, 230, 160 } } }, { elegant = 18, chic = 6 }),
 	tissu("satin_violet_pois", "Satin violet à pois", "satin", "violet", 12,
 		{ type = "pois", couleurs = { { 120, 70, 160 }, { 230, 210, 250 } }, periode = 0.5, rayon = 0.1 }, { mignon = 10, gothique = 8 }),
+	-- La toile de jute (sous-projet 2) : gratuite, pour s'exercer ou vendre sans risque ; un style à peine marqué
+	tissu("toile_jute", "Toile de jute", "jute", "brun", 0,
+		{ type = "carreaux", couleurs = { { 176, 140, 96 }, { 150, 116, 76 } }, periode = 0.25 }, { decontracte = 4 }),
 }
 
 -- Rendu 3D par matière : matériau Roblox et reflet (SurfaceAppearance est interdite en jeu, voir le spike)
 Catalogue.MATIERES = {
 	coton = { rugosite = 0.9, reflet = 0, materiau = "Fabric" },
 	lin = { rugosite = 1, reflet = 0, materiau = "Fabric" },
+	jute = { rugosite = 1, reflet = 0, materiau = "Fabric" },
 	laine = { rugosite = 1, reflet = 0, materiau = "Fabric" },
 	soie = { rugosite = 0.35, reflet = 0.1, materiau = "SmoothPlastic" },
 	velours = { rugosite = 0.8, reflet = 0, materiau = "Fabric" },

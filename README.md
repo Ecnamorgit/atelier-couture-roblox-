@@ -9,7 +9,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 `docs/superpowers/specs/2026-09-29-clientes-progression-design.md` pour les clientes et la progression ;
 plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 2 en cours : plans 5a et 5b, les clientes, le prestige et les déblocages)
+## État actuel (sous-projet 2 en cours : plans 5a à 5c, les clientes, le prestige, les déblocages et les robes libres)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -28,7 +28,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    près). Le serveur refuse un ruban à plus de 1,5 dm de la vraie mesure. Quand elle revient, « Reprendre ses
    mesures » les reprend du carnet. Le mannequin et le patron suivent les mesures prises ; l'ajustement
    (100 % jusqu'à 0,2 dm d'écart par tour, puis moins, 50 % au pire) multiplie la qualité de la robe.
-2. **Carnet de croquis** : corsage, manches, col et jupe au choix ; un tissu par pièce (24 tissus, filtre par style).
+2. **Carnet de croquis** : corsage, manches, col et jupe au choix ; un tissu par pièce (25 tissus, filtre par style,
+   dont la toile de jute, gratuite).
    Les jauges de style, l'état des exigences, le métrage et le coût du tissu à acheter se mettent à jour en
    direct. Ce qui n'est pas encore ouvert est grisé, avec ce qu'il faut pour l'ouvrir (« Prestige 3 »,
    « Amitié d'Hélène : 2 ») ; le serveur le refuse aussi.
@@ -61,9 +62,15 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    chaque cliente (niveaux 2 et 4) ouvre une variante ou un accessoire de son style. Rien n'est sauvegardé :
    tout se déduit du prestige et des amitiés. Les commandes ne demandent que ce qui est ouvert, et leurs
    exigences de style montent avec le prestige. L'accueil annonce ce qui vient de s'ouvrir.
-   **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8) atteint le
-   prestige 2 à la 3e robe au plus tard, le 5 vers la 16e, et tout est ouvert vers la 46e (médianes).
-9. La suite : robes libres à vendre ou à offrir (plan 5c), courrier et carnet d'adresses (plan 5d).
+   **Robes libres** (après deux commandes livrées) : « Robe libre » à l'accueil, une taille (S, M, L), et l'on
+   va droit au carnet, sans cliente ni exigence. À la photo : « Vendre » (prix = (matières + décorations +
+   6 po par pièce) × (0,5 + qualité), +6 % par niveau de prestige au-delà du premier ; du prestige, un quinzième
+   de la main d'œuvre, qui ne s'achète pas en décorant) ou « Offrir à… » une cliente déjà venue (+1 à +4 d'amitié selon le score de son style préféré,
+   +2 de prestige). La robe part en vitrine.
+   **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8, une robe libre de
+   jute vendue sur quatre robes) atteint le prestige 2 à la 3e robe au plus tard, le 5 vers la 19e, et tout est
+   ouvert vers la 61e (médianes).
+9. La suite : courrier et carnet d'adresses (plan 5d).
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).

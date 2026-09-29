@@ -53,7 +53,8 @@ return function(ctx)
 	local droite = UiKit.arrondir(UiKit.creer("Frame", { Name = "Droite", BackgroundColor3 = C.panneau, Position = UDim2.new(1, -310, 0, 0), Size = UDim2.new(0, 310, 1, -56), Parent = contenu }), 10)
 	local fiche = etat.commande.cliente and Clientes.get(etat.commande.cliente)
 	local qui = fiche and fiche.nom:match("^(%S+)") or "La cliente"
-	UiKit.texte({ Text = ("%s (taille %s) veut :"):format(qui, etat.commande.taille), Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 22), Parent = droite })
+	local entete = if etat.commande.libre then ("Robe libre (taille %s) : à ton idée."):format(etat.commande.taille) else ("%s (taille %s) veut :"):format(qui, etat.commande.taille)
+	UiKit.texte({ Name = "Entete", Text = entete, Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 22), Parent = droite })
 	local lignesExigences = {}
 	for i, e in ipairs(etat.commande.exigences) do
 		lignesExigences[i] = UiKit.texte({ Name = "Exigence" .. i, TextSize = 14, Position = UDim2.fromOffset(12, 10 + i * 22), Size = UDim2.new(1, -24, 0, 20), Parent = droite })
@@ -141,7 +142,7 @@ return function(ctx)
 						table.insert(etiquettes, Catalogue.NOMS_STYLES[styles[k].s])
 					end
 					if ouvert then
-						UiKit.texte({ Text = ("%d po/m · %s"):format(t.prix, table.concat(etiquettes, ", ")), TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(72, 50), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
+						UiKit.texte({ Text = (if t.prix == 0 then "Gratuit" else ("%d po/m"):format(t.prix)) .. " · " .. table.concat(etiquettes, ", "), TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(72, 50), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
 					else
 						UiKit.texte({ Name = "Raison", Text = Deblocages.raison("tissus", t.id), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(72, 50), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
 						echantillon.ImageTransparency, echantillon.BackgroundTransparency = 0.6, 0.6

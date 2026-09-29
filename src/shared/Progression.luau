@@ -37,4 +37,21 @@ function Progression.prestigeLivraison(paie)
 	return math.round(paie / 10)
 end
 
+-- Robes libres (sous-projet 2) : une robe vendue rapporte du prestige (prix / 15) ; son prix monte de 6 % par
+-- niveau de prestige au-delà du premier (+42 % au niveau 8)
+Progression.BONUS_VENTE = 0.06
+function Progression.bonusVente(niveauPrestige)
+	return Progression.BONUS_VENTE * (niveauPrestige - 1)
+end
+function Progression.prestigeVente(prix)
+	return math.round(prix / 15)
+end
+
+-- Une robe offerte : +2 de prestige, et de l'amitié selon le score de son style préféré le plus haut
+-- (moins de 30 : +1 ; 30 à 59 : +2 ; 60 à 79 : +3 ; 80 et plus : +4)
+Progression.PRESTIGE_CADEAU = 2
+function Progression.gainCadeau(score)
+	return if score >= 80 then 4 elseif score >= 60 then 3 elseif score >= 30 then 2 else 1
+end
+
 return Progression
