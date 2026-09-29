@@ -601,6 +601,90 @@ end
 function methodes.ScreenPointToRay(_, x, y)
 	return { Origin = Vector3.new(x, y, 0), Direction = Vector3.new(0, 0, 1) }
 end
+-- Pivot d'un modèle : sa PrimaryPart, sinon le dernier pivot posé
+function methodes.GetPivot(self)
+	local principale = rawget(self, "__props").PrimaryPart
+	if principale then
+		return principale.CFrame
+	end
+	return rawget(self, "__pivot") or CFrame.new()
+end
+function methodes.PivotTo(self, cf)
+	local ancien = methodes.GetPivot(self)
+	for _, d in ipairs(self:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.CFrame = cf * (ancien:Inverse() * d.CFrame)
+		end
+	end
+	rawset(self, "__pivot", cf)
+end
+-- Échelle d'un modèle : tailles et positions des pièces autour du pivot
+function methodes.GetScale(self)
+	return rawget(self, "__echelle") or 1
+end
+function methodes.ScaleTo(self, echelle)
+	local facteur = echelle / methodes.GetScale(self)
+	local pivot = methodes.GetPivot(self)
+	for _, d in ipairs(self:GetDescendants()) do
+		if d:IsA("BasePart") then
+			local local_ = pivot:Inverse() * d.CFrame
+			d.Size = d.Size * facteur
+			d.CFrame = pivot * CFrame.new(local_.Position * facteur) * (CFrame.new(local_.Position):Inverse() * local_)
+		end
+	end
+	rawset(self, "__echelle", echelle)
+end
+-- Avatar R15 simplifié (racine, torse, tête, Humanoid) ; M.echecAvatar simule une panne de Roblox ;
+-- M.pendantAvatar() est appelé une fois pendant la construction (ce qui se passe pendant l'attente)
+function methodes.CreateHumanoidModelFromDescriptionAsync(_, description, _rig)
+	if M.echecAvatar then
+		error("CreateHumanoidModelFromDescriptionAsync : panne simulée")
+	end
+	local pendant = M.pendantAvatar
+	if pendant then
+		M.pendantAvatar = nil
+		pendant()
+	end
+	M.derniereDescription = description
+	local modele = nouvelleInstance("Model")
+	local function partie(nom, taille, y)
+		local p = nouvelleInstance("Part")
+		p.Name = nom
+		p.Size = taille
+		p.CFrame = CFrame.new(0, y, 0)
+		p.Parent = modele
+		return p
+	end
+	local racine = partie("HumanoidRootPart", Vector3.new(2, 2, 1), 3)
+	partie("UpperTorso", Vector3.new(2, 1.6, 1), 3.4)
+	partie("Head", Vector3.new(1.2, 1.2, 1.2), 4.8)
+	nouvelleInstance("Humanoid").Parent = modele
+	modele.PrimaryPart = racine
+	return modele
+end
+-- Captures d'écran : M.surCapture() est appelé au moment de la prise (pour vérifier ce qui est affiché) ;
+-- M.echecCapture simule un refus de Roblox, M.captureMuette une capture qui ne répond jamais
+function methodes.CaptureScreenshot(_, rappel)
+	if M.echecCapture then
+		error("CaptureScreenshot : refus simulé")
+	end
+	if M.captureMuette then
+		return
+	end
+	M.captures = (M.captures or 0) + 1
+	if M.surCapture then
+		M.surCapture()
+	end
+	rappel("rbxtemp://capture/" .. M.captures)
+end
+function methodes.PromptSaveCapturesToGallery(_, captures, rappel)
+	M.galerie = captures
+	local resultats = {}
+	for _, c in ipairs(captures) do
+		resultats[c] = true
+	end
+	rappel(resultats)
+end
 function methodes.GetMouseLocation(_)
 	return M.souris or Vector2.new(0, 0)
 end
@@ -698,13 +782,19 @@ function M.initialiser()
 		"ServerScriptService",
 		"AssetService",
 		"StarterGui",
+		"Lighting",
+		"CaptureService",
 	}) do
 		local s = nouvelleInstance(nom)
 		s.Parent = game
 		M.services[nom] = s
 	end
+	local lumiere = rawget(M.services.Lighting, "__props")
+	lumiere.Ambient, lumiere.OutdoorAmbient = Color3.fromRGB(70, 70, 70), Color3.fromRGB(128, 128, 128)
+	lumiere.Brightness, lumiere.ClockTime, lumiere.ExposureCompensation = 2, 14, 0
 	local camera = nouvelleInstance("Camera")
 	rawget(camera, "__props").ViewportSize = Vector2.new(1280, 720)
+	rawget(camera, "__props").FieldOfView = 70
 	camera.Parent = M.services.Workspace
 	M.services.Workspace.CurrentCamera = camera
 	return game
