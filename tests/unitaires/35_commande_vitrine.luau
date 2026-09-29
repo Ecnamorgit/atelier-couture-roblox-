@@ -34,6 +34,7 @@ for _, id in ipairs(ORDRE) do
 end
 serveur:atelier(joueur).etat.argent = 1000
 appeler(serveur, joueur, "nouvelleCommande")
+appeler(serveur, joueur, "mesurer", U.module("Clientes").get(serveur:atelier(joueur).etat.commande.cliente).mesures)
 appeler(serveur, joueur, "validerCroquis", CROQUIS, tissus)
 appeler(serveur, joueur, "acheter", "coton_blanc", 12)
 appeler(serveur, joueur, "commencerDecoupe")

@@ -64,7 +64,7 @@ local function compterClientes()
 end
 scene:synchroniser(etat, nil)
 U.verifier(scene.dossier:FindFirstChild("Cliente") == nil, "personne à l'accueil avant la clochette")
-etat:nouvelleCommande(Random.new(3))
+U.commander(etat, Random.new(3))
 scene:synchroniser(etat, nil)
 local cliente = scene.dossier:FindFirstChild("Cliente")
 U.verifier(cliente ~= nil, "la clochette fait entrer la cliente")
@@ -93,7 +93,7 @@ M.avancer(Scene.DUREE_ADIEU + 0.5)
 U.verifier(cliente.Parent == nil and scene.dossier:FindFirstChild("Cliente") == nil, "puis elle s'en va")
 
 -- Nouvelle cliente, abandon : elle s'en va aussi ; une suivante chasse la précédente tout de suite
-etat:nouvelleCommande(Random.new(4))
+U.commander(etat, Random.new(4))
 scene:synchroniser(etat, nil)
 local deuxieme = scene.dossier:FindFirstChild("Cliente")
 U.verifier(deuxieme ~= nil and deuxieme ~= cliente, "nouvelle commande : nouvelle cliente")
@@ -101,7 +101,7 @@ etat.etape = "refus"
 etat:abandonner()
 scene:synchroniser(etat, { action = "abandonner", reponse = { ok = true } })
 U.verifier(bulle(deuxieme) == Scene.PAROLES.abandon, "abandon : elle le regrette")
-etat:nouvelleCommande(Random.new(5))
+U.commander(etat, Random.new(5))
 scene:synchroniser(etat, nil)
 U.verifier(deuxieme.Parent == nil and compterClientes() == 1, "une cliente à la fois : la précédente part dès qu'une autre entre")
 
@@ -113,7 +113,7 @@ local function renoncer()
 	scene:synchroniser(etat, { action = "abandonner", reponse = r })
 	return r.ok
 end
-U.verifier(renoncer() and etat:nouvelleCommande(Random.new(6)).ok, "commande suivante prête")
+U.verifier(renoncer() and U.commander(etat, Random.new(6)).ok, "commande suivante prête")
 M.pendantAvatar = function()
 	scene:synchroniser(etat, nil)
 end
@@ -122,13 +122,13 @@ U.verifier(compterClientes() == 1 and scene.cliente ~= nil and scene.cliente.Par
 -- La commande est abandonnée pendant la construction : l'avatar construit ne reste pas
 U.verifier(renoncer(), "elle renonce")
 M.avancer(Scene.DUREE_ADIEU + 0.5)
-U.verifier(compterClientes() == 0 and etat:nouvelleCommande(Random.new(7)).ok, "elle est partie, commande suivante prête")
+U.verifier(compterClientes() == 0 and U.commander(etat, Random.new(7)).ok, "elle est partie, commande suivante prête")
 M.pendantAvatar = function()
 	renoncer()
 end
 scene:synchroniser(etat, nil)
 U.verifier(M.pendantAvatar == nil and compterClientes() == 0 and scene.cliente == nil, "commande abandonnée pendant la construction : personne ne reste")
-U.verifier(etat:nouvelleCommande(Random.new(8)).ok, "commande suivante prête")
+U.verifier(U.commander(etat, Random.new(8)).ok, "commande suivante prête")
 scene:synchroniser(etat, nil)
 U.verifier(compterClientes() == 1, "la cliente suivante entre normalement")
 

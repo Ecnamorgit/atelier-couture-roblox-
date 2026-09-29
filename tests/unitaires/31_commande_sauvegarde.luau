@@ -46,6 +46,7 @@ U.verifier(r.ok and r.etat.argent == EtatAtelier.ARGENT_DEPART and r.avertisseme
 
 -- Une commande jusqu'à la découpe
 appeler(s1, fidele, "nouvelleCommande")
+appeler(s1, fidele, "mesurer", U.module("Clientes").get(s1:atelier(fidele).etat.commande.cliente).mesures)
 local CROQUIS = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
 appeler(s1, fidele, "validerCroquis", CROQUIS, {
 	corsage_droit_devant = "coton_blanc",

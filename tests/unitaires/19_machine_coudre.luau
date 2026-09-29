@@ -149,7 +149,7 @@ local DISPOSITION = {
 	jupe_droite_dos = { x = 7.5, y = 7.2, angle = 0 },
 }
 local etat = EtatAtelier.nouveau()
-etat:nouvelleCommande(Random.new(3))
+U.commander(etat, Random.new(3))
 local tissus = {}
 for idPiece in pairs(DISPOSITION) do
 	tissus[idPiece] = "coton_blanc"

@@ -1,4 +1,5 @@
--- Commandes : génère des commandes de clientes anonymes, toujours réalisables avec le catalogue.
+-- Commandes : génère des commandes, toujours réalisables avec le catalogue. Celle d'une cliente (sous-projet 2)
+-- vient de ses goûts : un de ses styles, sa teinte, jamais un « au plus » dans ses styles.
 local dossier = script.Parent
 local Catalogue = require(dossier:WaitForChild("Catalogue"))
 local Notation = require(dossier:WaitForChild("Notation"))
@@ -56,9 +57,9 @@ local function tirer(liste, rng)
 	return liste[rng:NextInteger(1, #liste)]
 end
 
-local function tirerExigences(rng)
+local function tirerExigences(rng, cliente)
 	local exigences = {}
-	local styleMin = tirer(Catalogue.STYLES, rng)
+	local styleMin = tirer(cliente and cliente.styles or Catalogue.STYLES, rng)
 	table.insert(exigences, { type = "min", style = styleMin, valeur = rng:NextInteger(3, 7) * 10 })
 	local autres = { "max", "qualite", "teinte", "accessoire" }
 	for _ = 2, rng:NextInteger(1, 3) do
@@ -67,12 +68,12 @@ local function tirerExigences(rng)
 			local style
 			repeat
 				style = tirer(Catalogue.STYLES, rng)
-			until style ~= styleMin
+			until style ~= styleMin and not (cliente and table.find(cliente.styles, style))
 			table.insert(exigences, { type = "max", style = style, valeur = rng:NextInteger(1, 4) * 10 })
 		elseif genre == "qualite" then
 			table.insert(exigences, { type = "qualite", valeur = rng:NextInteger(6, 9) / 10 })
 		elseif genre == "teinte" then
-			table.insert(exigences, { type = "teinte", teinte = tirer(Catalogue.Tissus, rng).teinte })
+			table.insert(exigences, { type = "teinte", teinte = cliente and cliente.teinte or tirer(Catalogue.Tissus, rng).teinte })
 		else
 			local objets = {}
 			for _, a in ipairs(Catalogue.Accessoires) do
@@ -86,17 +87,21 @@ local function tirerExigences(rng)
 	return exigences
 end
 
--- rng : un objet Random. Retourne { taille, mesures, exigences }
-function Commandes.generer(rng)
+-- rng : un objet Random ; cliente (facultatif) : une fiche de Clientes. Retourne { taille, mesures, exigences }
+-- (anonyme), ou { cliente, taille, exigences } : ses mesures seront prises à l'atelier.
+function Commandes.generer(rng, cliente)
 	local exigences
 	for _ = 1, ESSAIS do
-		local candidat = tirerExigences(rng)
+		local candidat = tirerExigences(rng, cliente)
 		if Commandes.realisable(candidat) then
 			exigences = candidat
 			break
 		end
 	end
-	exigences = exigences or { { type = "min", style = "decontracte", valeur = 20 } }
+	exigences = exigences or { { type = "min", style = cliente and cliente.styles[1] or "decontracte", valeur = 20 } }
+	if cliente then
+		return { cliente = cliente.id, taille = cliente.taille, exigences = exigences }
+	end
 	local taille = tirer(NOMS_TAILLES, rng)
 	return { taille = taille, mesures = table.clone(Catalogue.TAILLES[taille]), exigences = exigences }
 end

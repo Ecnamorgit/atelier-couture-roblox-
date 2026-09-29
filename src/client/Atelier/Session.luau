@@ -152,6 +152,12 @@ function Session:nouvelleCommande()
 	end
 	return agir(self, "nouvelleCommande", self.rng)
 end
+function Session:mesurer(prises)
+	return agir(self, "mesurer", prises)
+end
+function Session:reprendreMesures()
+	return agir(self, "reprendreMesures")
+end
 function Session:validerCroquis(croquis, tissus)
 	return agir(self, "validerCroquis", croquis, tissus)
 end

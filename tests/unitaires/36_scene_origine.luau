@@ -31,7 +31,7 @@ for _, id in ipairs(ORDRE) do
 	tissus[id] = "coton_blanc"
 end
 local etat = EtatAtelier.nouveau(1000)
-etat:nouvelleCommande(Random.new(3))
+U.commander(etat, Random.new(3))
 etat:validerCroquis(CROQUIS, tissus)
 etat:acheter("coton_blanc", 12)
 etat:commencerDecoupe()

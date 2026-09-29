@@ -15,6 +15,7 @@ local Sons = require(script:WaitForChild("Sons"))
 
 local ECRANS = {
 	accueil = require(script:WaitForChild("EcranAccueil")),
+	mesures = require(script:WaitForChild("EcranMesures")),
 	carnet = require(script:WaitForChild("EcranCarnet")),
 	achat = require(script:WaitForChild("EcranAchat")),
 	decoupe = require(script:WaitForChild("EcranDecoupe")),
@@ -26,6 +27,7 @@ local ECRANS = {
 }
 local TITRES = {
 	accueil = "Atelier de couture",
+	mesures = "Les mesures",
 	carnet = "1. Carnet de croquis",
 	achat = "2. Achat du tissu",
 	decoupe = "3. Table de découpe",

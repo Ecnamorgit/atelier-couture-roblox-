@@ -18,7 +18,7 @@ local DISPOSITION = {
 -- Commande en cours, robe entièrement coupée dans du coton blanc
 local function jusquAEpinglage()
 	local e = EtatAtelier.nouveau()
-	e:nouvelleCommande(Random.new(3))
+	U.commander(e, Random.new(3))
 	local tissus = {}
 	for _, id in ipairs(PIECES) do
 		tissus[id] = "coton_blanc"

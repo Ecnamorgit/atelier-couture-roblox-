@@ -20,11 +20,11 @@ local DISPOSITION = {
 -- Démarrage et commande
 local e = EtatAtelier.nouveau()
 U.verifier(e.argent == 150 and e.etape == "accueil", "départ : 150 pièces d'or, à l'accueil")
-local r = e:nouvelleCommande(Random.new(3))
+local r = U.commander(e, Random.new(3))
 U.verifier(r.ok and e.etape == "carnet" and #r.commande.exigences >= 1, "nouvelle commande : direction le carnet")
 U.verifier(not e:nouvelleCommande(Random.new(4)).ok, "une seule commande à la fois")
 local pauvre = EtatAtelier.nouveau(3)
-pauvre:nouvelleCommande(Random.new(1))
+U.commander(pauvre, Random.new(1))
 U.verifier(pauvre.argent == EtatAtelier.FILET, "filet de sécurité : au moins 20 pièces d'or")
 
 -- Carnet
@@ -78,7 +78,7 @@ U.verifier(e.stock.soie_rouge == 6 - 5 and e.stock.coton_blanc == 12 - 11, "chaq
 
 -- Rouleau trop court : on rachète pendant la découpe
 local e2 = EtatAtelier.nouveau()
-e2:nouvelleCommande(Random.new(5))
+U.commander(e2, Random.new(5))
 e2:validerCroquis(CROQUIS, tousEn("coton_blanc"))
 e2:acheter("coton_blanc", 10)
 e2:commencerDecoupe()
@@ -93,7 +93,7 @@ U.verifier(not e2:couper("jupe_droite_dos", DISPOSITION.jupe_droite_dos).ok, "pl
 
 -- Recommencer : le tissu entamé est perdu, la commande reste
 local e3 = EtatAtelier.nouveau()
-local commande = e3:nouvelleCommande(Random.new(6)).commande
+local commande = U.commander(e3, Random.new(6)).commande
 e3:validerCroquis(CROQUIS, tousEn("coton_blanc"))
 e3:acheter("coton_blanc", 12)
 e3:commencerDecoupe()
@@ -105,7 +105,7 @@ U.verifier(not EtatAtelier.nouveau():recommencer().ok, "rien à recommencer sans
 
 -- Filet de sécurité aussi en recommençant : jamais bloqué sans argent ni tissu (spec §3)
 local e4 = EtatAtelier.nouveau(20)
-e4:nouvelleCommande(Random.new(7))
+U.commander(e4, Random.new(7))
 e4:validerCroquis(CROQUIS, tousEn("soie_rouge"))
 U.verifier(e4:acheter("soie_rouge", 12).ok and e4.argent == 0, "tout l'argent dépensé en soie")
 e4:commencerDecoupe()

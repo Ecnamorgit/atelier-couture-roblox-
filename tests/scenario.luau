@@ -189,14 +189,65 @@ end
 remoteAtelier.OnServerInvoke = serveurLent
 cliquer("Clochette")
 remoteAtelier.OnServerInvoke = brancheServeur
-verifier(M.dernierAppel ~= nil and M.dernierAppel.action == "nouvelleCommande" and serveur:atelier(joueur).etat.etape == "carnet", "la commande passe par le serveur, qui fait foi")
+verifier(M.dernierAppel ~= nil and M.dernierAppel.action == "nouvelleCommande" and serveur:atelier(joueur).etat.etape == "mesures", "la commande passe par le serveur, qui fait foi")
 verifier(pendantAttente ~= nil and pendantAttente.visible and string.find(pendantAttente.texte, "sauvegardée", 1, true) ~= nil, "serveur lent : l'avertissement affiché n'est pas remplacé")
 verifier(sonsDepuis(nSons) == "Atelier_clic,Atelier_clochette", "sons : le clic du bouton, puis la clochette (" .. sonsDepuis(nSons) .. ")")
 
 ---------------------------------------------------------------------------
+-- Les mesures : Colette vient pour la première fois ; les rubans partent courts, on les règle au bord de sa
+-- silhouette (boutons − et +, au 0,1 dm près)
+---------------------------------------------------------------------------
+local Clientes = requireModule(dossier.Clientes)
+local MESURES = { "poitrine", "taille", "hanches" }
+verifier(titre() == "Les mesures" and texte("Colette Marchand") ~= nil, "première visite de Colette : ses mesures")
+verifier(fenetre.Contenu:FindFirstChild("ReprendreMesures") == nil, "première visite : rien à reprendre")
+verifierTailles("mesures")
+cliquer("ValiderMesures")
+verifier(titre() == "Les mesures" and fenetre.Message.Visible and fenetre.Message.Text == "Mesure invalide : règle chaque ruban au bord de la silhouette.", "rubans pas réglés : mesures refusées, message")
+-- Au doigt : on glisse la poignée du ruban de la poitrine jusqu'au bord de la silhouette ; un second doigt ne
+-- tire pas le ruban, et le doigt levé ne le tire plus
+local silhouetteM = fenetre.Contenu.Silhouette
+local justePoitrine = ("Poitrine : %d cm"):format(math.round(Clientes.get("colette").mesures.poitrine * 10))
+local doigtRuban = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(0, 0, 0) }
+silhouetteM.Poignee_poitrine.InputBegan:Fire(doigtRuban)
+local valeurAvant = texte("Valeur_poitrine").Text
+M.services.UserInputService.InputChanged:Fire({ UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(900, 0, 0) })
+verifier(texte("Valeur_poitrine").Text == valeurAvant, "un second doigt ne tire pas le ruban")
+doigtRuban.Position = Vector3.new(silhouetteM.Ruban_poitrine.AbsolutePosition.X + silhouetteM.Corps_poitrine.Size.X.Offset, 0, 0)
+M.services.UserInputService.InputChanged:Fire(doigtRuban)
+M.services.UserInputService.InputEnded:Fire(doigtRuban)
+verifier(texte("Valeur_poitrine").Text == justePoitrine, "glisser la poignée au doigt jusqu'au bord de la silhouette : la mesure juste")
+doigtRuban.Position = Vector3.new(0, 0, 0)
+M.services.UserInputService.InputChanged:Fire(doigtRuban)
+verifier(texte("Valeur_poitrine").Text == justePoitrine, "doigt levé : le ruban ne bouge plus")
+local function mesurerCliente()
+	local vraies = Clientes.get(serveur:atelier(joueur).etat.commande.cliente).mesures
+	for _, cle in ipairs(MESURES) do
+		local function lue()
+			return tonumber(texte("Valeur_" .. cle).Text:match("(%d+) cm")) / 10
+		end
+		local garde = 0
+		while math.abs(lue() - vraies[cle]) > 0.05 and garde < 80 do
+			garde += 1
+			cliquer(if lue() < vraies[cle] then "Plus_" .. cle else "Moins_" .. cle)
+		end
+	end
+end
+mesurerCliente()
+local silhouette = fenetre.Contenu.Silhouette
+for _, cle in ipairs(MESURES) do
+	local ruban, corps = silhouette["Ruban_" .. cle], silhouette["Corps_" .. cle]
+	local finRuban = ruban.Position.X.Offset + ruban.Size.X.Offset
+	local bordCorps = corps.Position.X.Offset + corps.Size.X.Offset
+	verifier(math.abs(finRuban - bordCorps) <= 2 and ruban.Position.X.Offset == corps.Position.X.Offset, cle .. " : réglé juste, le ruban s'arrête au bord de la silhouette")
+end
+cliquer("ValiderMesures")
+verifier(serveur:atelier(joueur).etat.commande.ajustement == 1 and serveur:atelier(joueur).etat.clientes.colette.mesures ~= nil, "mesures justes : ajustement 100 %, gardées pour la prochaine fois")
+
+---------------------------------------------------------------------------
 -- Carnet de croquis
 ---------------------------------------------------------------------------
-verifier(titre() == "1. Carnet de croquis", "la clochette ouvre le carnet")
+verifier(titre() == "1. Carnet de croquis", "mesures prises : le carnet")
 verifierTailles("carnet")
 verifier(texte("La cliente (taille") ~= nil, "la taille de la cliente est affichée")
 verifier(texte("Exigence1") ~= nil and texte("Exigence1").Text ~= "", "les exigences sont affichées")
@@ -837,7 +888,10 @@ verifier(titre() == "Atelier de couture", "E tapé dans le chat : rien")
 M.avancer(0.5)
 UIS.InputBegan:Fire(toucheE, false)
 verifier(scene:FindFirstChild("Cliente") ~= nil and scene.Cliente ~= laCliente, "E : la cliente suivante entre")
-verifier(titre() == "1. Carnet de croquis", "nouvelle cliente")
+verifier(titre() == "Les mesures" and texte("Margot Petit") ~= nil, "nouvelle cliente : Margot, à mesurer")
+mesurerCliente()
+cliquer("ValiderMesures")
+verifier(titre() == "1. Carnet de croquis", "Margot mesurée : le carnet")
 
 ---------------------------------------------------------------------------
 -- Robe en six tissus : la mise en page tient (lignes d'achat, onglets de la découpe)
@@ -936,7 +990,7 @@ verifier(parties.donnees[cleJoueur].verrou.jobId == "serveur-scenario" and serve
 M.avancer(0.5)
 verifier(serveur:traiter(joueur, "nouvelleCommande").ok, "une commande commencée sur le serveur")
 M.avancer(serveur.PERIODE_SAUVEGARDE + 1)
-verifier(parties.donnees[cleJoueur].enCours ~= nil and parties.donnees[cleJoueur].enCours.etape == "carnet", "sauvegarde régulière : la commande en cours")
+verifier(parties.donnees[cleJoueur].enCours ~= nil and parties.donnees[cleJoueur].enCours.etape == "mesures", "sauvegarde régulière : la commande en cours")
 -- (au moment où l'écriture de sa partie commence, sa boutique est déjà libérée : un joueur qui arrive
 -- pendant une écriture lente trouve une place)
 local boutiqueAuDepart = nil
@@ -950,9 +1004,9 @@ verifier(boutiqueAuDepart == false, "départ du joueur : sa boutique est libér�
 verifier(parties.donnees[cleJoueur].verrou.t == 0 and serveur.ateliers[joueur] == nil, "départ du joueur : partie écrite, verrou rendu")
 verifier(M.services.Workspace.Rue:FindFirstChild("Boutique_1") == nil and M.services.Workspace.Vitrines:FindFirstChild("Vitrine_1") == nil, "départ du joueur : sa boutique est retirée de la rue")
 M.services.Players.PlayerAdded:Fire(joueur)
-verifier(serveur:atelier(joueur) ~= nil and serveur:atelier(joueur).etat.etape == "carnet", "retour suivant : la commande reprend")
+verifier(serveur:atelier(joueur) ~= nil and serveur:atelier(joueur).etat.etape == "mesures", "retour suivant : la commande reprend")
 verifier(M.services.Workspace.Rue:FindFirstChild("Boutique_1") ~= nil and M.services.Workspace.Vitrines.Vitrine_1:GetAttribute("Recette") ~= nil, "retour : sa boutique est reconstruite, sa dernière robe en vitrine")
 M.fermeture()
-verifier(parties.donnees[cleJoueur].verrou.t == 0 and parties.donnees[cleJoueur].enCours.etape == "carnet", "arrêt du serveur : partie écrite, verrou rendu")
+verifier(parties.donnees[cleJoueur].verrou.t == 0 and parties.donnees[cleJoueur].enCours.etape == "mesures", "arrêt du serveur : partie écrite, verrou rendu")
 
 print(("TOUT EST VERT : %d vérifications"):format(nbVerifs))
