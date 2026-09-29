@@ -47,6 +47,9 @@ function Progression.prestigeVente(prix)
 	return math.round(prix / 15)
 end
 
+-- Une commande venue par lettre, livrée et acceptée : un point d'amitié de plus
+Progression.BONUS_LETTRE = 1
+
 -- Une robe offerte : +2 de prestige, et de l'amitié selon le score de son style préféré le plus haut
 -- (moins de 30 : +1 ; 30 à 59 : +2 ; 60 à 79 : +3 ; 80 et plus : +4)
 Progression.PRESTIGE_CADEAU = 2

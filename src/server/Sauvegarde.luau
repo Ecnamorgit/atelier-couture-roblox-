@@ -97,6 +97,9 @@ local function commandeLisible(c, etape)
 	if c.acompte ~= nil and not (nombre(c.acompte, nil) and c.acompte == math.floor(c.acompte) and c.acompte >= 0 and c.acompte <= 1000) then
 		return false
 	end
+	if c.parLettre ~= nil and c.parLettre ~= true then
+		return false
+	end
 	if type(c.exigences) ~= "table" or #c.exigences < 1 or #c.exigences > 3 then
 		return false
 	end
@@ -165,6 +168,7 @@ function Sauvegarde.depuisEtat(etat, debloques)
 		livraisons = d.livraisons,
 		visites = d.visites,
 		ventes = d.ventes,
+		lettres = d.lettres,
 	}
 	if d.etape ~= "accueil" then
 		partie.enCours = {}
@@ -199,6 +203,13 @@ function Sauvegarde.versEtat(partie)
 	end
 	base.prestige, base.livraisons, base.visites = entier(partie.prestige), entier(partie.livraisons), entier(partie.visites)
 	base.ventes = entier(partie.ventes)
+	-- Courrier : trois lettres au plus, d'une cliente connue, avec une commande qu'on peut jouer
+	for _, l in ipairs(type(partie.lettres) == "table" and partie.lettres or {}) do
+		if type(l) == "table" and type(l.cliente) == "string" and type(l.commande) == "table" and l.commande.cliente == l.cliente
+			and commandeLisible(l.commande, "mesures") and #base.lettres < EtatAtelier.LETTRES_MAX then
+			table.insert(base.lettres, { cliente = l.cliente, commande = copie(l.commande) })
+		end
+	end
 	-- Fiches des clientes : clientes connues seulement ; des mesures impossibles sont oubliées (on remesurera)
 	for id, f in pairs(type(partie.clientes) == "table" and partie.clientes or {}) do
 		if type(id) == "string" and Clientes.get(id) and type(f) == "table" then

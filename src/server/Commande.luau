@@ -70,13 +70,16 @@ local ACTIONS = {
 		return a.etat:retourDecorations()
 	end,
 	livrer = function(a)
-		return a.etat:livrer()
+		return a.etat:livrer(a.rng)
+	end,
+	inviter = function(a, indice)
+		return a.etat:inviter(indice)
 	end,
 	nouvelleRobeLibre = function(a, taille)
 		return a.etat:nouvelleRobeLibre(taille)
 	end,
 	vendre = function(a)
-		return a.etat:vendre()
+		return a.etat:vendre(a.rng)
 	end,
 	offrir = function(a, idCliente)
 		return a.etat:offrir(idCliente)
