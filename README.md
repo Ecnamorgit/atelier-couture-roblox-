@@ -7,7 +7,7 @@ et le tissu découpé se voit tel quel sur la robe en 3D.
 Le jeu est en cours de refonte, sous-projet par sous-projet
 (spec : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md`, plans : `docs/superpowers/plans/`).
 
-## État actuel (plan 4d-1)
+## État actuel (plan 4d-2)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -15,13 +15,17 @@ voient. Le serveur tient l'atelier de chaque joueur et valide chaque action (il 
 qu'une copie de l'état. Dans un jeu publié, la partie est sauvegardée (argent, stock de tissu, dix dernières
 robes et commande en cours : une déconnexion ne perd pas le travail) :
 
-1. **Commande** : la clochette fait entrer la cliente en personne (un avatar construit en code, taille S, M ou L)
+1. **Commande** : la clochette (ou E) fait entrer la cliente en personne (un avatar construit en code, taille S, M ou L)
    avec 1 à 3 exigences de style, de couleur, de qualité ou d'accessoire. Elle parle par une bulle.
 2. **Carnet de croquis** : corsage, manches, col et jupe au choix ; un tissu par pièce (24 tissus, filtre par style).
-   Les jauges de style et l'état des exigences se mettent à jour en direct.
-3. **Achat** : métrage conseillé par tissu, quantité réglable, coût au mètre.
-4. **Table de découpe** : les pièces du patron se glissent (souris ou doigt) et se tournent sur le rouleau.
-   Droit-fil aimanté, pièces pliées coupées en double au pli, chevauchements refusés, place proposée.
+   Les jauges de style, l'état des exigences, le métrage et le coût du tissu à acheter se mettent à jour en
+   direct.
+3. **Achat** : métrage conseillé par tissu, quantité réglable, coût au mètre ; toucher l'échantillon d'un tissu
+   montre le rouleau conseillé, avec les pièces rangées dessus.
+4. **Table de découpe** : les pièces du patron se glissent (souris ou doigt) et se tournent (boutons, R, molette
+   sur la pièce) sur le rouleau, qu'on déroule en le faisant défiler (ou avec A et D). Droit-fil aimanté,
+   pièces pliées coupées en double au pli, chevauchements refusés, place proposée ; une ligne marque le tissu
+   entamé (couper consomme le rouleau jusqu'au bas de la pièce la plus basse).
 5. **Épinglage** : le mannequin prend les mesures de la cliente ; chaque pièce touchée s'y épingle,
    dans le tissu exactement tel qu'il a été découpé.
 6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé
@@ -36,15 +40,16 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    la robe (styles, qualité, couleur dominante, accessoires). Acceptée : paie = base × (0,5 + qualité), et la
    robe part en vitrine ; la cliente remercie et s'en va. Refusée : les exigences ratées s'affichent (avec le
    score actuel pour les styles) ; on retouche les décorations ou on abandonne.
-9. La suite : écarts à la spec §4, sons, réglages mobiles, équilibrage, mobilier (plan 4d-2).
+9. La suite : sons, réglages mobiles, équilibrage, mobilier (plan 4d-3).
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
 
 **Réseau lent ou coupé** : au-delà de 0,3 s d'attente du serveur, « Un instant… » s'affiche en gris sous la
 fenêtre. Un refus passager (serveur occupé ou injoignable, trop d'appels) s'affiche en gris et ne défait
-rien : une pièce cousue reste finie, on la rend de nouveau. Une réponse perdue est rattrapée : le client
-redemande l'état au serveur, et chaque refus des règles emporte l'état du serveur, qui répare la copie du
+rien : une pièce cousue reste finie, on la rend de nouveau. Une réponse perdue (ou une erreur du serveur) est
+rattrapée : le client redemande l'état au serveur, et les actions attendent le temps de cette vérification
+(rien n'est fait deux fois). Chaque refus des règles emporte l'état du serveur, qui répare la copie du
 client. Si la partie n'est pas encore arrivée au bout d'une minute, le joueur en est prévenu.
 
 ## Installation
