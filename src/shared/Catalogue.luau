@@ -84,7 +84,8 @@ local CRAYON = { { x = 0, y = 0 }, { x = 5, y = 0 }, { x = 4.6, y = 6 }, { x = 0
 -- Sous-projet 7 : la basque, courte et évasée, sous la taille, par-dessus la jupe
 local BASQUE = { { x = 0.8, y = 0 }, { x = 5.6, y = 0 }, { x = 6.4, y = 1.2 }, { x = 0, y = 1.2 } }
 -- Un volant froncé : une bande longue (sa longueur fait le tour, froncée) et basse, cousue par le haut
-local GRILLE_VOLANT = { robe = { colonnes = 32, lignes = 3 }, vitrine = { colonnes = 16, lignes = 2 } }
+-- (en vitrine, 24 colonnes : avec 16, chaque sommet tomberait sur un creux des fronces, et le volant serait lisse)
+local GRILLE_VOLANT = { robe = { colonnes = 32, lignes = 3 }, vitrine = { colonnes = 24, lignes = 2 } }
 local GRILLE_BASQUE = { robe = { colonnes = 12, lignes = 4 }, vitrine = { colonnes = 6, lignes = 2 } }
 
 Catalogue.Pieces = {

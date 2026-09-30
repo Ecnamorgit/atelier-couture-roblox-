@@ -145,13 +145,31 @@ function Croquis.details(croquis)
 end
 
 -- La famille dessinée sous le point (x, y) du dessin (la plus haute dans l'ordre de dessin), ou nil ; et les pièces de
--- cette partie : les siennes (un volant), sinon celles de la variante
+-- cette partie : les siennes (un volant), sinon celles de la variante moins celles d'une autre partie (toucher la jupe
+-- ne change pas le tissu de son volant)
 function Croquis.partieA(croquis, x, y)
 	local parties = Croquis.parties(croquis)
 	for i = #parties, 1, -1 do
 		if Polygone.contient(parties[i].polygone, x, y) then
 			local p = parties[i]
-			return p.famille, p.pieces or Catalogue.variante(croquis[p.famille]).pieces
+			if p.pieces then
+				return p.famille, p.pieces
+			end
+			local portees = {}
+			for _, autre in ipairs(parties) do
+				if autre.famille == p.famille and autre.pieces then
+					for _, id in ipairs(autre.pieces) do
+						portees[id] = true
+					end
+				end
+			end
+			local pieces = {}
+			for _, id in ipairs(Catalogue.variante(croquis[p.famille]).pieces) do
+				if not portees[id] then
+					table.insert(pieces, id)
+				end
+			end
+			return p.famille, pieces
 		end
 	end
 	return nil

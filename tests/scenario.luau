@@ -466,6 +466,8 @@ do -- Sous-projet 7 : une jupe à volant et un corsage à basque ; leurs couches
 		lignes += if e.Name:sub(1, 6) == "Tissu_" then 1 else 0
 	end
 	verifier(liste:IsA("ScrollingFrame") and lignes == 10 and liste.CanvasSize.Y.Offset >= 10 * 36 and liste.Position.Y.Offset + liste.Size.Y.Offset <= page.Precedent_corsage.Position.Y.Offset, ("dix pièces : la liste défile, au-dessus des lignes des modèles (%d)"):format(lignes))
+	local tout = page:FindFirstChild("ToutEnUnTissu")
+	verifier(tout ~= nil and tout.Position.Y.Offset >= liste.Position.Y.Offset + liste.Size.Y.Offset and tout.Position.Y.Offset + tout.Size.Y.Offset <= page.Precedent_corsage.Position.Y.Offset, "« Même tissu pour toute la robe » reste en vue, sous la liste qui défile")
 	local d = page.Dessin
 	local function toucher(x, y)
 		M.avancer(0.5)

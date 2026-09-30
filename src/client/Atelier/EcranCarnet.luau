@@ -77,7 +77,7 @@ return function(ctx)
 
 	-- Les pièces du croquis et leur tissu (une ligne par pièce : la toucher choisit son tissu)
 	-- (une liste qui défile, au-dessus des lignes ◀ ▶ : une robe à couches a jusqu'à dix pièces)
-	local listePieces = UiKit.creer("ScrollingFrame", { Name = "Pieces", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollingDirection = Enum.ScrollingDirection.Y, Position = UDim2.fromOffset(334, 6), Size = UDim2.fromOffset(198, HAUT_LIGNES - 6), Parent = page })
+	local listePieces = UiKit.creer("ScrollingFrame", { Name = "Pieces", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollingDirection = Enum.ScrollingDirection.Y, Position = UDim2.fromOffset(334, 6), Size = UDim2.fromOffset(198, HAUT_LIGNES - 6 - 40), Parent = page })
 
 	-- Une ligne ◀ modèle ▶ par famille, avec un point par modèle
 	local lignes = {}
@@ -321,8 +321,13 @@ return function(ctx)
 			UiKit.texte({ Name = "Piece", Text = Catalogue.piece(id).nom, Font = Enum.Font.GothamBold, TextSize = 14, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 1), Size = UDim2.fromOffset(158, 16), Parent = ligne })
 			UiKit.texte({ Name = "Tissu", Text = t and t.nom or "(aucun tissu)", TextSize = 14, TextColor3 = t and C.texte or C.texteDoux, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 17), Size = UDim2.fromOffset(158, 16), Parent = ligne })
 		end
-		listePieces.CanvasSize = UDim2.fromOffset(0, #pieces * 36 + 40)
-		UiKit.boutonDoux({ Name = "ToutEnUnTissu", Text = "Même tissu pour toute la robe", TextSize = 14, Position = UDim2.fromOffset(0, #pieces * 36 + 4), Size = UDim2.fromOffset(192, 32), Parent = listePieces }, function()
+		listePieces.CanvasSize = UDim2.fromOffset(0, #pieces * 36)
+		-- « Même tissu pour toute la robe », sous la liste, toujours en vue
+		local ancienTout = page:FindFirstChild("ToutEnUnTissu")
+		if ancienTout then
+			ancienTout:Destroy()
+		end
+		UiKit.boutonDoux({ Name = "ToutEnUnTissu", Text = "Même tissu pour toute la robe", TextSize = 14, Position = UDim2.fromOffset(334, listePieces.Position.Y.Offset + listePieces.Size.Y.Offset + 4), Size = UDim2.fromOffset(192, 32), Parent = page }, function()
 			if dernierTissu then
 				for _, id in ipairs(pieces) do
 					tissus[id] = dernierTissu

@@ -88,12 +88,19 @@ end
 U.verifier(recouvertes >= #paires and #ratees == 0, ("chaque couche passe au moins 0,03 dm au-dessus de celle du dessous (%d cas ; en défaut : %s)"):format(recouvertes, table.concat(ratees, " ; ")))
 
 ---------------------------------------------------------------------------
--- Une grille propre à la pièce : le volant, froncé serré, en 32 × 3 (16 × 2 en vitrine)
+-- Une grille propre à la pièce : le volant, froncé serré, en 32 × 3 (24 × 2 en vitrine, où ses fronces se voient encore)
 ---------------------------------------------------------------------------
 local maillage = Maillage.piece("volant_devant", "unique", M, "robe")
 local vitrine = Maillage.piece("volant_devant", "unique", M, "vitrine")
 local jupe = Maillage.piece("jupe_droite_devant", "unique", M, "robe")
-U.verifier(#maillage.positions == 33 * 4 and #vitrine.positions == 17 * 3 and #jupe.positions == 13 * 17, ("grille du volant : 33 × 4 points (vitrine 17 × 3) ; la jupe garde 13 × 17 (%d, %d, %d)"):format(#maillage.positions, #vitrine.positions, #jupe.positions))
+U.verifier(#maillage.positions == 33 * 4 and #vitrine.positions == 25 * 3 and #jupe.positions == 13 * 17, ("grille du volant : 33 × 4 points (vitrine 25 × 3) ; la jupe garde 13 × 17 (%d, %d, %d)"):format(#maillage.positions, #vitrine.positions, #jupe.positions))
+-- (relecture) en vitrine, l'ourlet du volant ondule encore : ses fronces ne tombent pas toutes sur les creux
+local mini, maxi = math.huge, 0
+for k = #vitrine.positions - 24, #vitrine.positions do
+	local r = rayon(vitrine.positions[k])
+	mini, maxi = math.min(mini, r), math.max(maxi, r)
+end
+U.verifier(maxi - mini > 0.1, ("en vitrine, l'ourlet du volant ondule (%.3f dm d'écart)"):format(maxi - mini))
 U.verifier(not pcall(Maillage.piece, "volant_devant", "unique", M, "inconnue"), "une finesse inconnue est refusée")
 
 ---------------------------------------------------------------------------
