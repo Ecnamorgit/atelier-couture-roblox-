@@ -80,6 +80,18 @@ end
 U.verifier(#nouveaux == 5 and nouveaux[1].genre == "tissus" and nouveaux[5].id == "dentelle_noire", "prestige 3 : quatre satins et la dentelle noire (" .. table.concat(noms, ", ") .. ")")
 U.verifier(#Deblocages.nouveaux(au(50), au(99)) == 0, "rien de neuf sans changer de niveau")
 U.verifier(Deblocages.resume(nouveaux) == "les satins (4), Dentelle noire", "en une ligne : les satins ensemble (" .. Deblocages.resume(nouveaux) .. ")")
+-- Chaque matière ouverte par le prestige a son nom au pluriel dans l'annonce (« les crêpes (4) », pas « crepe (4) »)
+local resume6 = Deblocages.resume(Deblocages.nouveaux(au(SEUILS_P[6] - 1), au(SEUILS_P[6])))
+U.verifier(resume6 == "les crêpes (4), les organzas (4), Papillon de soie, Galon argenté", "prestige 6 en une ligne : les crêpes et les organzas ensemble (" .. resume6 .. ")")
+for matiere in pairs(Deblocages.PRESTIGE_MATIERES) do
+	local tissus = {}
+	for _, t in ipairs(Catalogue.Tissus) do
+		if t.matiere == matiere then
+			table.insert(tissus, { genre = "tissus", id = t.id, nom = t.nom })
+		end
+	end
+	U.verifier(string.sub(Deblocages.resume(tissus), 1, 4) == "les ", matiere .. " : son nom au pluriel dans l'annonce (" .. Deblocages.resume(tissus) .. ")")
+end
 U.verifier(Deblocages.message("tissus", "soie_rouge") == "Pas encore ouvert : Soie rouge (Prestige 5).", "le refus dit ce qu'il faut pour ouvrir")
 local prochain = Deblocages.prochainDeCliente("colette", 0)
 U.verifier(prochain ~= nil and prochain.niveau == 2 and prochain.nom == "Jupe ample froncée", "carnet d'adresses : l'amitié de Colette ouvrira ensuite la jupe ample (niveau 2)")

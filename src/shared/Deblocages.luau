@@ -178,7 +178,16 @@ function Deblocages.nouveaux(avant, apres)
 	return out
 end
 
-local MATIERES = { laine = "les laines", satin = "les satins", velours = "les velours", soie = "les soies" }
+local MATIERES = {
+	laine = "les laines",
+	satin = "les satins",
+	velours = "les velours",
+	soie = "les soies",
+	crepe = "les crêpes",
+	organza = "les organzas",
+	brocart = "les brocarts",
+	tulle = "les tulles",
+}
 
 -- Ce qui vient de s'ouvrir, en une ligne : les tissus d'une même matière ensemble (« les satins (4), Dentelle
 -- noire »)
