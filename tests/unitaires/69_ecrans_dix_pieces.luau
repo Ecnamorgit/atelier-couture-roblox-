@@ -6,6 +6,7 @@ local Patron = U.module("Patron")
 local Metrage = U.module("Metrage")
 local EcranDecoupe = U.module("EcranDecoupe")
 local EcranCouture = U.module("EcranCouture")
+local EcranEpinglage = U.module("EcranEpinglage")
 
 local DIX = { corsage = "corsage_basque", manches = "manches_ballon", col = "col_claudine", jupe = "jupe_volant" }
 local ids = Patron.piecesDuCroquis(DIX)
@@ -41,6 +42,25 @@ fermer()
 for _, id in ipairs(ids) do
 	assert(session:couper(id, placements[id]).ok, id)
 end
+
+-- (plan 20) L'épinglage : les couches (basque, volant) en fin de liste, elles se posent par-dessus les autres pièces
+local ctx3 = contexte()
+local fermer3 = EcranEpinglage(ctx3)
+local cartes = {}
+for _, c in ipairs(ctx3.contenu.Liste:GetChildren()) do
+	if c.Name:sub(1, 9) == "Epingler_" then
+		table.insert(cartes, c)
+	end
+end
+table.sort(cartes, function(a, b)
+	return a.Position.Y.Offset < b.Position.Y.Offset
+end)
+local ordre = {}
+for _, c in ipairs(cartes) do
+	table.insert(ordre, (c.Name:gsub("^Epingler_", "")))
+end
+U.verifier(#ordre == 10 and table.concat(ordre, ",", 7) == "basque_devant,basque_dos,volant_devant,volant_dos", "épinglage : les couches en fin de liste (" .. table.concat(ordre, ", ") .. ")")
+fermer3()
 for _, id in ipairs(ids) do
 	assert(session:epingler(id).ok, id)
 end

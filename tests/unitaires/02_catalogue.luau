@@ -64,7 +64,7 @@ for _, c in ipairs(Catalogue.variantesDe("corsage")) do
 	end
 end
 U.verifier(minimum == 4 and maximum == 10, ("4 à 10 pièces par robe (obtenu %d à %d)"):format(minimum, maximum))
--- Sous-projet 4 : dix-neuf variantes (cinq corsages, cinq manches, quatre cols, cinq jupes : 500 croquis)
+-- Sous-projet 7 : vingt et une variantes (six corsages, cinq manches, quatre cols, six jupes : 720 croquis)
 local parFamille = {}
 for _, v in ipairs(Catalogue.Variantes) do
 	parFamille[v.famille] = (parFamille[v.famille] or 0) + 1

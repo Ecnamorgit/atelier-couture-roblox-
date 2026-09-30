@@ -1,5 +1,6 @@
 -- Écran d'épinglage (panneau à droite, le mannequin à gauche) : toucher une pièce coupée l'épingle
 -- à sa place sur le mannequin, dans son vrai tissu. La dernière pièce épinglée mène à la couture.
+-- Sous-projet 7 : les couches (volant, basque) viennent en fin de liste : elles se posent par-dessus les autres.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
@@ -29,7 +30,14 @@ return function(ctx)
 		Parent = ctx.contenu,
 	})
 	local cartes = {}
-	local pieces = etat:piecesDuCroquis()
+	local pieces = {}
+	for _, dessus in ipairs({ false, true }) do
+		for _, id in ipairs(etat:piecesDuCroquis()) do
+			if ((Catalogue.piece(id).enroulement.couche or 0) > 0) == dessus then
+				table.insert(pieces, id)
+			end
+		end
+	end
 	for i, id in ipairs(pieces) do
 		local def = Catalogue.piece(id)
 		local tissu = Catalogue.tissu(etat.tissus[id])
