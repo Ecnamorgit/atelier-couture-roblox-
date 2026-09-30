@@ -286,9 +286,26 @@ do
 	verifier(page.Modele_jupe.Text == "Trapèze" and dessin.ImageContent ~= dessinAvant and page.Points_jupe.Point2.BackgroundColor3 == ACCENT and page.Points_jupe.Point1.BackgroundColor3 ~= ACCENT, "▶ : le modèle suivant, dessiné, son point marqué")
 	cliquer("Precedent_jupe")
 	verifier(page.Modele_jupe.Text == "Droite", "◀ : retour au modèle précédent")
-	-- Mémoire des images pleine : un mot à la place du dessin (pas l'ancien), le carnet marche quand même
+	-- Au doigt : sur un téléphone, la fenêtre est réduite de moitié ; ◀ ▶ restent assez grands, lignes espacées
+	verifier(page.Suivant_jupe.Size.X.Offset >= 44 and page.Suivant_jupe.Size.Y.Offset >= 34 and page.Precedent_jupe.Size.Y.Offset >= 34 and page.Suivant_jupe.Position.Y.Offset - page.Suivant_manches.Position.Y.Offset >= 36, "◀ ▶ assez grands pour le doigt, lignes espacées")
+	local hauteurPage = fenetre.Size.Y.Offset * fenetre.Contenu.Size.Y.Scale + fenetre.Contenu.Size.Y.Offset -- (la page prend la hauteur du contenu)
+	verifier(page.Valider.Position.Y.Offset + page.Valider.Size.Y.Offset <= hauteurPage and page.Suivant_jupe.Position.Y.Offset + page.Suivant_jupe.Size.Y.Offset <= page.Valider.Position.Y.Offset, "tout tient dans la page, au-dessus de « Tracer le patron »")
+	-- Le dessin se fige en attendant Roblox : deux modèles demandés coup sur coup, seul le dernier s'affiche
 	local VignettesCarnet = requireModule(scriptClient.Vignettes)
 	local peindre, colAvant = VignettesCarnet.croquis, page.Modele_col.Text
+	local revenu = false
+	VignettesCarnet.croquis = function(c, ...)
+		local image = peindre(c, ...)
+		if c.jupe == "jupe_trapeze" and not revenu then
+			revenu = true -- pendant que le trapèze se fige, le joueur revient déjà à la jupe droite
+			page.Precedent_jupe.Activated:Fire()
+		end
+		return image
+	end
+	cliquer("Suivant_jupe")
+	verifier(page.Modele_jupe.Text == "Droite" and dessin.ImageContent == dessinAvant, "un dessin arrivé en retard ne remplace pas le dernier demandé")
+	VignettesCarnet.croquis = peindre
+	-- Mémoire des images pleine : un mot à la place du dessin (pas l'ancien), le carnet marche quand même
 	VignettesCarnet.croquis = function()
 		return nil
 	end
@@ -376,6 +393,13 @@ do
 	local ouvert = fenetre.Contenu:FindFirstChild("ChoixTissu")
 	verifier(ouvert ~= nil and ouvert:GetAttribute("Famille") == "jupe", "toucher la jupe dessinée : le choix de son tissu")
 	cliquer("FermerChoix")
+	-- Double clic sur un tissu : le second appui tombe sur le dessin, dessous ; il ne rouvre pas le choix
+	M.avancer(0.5)
+	d.Activated:Fire({ Position = Vector3.new(point.X, point.Y, 0) }, 1)
+	M.avancer(0.5)
+	fenetre.Contenu.ChoixTissu.Grille.Tissu_coton_blanc.Activated:Fire()
+	d.Activated:Fire({ Position = Vector3.new(point.X, point.Y, 0) }, 1)
+	verifier(fenetre.Contenu:FindFirstChild("ChoixTissu") == nil and fenetre.Contenu.Page.Pieces.Tissu_jupe_trapeze_devant.Tissu.Text == "Coton blanc", "double clic sur un tissu : choisi, et le second appui ne rouvre pas le choix")
 end
 local pieces = fenetre.Contenu.Page.Pieces
 local nbBoutonsTissu = 0

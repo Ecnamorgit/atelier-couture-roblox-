@@ -262,9 +262,11 @@ function Pixels.croquis(croquis, tissus, largeur, hauteur)
 		end
 		return buffer.readu8(etiquettes, j * largeur + i)
 	end
-	local motifs = {}
-	for _, id in pairs(tissus) do
-		motifs[id] = motifs[id] or Pixels.motif(id)
+	-- Le motif n'est calculé qu'aux points de la robe (un motif entier, 256 × 256 points par tissu, prendrait
+	-- l'essentiel du temps, à chaque modèle ou tissu choisi, sur téléphone)
+	local tissuDe = {}
+	for famille, id in pairs(tissus) do
+		tissuDe[famille] = Catalogue.tissu(id)
 	end
 	local blanc = empaqueter(BLANC_CROQUIS[1], BLANC_CROQUIS[2], BLANC_CROQUIS[3])
 	local crayon = empaqueter(CRAYON[1], CRAYON[2], CRAYON[3])
@@ -277,8 +279,13 @@ function Pixels.croquis(croquis, tissus, largeur, hauteur)
 				if etiquette(i - 1, j) ~= k or etiquette(i + 1, j) ~= k or etiquette(i, j - 1) ~= k or etiquette(i, j + 1) ~= k then
 					valeur = crayon
 				else
-					local motif = motifs[tissus[parties[k].famille]]
-					valeur = if motif then buffer.readu32(motif, (((j * MOTIF_PAR_PX) % N) * N + (i * MOTIF_PAR_PX) % N) * 4) else blanc
+					local t = tissuDe[parties[k].famille]
+					if t then
+						local c = MOTIFS[t.motif.type](t.motif, (i * MOTIF_PAR_PX) % N, (j * MOTIF_PAR_PX) % N)
+						valeur = empaqueter(c[1], c[2], c[3])
+					else
+						valeur = blanc
+					end
 				end
 			end
 			buffer.writeu32(buf, (j * largeur + i) * 4, valeur)

@@ -81,3 +81,32 @@ for di = -2, 2 do
 	trait = trait or (aa == 255 and rr < 100 and gg < 100 and bb < 100)
 end
 U.verifier(trait, "un trait de crayon foncé au bord de la jupe")
+
+-- Rapide sur téléphone : le croquis ne calcule du motif que les points de la robe, pas des motifs entiers
+-- (256 × 256 points par tissu), et il en montre exactement les couleurs (un point du dessin, deux du motif)
+do
+	local fleuri
+	for _, t in ipairs(Catalogue.Tissus) do
+		if t.motif.type ~= "uni" and t.motif.type ~= "rayures" then
+			fleuri = fleuri or t
+		end
+	end
+	local motifsEntiers = 0
+	local motifReel = Pixels.motif
+	Pixels.motif = function(...)
+		motifsEntiers += 1
+		return motifReel(...)
+	end
+	local b = Pixels.croquis(base, { corsage = fleuri.id, jupe = fleuri.id }, L, H)
+	Pixels.motif = motifReel
+	U.verifier(motifsEntiers == 0, "aucun motif entier calculé pour un croquis (" .. motifsEntiers .. ")")
+	local motif, N = Pixels.motif(fleuri.id), Catalogue.TAILLE_MOTIF
+	local ecarts = 0
+	for _, p in ipairs({ { 100, 150 }, { 90, 120 }, { 110, 100 }, { 100, 70 } }) do -- (jupe et corsage)
+		local i, j = p[1], p[2]
+		if buffer.readu32(b, (j * L + i) * 4) ~= buffer.readu32(motif, (((j * 2) % N) * N + (i * 2) % N) * 4) then
+			ecarts += 1
+		end
+	end
+	U.verifier(ecarts == 0, "les couleurs du motif (" .. fleuri.nom .. ") : " .. ecarts .. " écart(s)")
+end

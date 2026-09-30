@@ -21,7 +21,8 @@ local CROQUIS_DEPART = { corsage = "corsage_droit", manches = "manches_sans", co
 local PAPIER = Color3.fromRGB(250, 245, 232)
 local LISERE = Color3.fromRGB(196, 168, 150)
 local CRAYON = Color3.fromRGB(110, 90, 96)
-local L_DESSIN, H_DESSIN = 230, 299 -- pixels de l'image du dessin (100 × 130 unités de croquis)
+local L_DESSIN, H_DESSIN = 212, 276 -- pixels de l'image du dessin (100 × 130 unités de croquis)
+local HAUT_LIGNES, PAS_LIGNES = 282, 36 -- les lignes ◀ ▶ sous le dessin : assez grandes pour le doigt
 
 return function(ctx)
 	local UiKit, session, contenu = ctx.UiKit, ctx.session, ctx.contenu
@@ -31,6 +32,7 @@ return function(ctx)
 	local tissus = table.clone(etat.tissus or {})
 	local dernierTissu = nil
 	local rafraichir, ouvrirChoix
+	local dessinDemande = 0 -- numéro du dernier dessin demandé
 
 	-- La page du carnet : papier, liseré, quelques notes au crayon dans la marge, un crayon posé
 	local page = UiKit.arrondir(UiKit.creer("Frame", { Name = "Page", BackgroundColor3 = PAPIER, Size = UDim2.new(0, 540, 1, 0), Parent = contenu }), 10)
@@ -38,18 +40,29 @@ return function(ctx)
 	for _, note in ipairs({ { "poitrine", 14, 196 }, { "taille", 14, 216 }, { "ourlet", 14, 236 } }) do
 		UiKit.texte({ Text = note[1], Font = Enum.Font.Kalam, TextSize = 14, TextColor3 = LISERE, Position = UDim2.fromOffset(note[2], note[3]), Size = UDim2.fromOffset(90, 18), Parent = page })
 	end
-	local crayon = UiKit.creer("Frame", { Name = "Crayon", BackgroundColor3 = Color3.fromRGB(214, 110, 140), BorderSizePixel = 0, Position = UDim2.fromOffset(80, 180), Size = UDim2.fromOffset(6, 110), Rotation = 12, Parent = page })
+	local crayon = UiKit.creer("Frame", { Name = "Crayon", BackgroundColor3 = Color3.fromRGB(214, 110, 140), BorderSizePixel = 0, Position = UDim2.fromOffset(74, 150), Size = UDim2.fromOffset(6, 100), Rotation = 12, Parent = page })
 	UiKit.creer("Frame", { BackgroundColor3 = Color3.fromRGB(236, 206, 170), BorderSizePixel = 0, Position = UDim2.new(0, 0, 1, 0), Size = UDim2.fromOffset(6, 10), Parent = crayon })
 
 	-- Les échantillons des tissus choisis, épinglés en haut à gauche
 	local echantillons = UiKit.creer("Frame", { Name = "Echantillons", BackgroundTransparency = 1, Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(90, 180), Parent = page })
 
 	-- La robe dessinée ; la toucher choisit le tissu de la partie touchée
-	local dessin = UiKit.creer("ImageButton", { Name = "Dessin", BackgroundTransparency = 1, AutoButtonColor = false, Position = UDim2.fromOffset(100, 4), Size = UDim2.fromOffset(L_DESSIN, H_DESSIN), Parent = page })
+	local dessin = UiKit.creer("ImageButton", { Name = "Dessin", BackgroundTransparency = 1, AutoButtonColor = false, Position = UDim2.fromOffset(106, 2), Size = UDim2.fromOffset(L_DESSIN, H_DESSIN), Parent = page })
 	local sansDessin = UiKit.texte({ Name = "SansDessin", Text = "(le dessin ne peut pas s'afficher)", TextSize = 14, TextColor3 = CRAYON, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromScale(1, 1), Visible = false, Parent = dessin })
+	-- (le second appui d'un double clic sur une carte de tissu tombe sur le dessin ou une pièce, dessous : ignoré)
+	local choixFerme = -math.huge
+	local function appuiDessous()
+		if os.clock() - choixFerme < UiKit.DELAI_NOUVEAU then
+			return false
+		end
+		if UiKit.surClic then
+			pcall(UiKit.surClic)
+		end
+		return true
+	end
 	dessin.Activated:Connect(function(entree)
 		local position = entree and entree.Position
-		if not position or dessin.AbsoluteSize.X <= 0 then
+		if not position or dessin.AbsoluteSize.X <= 0 or not appuiDessous() then
 			return
 		end
 		local u = (position.X - dessin.AbsolutePosition.X) / dessin.AbsoluteSize.X
@@ -66,9 +79,9 @@ return function(ctx)
 	-- Une ligne ◀ modèle ▶ par famille, avec un point par modèle
 	local lignes = {}
 	for i, famille in ipairs(ORDRE_LIGNES) do
-		local y = 310 + (i - 1) * 28
+		local y = HAUT_LIGNES + (i - 1) * PAS_LIGNES
 		local modeles = Catalogue.variantesDe(famille)
-		UiKit.texte({ Text = NOMS_FAMILLES[famille], Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = CRAYON, Position = UDim2.fromOffset(14, y + 3), Size = UDim2.fromOffset(70, 20), Parent = page })
+		UiKit.texte({ Text = NOMS_FAMILLES[famille], Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = CRAYON, Position = UDim2.fromOffset(14, y + 7), Size = UDim2.fromOffset(70, 20), Parent = page })
 		local function tourner(pas)
 			local rang = 1
 			for k, m in ipairs(modeles) do
@@ -79,14 +92,14 @@ return function(ctx)
 			croquis[famille] = modeles[(rang - 1 + pas) % #modeles + 1].id
 			rafraichir()
 		end
-		UiKit.boutonDoux({ Name = "Precedent_" .. famille, Text = "◀", TextSize = 30, TextColor3 = Color3.fromRGB(196, 120, 60), Position = UDim2.fromOffset(86, y), Size = UDim2.fromOffset(34, 26), Parent = page }, function()
+		UiKit.boutonDoux({ Name = "Precedent_" .. famille, Text = "◀", TextSize = 30, TextColor3 = Color3.fromRGB(196, 120, 60), Position = UDim2.fromOffset(84, y), Size = UDim2.fromOffset(48, 34), Parent = page }, function()
 			tourner(-1)
 		end)
-		local nom = UiKit.texte({ Name = "Modele_" .. famille, Font = Enum.Font.GothamBold, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(124, y), Size = UDim2.fromOffset(354, 18), Parent = page })
-		UiKit.boutonDoux({ Name = "Suivant_" .. famille, Text = "▶", TextSize = 30, TextColor3 = Color3.fromRGB(196, 120, 60), Position = UDim2.fromOffset(482, y), Size = UDim2.fromOffset(34, 26), Parent = page }, function()
+		local nom = UiKit.texte({ Name = "Modele_" .. famille, Font = Enum.Font.GothamBold, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(136, y + 2), Size = UDim2.fromOffset(338, 18), Parent = page })
+		UiKit.boutonDoux({ Name = "Suivant_" .. famille, Text = "▶", TextSize = 30, TextColor3 = Color3.fromRGB(196, 120, 60), Position = UDim2.fromOffset(478, y), Size = UDim2.fromOffset(48, 34), Parent = page }, function()
 			tourner(1)
 		end)
-		local points = UiKit.creer("Frame", { Name = "Points_" .. famille, BackgroundTransparency = 1, Position = UDim2.fromOffset(124, y + 19), Size = UDim2.fromOffset(354, 7), Parent = page })
+		local points = UiKit.creer("Frame", { Name = "Points_" .. famille, BackgroundTransparency = 1, Position = UDim2.fromOffset(136, y + 23), Size = UDim2.fromOffset(338, 7), Parent = page })
 		UiKit.creer("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 6), Parent = points })
 		local pastilles = {}
 		for k, m in ipairs(modeles) do
@@ -94,7 +107,7 @@ return function(ctx)
 		end
 		lignes[famille] = { nom = nom, pastilles = pastilles }
 	end
-	local environ = UiKit.texte({ Name = "Environ", Font = Enum.Font.Kalam, TextSize = 16, TextColor3 = Color3.fromRGB(176, 70, 90), Position = UDim2.fromOffset(16, 434), Size = UDim2.fromOffset(270, 24), Parent = page })
+	local environ = UiKit.texte({ Name = "Environ", Font = Enum.Font.Kalam, TextSize = 16, TextColor3 = Color3.fromRGB(176, 70, 90), Position = UDim2.fromOffset(16, 432), Size = UDim2.fromOffset(270, 24), Parent = page })
 
 	-- La fiche de commande, épinglée à droite : qui commande, exigences, jauges de style, métrage
 	local droite = UiKit.arrondir(UiKit.creer("Frame", { Name = "Droite", BackgroundColor3 = C.panneau, Position = UDim2.new(1, -310, 0, 0), Size = UDim2.new(0, 310, 1, 0), Parent = contenu }), 10)
@@ -133,6 +146,7 @@ return function(ctx)
 		if choix then
 			choix:Destroy()
 			choix = nil
+			choixFerme = os.clock()
 		end
 	end
 	ouvrirChoix = function(pieces, famille)
@@ -241,13 +255,22 @@ return function(ctx)
 			local premiere = Catalogue.variante(croquis[famille]).pieces[1]
 			tissusDessin[famille] = premiere and tissus[premiere] or nil
 		end
-		local image = Vignettes.croquis(croquis, tissusDessin, L_DESSIN, H_DESSIN)
-		if image then
-			dessin.ImageContent = image
-		end
-		-- Mémoire des images pleine : pas de dessin (pas l'ancien non plus), un mot à la place ; le reste marche
-		dessin.ImageTransparency = if image then 0 else 1
-		sansDessin.Visible = image == nil
+		-- L'image se fige en attendant Roblox : à part, pour ne pas faire attendre le reste de l'écran ; seul le
+		-- dernier dessin demandé s'affiche (deux modèles choisis coup sur coup peuvent arriver dans le désordre)
+		dessinDemande += 1
+		local demande, croquisDessin = dessinDemande, table.clone(croquis)
+		task.spawn(function()
+			local image = Vignettes.croquis(croquisDessin, tissusDessin, L_DESSIN, H_DESSIN)
+			if demande ~= dessinDemande then
+				return
+			end
+			if image then
+				dessin.ImageContent = image
+			end
+			-- Mémoire des images pleine : pas de dessin (pas l'ancien non plus), un mot à la place ; le reste marche
+			dessin.ImageTransparency = if image then 0 else 1
+			sansDessin.Visible = image == nil
+		end)
 		-- Les échantillons épinglés : un par tissu choisi, dans l'ordre de la robe
 		echantillons:ClearAllChildren()
 		local deja = {}
@@ -271,7 +294,9 @@ return function(ctx)
 			local t = tissus[id] and Catalogue.tissu(tissus[id])
 			local ligne = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Tissu_" .. id, Text = "", AutoButtonColor = true, BackgroundColor3 = C.panneau, BackgroundTransparency = 0.3, Position = UDim2.fromOffset(0, (i - 1) * 36), Size = UDim2.fromOffset(198, 34), Parent = listePieces }), 6)
 			ligne.Activated:Connect(function()
-				ouvrirChoix({ id })
+				if appuiDessous() then
+					ouvrirChoix({ id })
+				end
 			end)
 			local pastille = UiKit.arrondir(UiKit.creer("ImageLabel", { Name = "Pastille", BackgroundColor3 = t and UiKit.couleur(t.motif.couleurs[1]) or C.secondaire, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(64, 64), Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(26, 26), Parent = ligne }), 13)
 			pastille.BackgroundTransparency = t and 0 or 0.5
@@ -279,8 +304,8 @@ return function(ctx)
 			if motif then
 				pastille.ImageContent = motif
 			end
-			UiKit.texte({ Text = Catalogue.piece(id).nom, Font = Enum.Font.GothamBold, TextSize = 14, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 1), Size = UDim2.fromOffset(158, 16), Parent = ligne })
-			UiKit.texte({ Text = t and t.nom or "(aucun tissu)", TextSize = 14, TextColor3 = t and C.texte or C.texteDoux, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 17), Size = UDim2.fromOffset(158, 16), Parent = ligne })
+			UiKit.texte({ Name = "Piece", Text = Catalogue.piece(id).nom, Font = Enum.Font.GothamBold, TextSize = 14, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 1), Size = UDim2.fromOffset(158, 16), Parent = ligne })
+			UiKit.texte({ Name = "Tissu", Text = t and t.nom or "(aucun tissu)", TextSize = 14, TextColor3 = t and C.texte or C.texteDoux, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 17), Size = UDim2.fromOffset(158, 16), Parent = ligne })
 		end
 		UiKit.boutonDoux({ Name = "ToutEnUnTissu", Text = "Même tissu pour toute la robe", TextSize = 14, Position = UDim2.fromOffset(0, #pieces * 36 + 4), Size = UDim2.fromOffset(198, 32), Parent = listePieces }, function()
 			if dernierTissu then
