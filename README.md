@@ -12,7 +12,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 `docs/superpowers/specs/2026-09-30-fidelite-dressmaker-design.md` pour la fidélité à la présentation de
 *Dressmaker* ; plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 5 terminé côté code, plans 11 à 13 : la fidélité à la présentation de *Dressmaker*)
+## État actuel (sous-projet 5 terminé côté code, plans 11 à 14 : la fidélité à la présentation de *Dressmaker*)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
