@@ -74,7 +74,7 @@ function Commandes.realisable(exigences, ouverts)
 			return false
 		end
 	end
-	if ouverts and accessoireImpose and not ouverts.accessoires[accessoireImpose] then
+	if accessoireImpose and (not Catalogue.accessoire(accessoireImpose) or (ouverts and not ouverts.accessoires[accessoireImpose])) then
 		return false
 	end
 	-- Les exigences les plus fermées d'abord, une fois pour toutes : les accessoires (seul le dernier demandé est

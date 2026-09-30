@@ -44,6 +44,25 @@ for nomTaille, mesures in pairs(tailles) do
 			end
 		end
 	end
+	-- Aucun point des cols (les deux moitiés) dans le buste : le col marin retombe sur les épaules et dans le dos
+	for id, def in pairs(Catalogue.Pieces) do
+		if def.enroulement.type == "col" then
+			local b = Polygone.boite(def.contour)
+			local dedans = 0
+			for _, copie in ipairs(Patron.copies(id)) do
+				for j = 0, 8 do
+					local y = math.min(b.minY + (b.maxY - b.minY) * j / 8, b.maxY)
+					local x0, x1 = Polygone.etendueLigne(def.contour, y)
+					for i = 0, 8 do
+						if dansEllipsoide(Patron.point(id, copie, x0 + (x1 - x0) * i / 8, y, mesures), formes[1]) then
+							dedans += 1
+						end
+					end
+				end
+			end
+			U.verifier(dedans == 0, ("%s (%s) : le col ne traverse pas le buste (%d points dedans)"):format(id, nomTaille, dedans))
+		end
+	end
 	-- Le socle touche le sol
 	local socle = formes[#formes]
 	U.verifier(U.proche(socle.centre.Y - socle.taille.Y / 2, -Mannequin.HAUTEUR_TAILLE), nomTaille .. " : socle posé au sol")

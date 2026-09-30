@@ -51,20 +51,21 @@ for _, c in ipairs(Clientes.LISTE) do
 		U.verifier(Commandes.realisable(commande.exigences, ouverts), c.id .. " : commande " .. n .. " réalisable dès son arrivée")
 	end
 end
--- Plus tard aussi (prestiges 6, 7 et 8, amitié nulle ou au plus haut) : réalisables avec ce qui est ouvert
+-- Plus tard aussi (prestiges 6, 7 et 8, amitié nulle ou au plus haut) : le tirage trouve une vraie commande (un
+-- « au moins » de 30 ou plus dans un de ses styles), jamais le repli (« au moins » 20 ou 10, ou la qualité seule)
 for _, prestige in ipairs({ 260, 380, 530 }) do
 	for _, amitie in ipairs({ 0, 25 }) do
 		for _, c in ipairs(Clientes.LISTE) do
 			local progres = { prestige = prestige, clientes = { [c.id] = { amitie = amitie } } }
-			local ouverts = Deblocages.ouverts(progres)
 			local rng = Random.new(prestige + amitie)
-			local ratees = 0
+			local replis = 0
 			for _ = 1, 10 do
-				if not Commandes.realisable(Commandes.generer(rng, c, progres).exigences, ouverts) then
-					ratees += 1
+				local premiere = Commandes.generer(rng, c, progres).exigences[1]
+				if not (premiere.type == "min" and premiere.valeur >= 30 and table.find(c.styles, premiere.style)) then
+					replis += 1
 				end
 			end
-			U.verifier(ratees == 0, ("%s au prestige %d, amitié %d : commandes réalisables avec ce qui est ouvert"):format(c.id, prestige, amitie))
+			U.verifier(replis == 0, ("%s au prestige %d, amitié %d : de vraies commandes, sans repli (%d replis)"):format(c.id, prestige, amitie, replis))
 		end
 	end
 end

@@ -1021,6 +1021,14 @@ for _, v in pairs(croquisNouveau) do
 	cliquer("Variante_" .. v)
 	verifier(boutonNomme("Variante_" .. v).BackgroundColor3 == Color3.fromRGB(214, 76, 128), v .. " choisie au carnet")
 end
+cliquer("Tissu_corsage_cache_coeur_devant")
+cliquer("Tissu_toile_jute")
+cliquer("ToutEnUnTissu")
+cliquer("Valider")
+do
+	local croquisServeur = serveur:atelier(joueur).etat.croquis
+	verifier(titre() == "2. Achat du tissu" and croquisServeur.corsage == "corsage_cache_coeur" and croquisServeur.manches == "manches_trois_quarts" and croquisServeur.col == "col_marin" and croquisServeur.jupe == "jupe_crayon", "croquis en variantes nouvelles validé au carnet : le serveur l'accepte")
+end
 robeLibreALaPhoto("toile_jute", croquisNouveau)
 local robeNouvelle, manquantes = scene:FindFirstChild("Robe"), {}
 for _, nom in ipairs({ "Piece_corsage_cache_coeur_devant_unique", "Piece_manche_trois_quarts_gauche", "Piece_col_marin_droite", "Piece_jupe_crayon_dos_unique" }) do
@@ -1067,6 +1075,8 @@ do
 		end
 	end
 	verifier(liste ~= nil and liste:IsA("ScrollingFrame") and bas > 0 and (if liste.CanvasSize then liste.CanvasSize.Y.Offset else 0) >= bas and liste:FindFirstChild("Adresse_maelle") ~= nil and texte("Le grand défilé du quartier — souvenir : Rosette d'honneur") ~= nil, "dix clientes et douze souvenirs : le carnet d'adresses défile jusqu'au dernier")
+	verifier(liste.ScrollBarImageColor3 == requireModule(scriptClient.UiKit).COULEURS.accent, "la barre de défilement du carnet d'adresses se voit (couleur d'accent, comme les onglets)")
+	verifier(liste.Souvenirs.TextYAlignment == Enum.TextYAlignment.Top, "les souvenirs commencent juste sous les adresses (texte calé en haut)")
 	cliquer("FermerCarnetAdresses")
 	local e = serveur:atelier(joueur).etat
 	for _, c in ipairs(Clientes.LISTE) do
@@ -1152,6 +1162,7 @@ end
 e.etape = "photo"
 requireModule(scriptClient.Session).courante:actualiser()
 local laColette = scene.Cliente
+e.prestige = 259 -- (juste sous le prestige 6 : la livraison le fait passer, l'annonce s'allonge)
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Aiguille & Dentelle" and fenetre.Contenu.Epilogue.Visible and texte("Le bal des lanternes a eu lieu !") ~= nil and texte("Souvenir : Lanterne de papier") ~= nil, "la dernière robe livrée : le bal a lieu, épilogue et souvenir")
@@ -1159,6 +1170,12 @@ verifier(texte(Histoire.get("lanternes").epilogue) ~= nil and laColette.Head.Bul
 verifierTailles("épilogue")
 local inviter3 = boutonNomme("Inviter_3")
 verifier(fenetre.Contenu.Courrier.Text == "Courrier (boîte pleine) :" and inviter3.Position.Y.Offset + inviter3.Size.Y.Offset <= 466, "boîte pleine : c'est dit, et les trois lettres tiennent dans la fenêtre")
+do -- Le passage au prestige 6 allonge l'annonce (« Nouveau : » sur deux lignes) : sa hauteur compte les lignes
+	-- repliées, et l'introduction reste dessous
+	local annonce, intro = fenetre.Contenu.Annonce, fenetre.Contenu.Intro
+	verifier(string.find(annonce.Text, "Nouveau : Manches courtes", 1, true) ~= nil and annonce.Size.Y.Offset == 24 * requireModule(scriptClient.UiKit).lignes(annonce.Text, fenetre.Size.X.Offset + fenetre.Contenu.Size.X.Offset, 18) + 2 and intro.Position.Y.Offset >= annonce.Size.Y.Offset + 10, "annonce longue (prestige 6) : sa hauteur compte les lignes repliées, l'introduction reste dessous")
+end
+e.prestige = 530 -- (tout reste ouvert pour la suite)
 cliquer("FermerEpilogue")
 local suite = fenetre.Contenu.Suite
 verifier(suite.Visible and suite.Interlocutrice.Text == "Colette Marchand" and suite.Replique.Text == def.repliques.merci, "sous l'épilogue : la suite de l'histoire de Colette, lisible")

@@ -11,7 +11,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 `docs/superpowers/specs/2026-09-30-ampleur-contenu-design.md` pour l'ampleur du catalogue et du quartier ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 3 terminé côté code, plan 6 : l'histoire et les événements du quartier)
+## État actuel (sous-projet 4 terminé côté code, plans 8a à 9 : l'ampleur du catalogue et du quartier)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -48,8 +48,9 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
 6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé
    pendant que le tissu tire ; vitesse tortue, normale ou lapin, découd-vite, assistance (note plafonnée à 85 %).
    Une pièce finie n'est rendue qu'avec « Pièce suivante » : la dernière couture se défait encore.
-7. **Décorations** : 23 objets (boutons, nœuds, fleurs, broches, perles, étoile, croix, couronne, et les huit
-   souvenirs du quartier une fois leur événement passé) et 8 garnitures (dentelles, rubans, galons). On touche la robe pour poser, on tourne (Q/E), agrandit, supprime, annule ; une garniture
+7. **Décorations** : 30 objets (boutons, nœuds, fleurs, broches, perles, étoile, croix, couronne, violette,
+   boucle, coquillage, et les douze souvenirs du quartier une fois leur événement passé) et 9 garnitures
+   (dentelles, rubans, galons). On touche la robe pour poser, on tourne (Q/E), agrandit, supprime, annule ; une garniture
    se pose point par point sur une pièce. Glisser sur la scène fait tourner la vue autour du mannequin.
    Le coût s'affiche en direct ; ce qu'on retire est remboursé.
 8. **Photo et livraison** : on règle la photo (décor, lumière, couleur du mannequin) et on la prend

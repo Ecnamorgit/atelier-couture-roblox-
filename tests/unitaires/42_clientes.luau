@@ -7,6 +7,13 @@ local Recette = U.module("Recette")
 -- Les dix clientes : des données valides, des mesures proches de leur taille
 ---------------------------------------------------------------------------
 U.verifier(#Clientes.LISTE == 10, "dix clientes")
+-- Dix noms de famille différents (le carnet d'adresses les montre les uns sous les autres)
+local familles = {}
+for _, c in ipairs(Clientes.LISTE) do
+	local famille = c.nom:match("%s(.+)$")
+	U.verifier(famille ~= nil and not familles[famille], c.id .. " : un nom de famille à elle (" .. tostring(famille) .. ")")
+	familles[famille or c.id] = true
+end
 -- Sous-projet 4 : quatre clientes arrivent tard, aux prestiges 5 à 8, et vouvoient la couturière
 local TUTOIEMENT = { " tu ", "Tu ", " toi", " ta ", " ton ", " tes ", " te ", " t'" }
 for niveau, id in pairs({ [5] = "apolline", [6] = "josephine", [7] = "capucine", [8] = "maelle" }) do
