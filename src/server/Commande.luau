@@ -51,6 +51,10 @@ local ACTIONS = {
 	acheter = function(a, idTissu, dm)
 		return a.etat:acheter(idTissu, dm)
 	end,
+	-- (sous-projet 6) la mercerie, achetée d'avance
+	acheterMercerie = function(a, idAccessoire, quantite)
+		return a.etat:acheterMercerie(idAccessoire, quantite)
+	end,
 	commencerDecoupe = function(a)
 		return a.etat:commencerDecoupe()
 	end,

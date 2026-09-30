@@ -15,7 +15,7 @@ local Histoire = require(Couture:WaitForChild("Histoire"))
 local Sauvegarde = {}
 Sauvegarde.__index = Sauvegarde
 
-Sauvegarde.VERSION = 3
+Sauvegarde.VERSION = 4
 Sauvegarde.MAGASIN = "AtelierCouture_v2"
 Sauvegarde.ANCIEN_MAGASIN = "AtelierCouture_v1" -- le prototype : { argent, reputation }
 Sauvegarde.VERROU_VIVANT = 90 -- s : un verrou plus récent appartient à un serveur encore en vie
@@ -137,6 +137,13 @@ Sauvegarde.MIGRATIONS = {
 		v2.clientes = {}
 		return v2
 	end,
+	-- v3 → v4 (sous-projet 6) : la mercerie, achetée d'avance ; chaque partie reçoit le kit de départ (une robe en
+	-- cours garde ses décorations, déjà posées)
+	[3] = function(v3)
+		v3.version = 4
+		v3.mercerie = table.clone(EtatAtelier.KIT_MERCERIE)
+		return v3
+	end,
 }
 
 -- La partie au format actuel, ou nil si elle vient d'une version plus récente du jeu (on n'y touche pas)
@@ -174,6 +181,7 @@ function Sauvegarde.depuisEtat(etat, debloques)
 		ventes = d.ventes,
 		lettres = d.lettres,
 		histoire = d.histoire,
+		mercerie = d.mercerie,
 	}
 	if d.etape ~= "accueil" then
 		partie.enCours = {}
@@ -213,6 +221,15 @@ function Sauvegarde.versEtat(partie)
 	for id, fait in pairs(histoire) do
 		if fait == true and type(id) == "string" and Histoire.commande(id) then
 			base.histoire.faites[id] = true
+		end
+	end
+	-- Mercerie : des articles connus, en quantités entières et positives, ramenées au plafond ; absente ou illisible :
+	-- vide (le kit vient de la migration v3 → v4)
+	base.mercerie = {}
+	for id, q in pairs(type(partie.mercerie) == "table" and partie.mercerie or {}) do
+		local def = type(id) == "string" and Catalogue.accessoire(id)
+		if def and nombre(q, 0) >= 1 and q == math.floor(q) then
+			base.mercerie[id] = math.min(q, if def.genre == "garniture" then EtatAtelier.MERCERIE_MAX_CM else EtatAtelier.MERCERIE_MAX_UNITES)
 		end
 	end
 	-- Courrier : trois lettres au plus, d'une cliente connue, avec une commande qu'on peut jouer
