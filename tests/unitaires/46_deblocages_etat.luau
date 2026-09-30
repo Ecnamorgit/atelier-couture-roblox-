@@ -52,20 +52,23 @@ for _, c in ipairs(Clientes.LISTE) do
 	end
 end
 -- Plus tard aussi (prestiges 6, 7 et 8, amitié nulle ou au plus haut) : le tirage trouve une vraie commande (un
--- « au moins » de 30 ou plus dans un de ses styles), jamais le repli (« au moins » 20 ou 10, ou la qualité seule)
+-- « au moins » de 30 ou plus dans un de ses styles), réalisable avec ce qui est ouvert, jamais le repli (« au
+-- moins » 20 ou 10, ou la qualité seule)
 for _, prestige in ipairs({ 260, 380, 530 }) do
 	for _, amitie in ipairs({ 0, 25 }) do
 		for _, c in ipairs(Clientes.LISTE) do
 			local progres = { prestige = prestige, clientes = { [c.id] = { amitie = amitie } } }
+			local ouverts = Deblocages.ouverts(progres)
 			local rng = Random.new(prestige + amitie)
 			local replis = 0
 			for _ = 1, 10 do
-				local premiere = Commandes.generer(rng, c, progres).exigences[1]
-				if not (premiere.type == "min" and premiere.valeur >= 30 and table.find(c.styles, premiere.style)) then
+				local commande = Commandes.generer(rng, c, progres)
+				local premiere = commande.exigences[1]
+				if not (premiere.type == "min" and premiere.valeur >= 30 and table.find(c.styles, premiere.style) and Commandes.realisable(commande.exigences, ouverts)) then
 					replis += 1
 				end
 			end
-			U.verifier(replis == 0, ("%s au prestige %d, amitié %d : de vraies commandes, sans repli (%d replis)"):format(c.id, prestige, amitie, replis))
+			U.verifier(replis == 0, ("%s au prestige %d, amitié %d : de vraies commandes, réalisables, sans repli (%d en défaut)"):format(c.id, prestige, amitie, replis))
 		end
 	end
 end

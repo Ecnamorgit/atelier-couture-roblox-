@@ -1183,7 +1183,8 @@ verifier(fenetre.Contenu.Courrier.Text == "Courrier (boîte pleine) :" and invit
 do -- Le passage au prestige 6 allonge l'annonce (« Nouveau : » sur deux lignes) : sa hauteur compte les lignes
 	-- repliées, et l'introduction reste dessous
 	local annonce, intro = fenetre.Contenu.Annonce, fenetre.Contenu.Intro
-	verifier(string.find(annonce.Text, "Nouveau : Manches courtes", 1, true) ~= nil and annonce.Size.Y.Offset == 24 * requireModule(scriptClient.UiKit).lignes(annonce.Text, fenetre.Size.X.Offset + fenetre.Contenu.Size.X.Offset, 18) + 2 and intro.Position.Y.Offset >= annonce.Size.Y.Offset + 10, "annonce longue (prestige 6) : sa hauteur compte les lignes repliées, l'introduction reste dessous")
+	local taille, hauteur = requireModule(scriptClient.UiKit).mesureAnnonce(annonce.Text, fenetre.Size.X.Offset + fenetre.Contenu.Size.X.Offset)
+	verifier(string.find(annonce.Text, "Nouveau : Manches courtes", 1, true) ~= nil and annonce.TextSize == taille and annonce.Size.Y.Offset == hauteur and intro.Position.Y.Offset >= hauteur + 10, "annonce longue (prestige 6) : sa hauteur compte les lignes repliées, l'introduction reste dessous")
 end
 e.prestige = 530 -- (tout reste ouvert pour la suite)
 cliquer("FermerEpilogue")

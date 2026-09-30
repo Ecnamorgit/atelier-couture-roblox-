@@ -15,6 +15,7 @@ UiKit.COULEURS = {
 }
 UiKit.LARGEUR, UiKit.HAUTEUR = 900, 560 -- taille de référence de la fenêtre (mise à l'échelle sur petit écran)
 UiKit.LARGEUR_PANNEAU = 380 -- fenêtre rangée à droite pendant les postes autour du mannequin
+UiKit.LARGEUR_CONTENU = UiKit.LARGEUR - 40 -- contenu de la fenêtre centrée (20 px de marge de chaque côté, init.client)
 
 function UiKit.creer(classe, props, enfants)
 	local instance = Instance.new(classe)
@@ -56,6 +57,16 @@ function UiKit.lignes(texte, largeur, taille)
 		n += math.max(1, math.ceil((utf8.len(ligne) or #ligne) / parLigne))
 	end
 	return n
+end
+
+-- Taille (px) et hauteur de l'annonce de l'accueil dans une largeur donnée : 18 px tant qu'elle tient en quatre
+-- lignes, sinon 14 px (lignes de 19 px), pour laisser la place au courrier dessous
+function UiKit.mesureAnnonce(texte, largeur)
+	local lignes = UiKit.lignes(texte, largeur, 18)
+	if lignes <= 4 then
+		return 18, 24 * lignes + 2
+	end
+	return 14, 19 * UiKit.lignes(texte, largeur, 14) + 2
 end
 
 function UiKit.texte(props)

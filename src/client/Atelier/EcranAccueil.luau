@@ -77,8 +77,8 @@ return function(ctx)
 		end
 	end
 	if annonce then
-		local hauteur = 24 * UiKit.lignes(annonce, UiKit.LARGEUR - 40, 18) + 2 -- (« Nouveau : » peut tenir sur deux lignes)
-		UiKit.texte({ Name = "Annonce", Text = annonce, Font = Enum.Font.GothamBold, TextSize = 18, TextColor3 = couleur, Size = UDim2.new(1, 0, 0, hauteur), Parent = ctx.contenu })
+		local taille, hauteur = UiKit.mesureAnnonce(annonce, UiKit.LARGEUR_CONTENU) -- (« Nouveau : » peut tenir sur deux lignes)
+		UiKit.texte({ Name = "Annonce", Text = annonce, Font = Enum.Font.GothamBold, TextSize = taille, TextColor3 = couleur, Size = UDim2.new(1, 0, 0, hauteur), Parent = ctx.contenu })
 		decalage = hauteur + 10
 	end
 	-- L'explication complète tant qu'aucune robe n'est livrée, une ligne ensuite (place pour le courrier)
