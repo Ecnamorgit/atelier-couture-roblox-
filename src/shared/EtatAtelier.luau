@@ -12,6 +12,7 @@ local Recette = require(dossier:WaitForChild("Recette"))
 local Clientes = require(dossier:WaitForChild("Clientes"))
 local Progression = require(dossier:WaitForChild("Progression"))
 local Deblocages = require(dossier:WaitForChild("Deblocages"))
+local Histoire = require(dossier:WaitForChild("Histoire"))
 
 local EtatAtelier = {}
 EtatAtelier.__index = EtatAtelier
@@ -82,7 +83,7 @@ local function pareil(a, b)
 end
 
 -- Champs de l'état échangés avec le serveur (les rouleaux à part : ce sont des objets Coupon)
-local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites", "ventes", "lettres" }
+local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites", "ventes", "lettres", "histoire" }
 
 function EtatAtelier.nouveau(argent)
 	return setmetatable({
@@ -106,6 +107,7 @@ function EtatAtelier.nouveau(argent)
 		visites = 0,
 		ventes = 0,
 		lettres = {}, -- le courrier : { { cliente, commande } }, trois au plus
+		histoire = { faites = {} }, -- sous-projet 3 : les commandes d'histoire livrées ([idCommande] = true)
 	}, EtatAtelier)
 end
 
@@ -235,6 +237,20 @@ function EtatAtelier:inviter(indice)
 	table.remove(self.lettres, indice)
 	lettre.commande.parLettre = true
 	return accueillir(self, lettre.cliente, lettre.commande)
+end
+
+-- La commande de l'événement en cours (sous-projet 3) : sa prochaine robe, de la cliente et avec la tenue du
+-- tableau de l'histoire (jamais d'un appel du client) ; même accueil que la clochette
+function EtatAtelier:commandeHistoire()
+	if self.etape ~= "accueil" then
+		return refus("Une commande est déjà en cours.")
+	end
+	local def = Histoire.prochaine(self)
+	if not def then
+		return refus("Aucun événement ne s'annonce pour l'instant.")
+	end
+	local cliente = Clientes.get(def.cliente)
+	return accueillir(self, def.cliente, { cliente = def.cliente, taille = cliente.taille, exigences = copie(def.exigences), histoire = def.id })
 end
 
 -- Le courrier : après cinq commandes livrées, une lettre arrive toutes les deux robes (livrées ou vendues), d'une
@@ -643,9 +659,19 @@ function EtatAtelier:livrer(rng)
 		self.etape = "refus"
 		return { ok = true, reussie = false, ratees = ratees, bilan = bilan }
 	end
-	local avant = { prestige = self.prestige, clientes = {} } -- pour dire ce que la livraison a ouvert
+	local avant = { prestige = self.prestige, clientes = {}, histoire = { faites = table.clone(self.histoire.faites) } } -- pour dire ce que la livraison a ouvert
 	for id, f in pairs(self.clientes) do
 		avant.clientes[id] = { amitie = f.amitie }
+	end
+	-- Une robe d'histoire livrée : faite ; la dernière de son événement le fait avoir lieu (épilogue, souvenir,
+	-- prestige en plus)
+	local evenement
+	if self.commande.histoire then
+		self.histoire.faites[self.commande.histoire] = true
+		local _, ev = Histoire.commande(self.commande.histoire)
+		if ev and Histoire.aEuLieu(self, ev.id) then
+			evenement = { id = ev.id, nom = ev.nom, epilogue = ev.epilogue, souvenir = ev.souvenir }
+		end
 	end
 	local paie = Notation.paie(#recette.pieces, #self.commande.exigences, bilan.qualite)
 	local acompte = self.commande.acompte or 0
@@ -653,7 +679,7 @@ function EtatAtelier:livrer(rng)
 	self.argent += verse
 	local gainAmitie = amitie(self, true, bilan.qualite)
 	local niveauAvant = Progression.niveauPrestige(self.prestige)
-	local gainPrestige = Progression.prestigeLivraison(paie)
+	local gainPrestige = Progression.prestigeLivraison(paie) + (if evenement then Histoire.PRESTIGE_EVENEMENT else 0)
 	self.prestige += gainPrestige
 	self.livraisons += 1
 	local prestige = { gain = gainPrestige, points = self.prestige, niveau = Progression.niveauPrestige(self.prestige), niveauAvant = niveauAvant }
@@ -663,7 +689,7 @@ function EtatAtelier:livrer(rng)
 	end
 	terminer(self)
 	local nouveaux = Deblocages.nouveaux(avant, self)
-	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige, nouveaux = nouveaux, lettre = courrier(self, rng) }
+	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige, nouveaux = nouveaux, lettre = courrier(self, rng), evenement = evenement }
 end
 
 -- Robes libres : le prestige et les amitiés avant la vente ou le cadeau (pour dire ce qui s'ouvre), le prestige

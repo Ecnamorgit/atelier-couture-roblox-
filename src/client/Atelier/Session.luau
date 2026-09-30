@@ -192,6 +192,9 @@ end
 function Session:inviter(indice)
 	return agir(self, "inviter", indice)
 end
+function Session:commandeHistoire()
+	return agir(self, "commandeHistoire")
+end
 function Session:nouvelleRobeLibre(taille)
 	return agir(self, "nouvelleRobeLibre", taille)
 end
