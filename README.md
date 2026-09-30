@@ -13,7 +13,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 6 en cours, plan 15 : les mesures à molettes)
+## État actuel (sous-projet 6 en cours, plans 15 et 16 : les mesures à molettes, la mercerie)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -63,7 +63,12 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    violette, boucle, coquillage, et les douze souvenirs du quartier une fois leur événement passé) et 9 garnitures
    (dentelles, rubans, galons). On touche la robe pour poser, on tourne (Q/E), agrandit, supprime, annule ; une garniture
    se pose point par point sur une pièce. Glisser sur la scène fait tourner la vue autour du mannequin.
-   Le coût s'affiche en direct ; ce qu'on retire est remboursé.
+   **La mercerie** : les décorations s'achètent d'avance, en stock (à l'unité, les garnitures par 50 cm), dans
+   la **Mercerie** qu'on ouvre depuis l'accueil ou depuis les décorations, sans quitter la robe ; toute partie
+   commence avec un kit (boutons, perles, fleurs, 1,50 m de ruban rose). La palette dit ce qu'il reste de chaque
+   article (« Perle · ×12 », « Ruban rose · 1,50 m ») et grise ce qui est épuisé ; l'article choisi montre ce que
+   la robe en prend (« Ruban rose : 0,20 / 1,50 m »). Poser prend au stock, retirer y rend ; au carnet, une
+   exigence d'accessoire dit ce qu'on en a. Chaque événement qui a lieu offre cinq exemplaires de son souvenir.
 8. **Photo et livraison** : on règle la photo (décor, lumière, couleur du mannequin) et on la prend
    (capture officielle de Roblox, sans l'interface) ; on peut l'enregistrer dans sa galerie. La cliente juge
    la robe (styles, qualité, couleur dominante, accessoires). Acceptée : paie = base × (0,5 + qualité), et la
@@ -117,7 +122,7 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    **Le chat** : un chat roux dort sur son coussin près de la fenêtre de chaque boutique ; « Caresser » (touche F)
    le fait ronronner, remuer la queue, et de petits cœurs montent. Pour le plaisir seulement.
 10. La suite : porter la robe sur son avatar et les défilés entre joueurs, ou d'autres écarts avec *Dressmaker*
-   (mesures à molettes, compteur de mètres, mercerie en stock, robes plus riches) : à décider.
+   (compteur de mètres, robes plus riches) : à décider.
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
@@ -179,7 +184,8 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   vraisemblance), toute erreur devient un refus ; chaque réponse acceptée emporte l'état. `Limiteur` compte
   les appels. `Sauvegarde` range la partie de chaque joueur dans le DataStore `AtelierCouture_v2` (une clé
   par joueur, écriture par `UpdateAsync` avec un verrou de session, migrations, reprise de l'argent de
-  l'ancienne clé `AtelierCouture_v1` ; partie v3 depuis le plan 5a : prestige, fiches des clientes) : lue à l'arrivée, écrite toutes les 60 s, au départ et à l'arrêt du
+  l'ancienne clé `AtelierCouture_v1` ; partie v3 depuis le plan 5a : prestige, fiches des clientes ; v4 depuis
+  le plan 16 : la mercerie, et un kit de départ offert aux parties existantes) : lue à l'arrivée, écrite toutes les 60 s, au départ et à l'arrêt du
   serveur. Rien n'est écrit si la lecture a échoué (le joueur est prévenu), ni sur un lieu non publié.
   Une écriture à la fois par joueur (la sauvegarde régulière et celle du départ ne se croisent pas, et un
   retour rapide sur le même serveur attend l'écriture du départ) ; à l'arrêt du serveur, les parties en
@@ -200,7 +206,7 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   joueur, la cliente, le mannequin,
   la robe épinglée, l'aperçu des décorations, les réglages de la photo et la caméra du poste ; `Sons` joue
   les bruits et la musique ; un module `Ecran…` par étape (`EcranMesures` : le mannequin à molettes, `Molette` : le réglage d'une
-  molette).
+  molette) ; `Mercerie` : la boutique de la mercerie, par-dessus l'accueil ou les décorations.
 
 **Tester la sauvegarde** : un lieu non publié (fichier local, `game.PlaceId == 0`) ne sauvegarde pas.
 Publier un lieu de test privé et activer « Autoriser l'accès de Studio aux services d'API » (paramètres du
