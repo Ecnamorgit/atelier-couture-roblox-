@@ -3,7 +3,7 @@
 -- Roblox) ; le ronron du chat, lui, est un envoi d'un créateur de la boutique de Roblox (« cat purring », de
 -- Bloonkii) : il pourrait être retiré, le chat se tairait alors. Rien n'est repris de Dressmaker. Chaque son est
 -- un objet Sound de SoundService (entendu par ce joueur seulement), créé une fois. « actif » coupe tout (bouton
--- « Son » à gauche de l'écran).
+-- « Son », dans la barre de titre de la fenêtre).
 local SoundService = game:GetService("SoundService")
 
 local Sons = {}
