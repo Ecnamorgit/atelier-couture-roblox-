@@ -390,13 +390,18 @@ do -- Au départ, les jauges du carnet ne promettent que ce que les tissus ouver
 	local imposes = Notation.accessoiresImposes(etatC.commande.exigences)
 	local fTous = Notation.fourchette(croquisDepart, {}, imposes)
 	local fOuverts = Notation.fourchette(croquisDepart, {}, imposes, requireModule(dossier.Deblocages).ouverts(etatC).tissus)
-	local ecarts = {}
-	for _, style in ipairs(Catalogue.STYLES) do
-		if math.abs(fenetre.Contenu.Droite["Jauge_" .. style].Plage.Size.X.Scale - fOuverts[style].max / 100) > 1e-9 then
-			table.insert(ecarts, style)
+	-- (sous-projet 7 : les jauges des étiquettes demandées et des styles de la cliente, pas toujours les six)
+	local ecarts, montrees = {}, 0
+	for _, jauge in ipairs(fenetre.Contenu.Droite:GetChildren()) do
+		local cle = jauge.Name:match("^Jauge_(.+)$")
+		if cle then
+			montrees += 1
+			if math.abs(jauge.Plage.Size.X.Scale - fOuverts[cle].max / 100) > 1e-9 then
+				table.insert(ecarts, cle)
+			end
 		end
 	end
-	verifier(fOuverts.elegant.max < fTous.elegant.max and #ecarts == 0, "au départ, les six jauges s'arrêtent à ce que les tissus ouverts peuvent donner (en défaut : " .. table.concat(ecarts, ", ") .. ")")
+	verifier(fOuverts.elegant.max < fTous.elegant.max and montrees >= 2 and #ecarts == 0, "au départ, les jauges s'arrêtent à ce que les tissus ouverts peuvent donner (en défaut : " .. table.concat(ecarts, ", ") .. ")")
 end
 -- Pour la suite, une couturière confirmée : tout le catalogue ouvert (prestige et amitiés au plus haut)
 local etatServeur = serveur:atelier(joueur).etat
@@ -431,7 +436,12 @@ verifier(gui.Atelier.Dialogue.Texte.Text == requireModule(scriptClient.Scene).PA
 verifier(texte("Exigence1") ~= nil and texte("Exigence1").Text ~= "", "les exigences sont affichées")
 local ligneMetrage = fenetre.Contenu.Droite:FindFirstChild("Metrage")
 verifier(ligneMetrage ~= nil and string.find(ligneMetrage.Text, "Choisis les tissus", 1, true) == 1, "sans tissu : le métrage attend les tissus, dans la colonne de droite")
-local derniereJauge = fenetre.Contenu.Droite["Jauge_" .. Catalogue.STYLES[#Catalogue.STYLES]]
+local derniereJauge -- (sous-projet 7 : la plus basse des jauges montrées)
+for _, j in ipairs(fenetre.Contenu.Droite:GetChildren()) do
+	if j.Name:match("^Jauge_") and (not derniereJauge or j.Position.Y.Offset > derniereJauge.Position.Y.Offset) then
+		derniereJauge = j
+	end
+end
 local hauteurDroite = fenetre.Size.Y.Offset + fenetre.Contenu.Size.Y.Offset + fenetre.Contenu.Droite.Size.Y.Offset -- (tailles relatives)
 verifier(ligneMetrage.AnchorPoint.Y == 1 and ligneMetrage.Position.Y.Scale == 1 and derniereJauge.Position.Y.Offset + derniereJauge.Size.Y.Offset < hauteurDroite + ligneMetrage.Position.Y.Offset - ligneMetrage.Size.Y.Offset, "la ligne du métrage est en bas de la colonne, sous les jauges, loin des boutons du carnet")
 -- Robe : décolleté en V, manches ballon, col Claudine, jupe trapèze
@@ -1275,7 +1285,7 @@ cliquer("RobeLibre_M")
 verifier(titre() == "1. Carnet de croquis" and texte("Robe libre (taille M) : à ton idée.") ~= nil, "robe libre : droit au carnet, sans exigence")
 verifier(scene:FindFirstChild("Cliente") == nil and serveur:atelier(joueur).etat.commande.libre, "robe libre : personne n'entre")
 cliquer("Tissu_corsage_droit_devant")
-verifier(boutonNomme("Tissu_toile_jute") ~= nil and texte("Gratuit · Décontracté") ~= nil, "la toile de jute est gratuite")
+verifier(boutonNomme("Tissu_toile_jute") ~= nil and texte("Gratuit · Journée, Travail, Décontracté, Chaude") ~= nil, "la toile de jute est gratuite (et ses quatre étiquettes)")
 cliquer("Tissu_toile_jute")
 cliquer("ToutEnUnTissu")
 cliquer("Valider")

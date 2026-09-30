@@ -13,6 +13,7 @@ local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Clientes = require(Couture:WaitForChild("Clientes"))
 local Deblocages = require(Couture:WaitForChild("Deblocages"))
 local Croquis = require(Couture:WaitForChild("Croquis"))
+local Etiquettes = require(Couture:WaitForChild("Etiquettes"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 local Mercerie = require(script.Parent:WaitForChild("Mercerie"))
 
@@ -127,25 +128,42 @@ return function(ctx)
 		lignesExigences[i] = UiKit.texte({ Name = "Exigence" .. i, TextSize = 14, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(12, yExigence), Size = UDim2.new(1, -24, 0, haut), Parent = droite })
 		yExigence += haut + 2
 	end
+	-- Les jauges (sous-projet 7) : les étiquettes que la commande demande, puis les styles de la cliente, sans doublon ;
+	-- sans rien de chiffré à suivre (une robe libre…), les six styles
+	local cles = {}
+	for _, e in ipairs(etat.commande.exigences) do
+		local cle = e.style or e.occasion or e.trait
+		if cle and not table.find(cles, cle) then
+			table.insert(cles, cle)
+		end
+	end
+	for _, s in ipairs(fiche and fiche.styles or {}) do
+		if not table.find(cles, s) then
+			table.insert(cles, s)
+		end
+	end
+	if #cles == 0 then
+		cles = table.clone(Catalogue.STYLES)
+	end
 	local jauges = {}
 	local y0 = yExigence + 10
-	for i, style in ipairs(Catalogue.STYLES) do
+	for i, cle in ipairs(cles) do
 		local y = y0 + (i - 1) * 30
-		UiKit.texte({ Text = Catalogue.NOMS_STYLES[style], TextSize = 14, Position = UDim2.fromOffset(12, y), Size = UDim2.fromOffset(100, 20), Parent = droite })
-		local fond = UiKit.arrondir(UiKit.creer("Frame", { Name = "Jauge_" .. style, BackgroundColor3 = C.secondaire, Position = UDim2.fromOffset(112, y + 4), Size = UDim2.fromOffset(180, 12), Parent = droite }), 6)
+		UiKit.texte({ Name = "NomJauge_" .. cle, Text = Etiquettes.nom(cle), TextSize = 14, Position = UDim2.fromOffset(12, y), Size = UDim2.fromOffset(100, 20), Parent = droite })
+		local fond = UiKit.arrondir(UiKit.creer("Frame", { Name = "Jauge_" .. cle, BackgroundColor3 = C.secondaire, Position = UDim2.fromOffset(112, y + 4), Size = UDim2.fromOffset(180, 12), Parent = droite }), 6)
 		local plage = UiKit.creer("Frame", { Name = "Plage", BackgroundColor3 = C.accent, BackgroundTransparency = 0.65, BorderSizePixel = 0, Parent = fond })
 		local acquis = UiKit.creer("Frame", { Name = "Acquis", BackgroundColor3 = C.accent, BorderSizePixel = 0, Parent = fond })
 		for _, e in ipairs(etat.commande.exigences) do
-			if e.style == style then
+			if (e.style or e.occasion or e.trait) == cle then
 				UiKit.creer("Frame", { Name = "Cible", BackgroundColor3 = C.texte, BorderSizePixel = 0, Position = UDim2.new(e.valeur / 100, -1, 0, -3), Size = UDim2.new(0, 2, 1, 6), Parent = fond })
 			end
 		end
-		jauges[style] = { plage = plage, acquis = acquis }
+		jauges[cle] = { plage = plage, acquis = acquis }
 	end
 	-- Sous les jauges, en bas de la fiche : le tissu à acheter pour ce croquis, et son coût
 	local metrage = UiKit.texte({ Name = "Metrage", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 12, 1, -8), Size = UDim2.new(1, -24, 0, 46), Parent = droite })
 
-	-- Choix du tissu de pièces (par-dessus le carnet), filtrable par style. Un bouton sans texte, pas un simple
+	-- Choix du tissu de pièces (par-dessus le carnet), filtrable par style ou par occasion. Un bouton sans texte, pas un simple
 	-- cadre : dans Roblox, un cadre (même Active) laisse passer l'appui aux boutons cachés dessous (modèles,
 	-- « Tracer le patron »…), par exemple entre deux cartes de tissu
 	local choix
@@ -166,15 +184,16 @@ return function(ctx)
 			Name = "Grille",
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(0, 44),
-			Size = UDim2.new(1, 0, 1, -44),
+			Position = UDim2.fromOffset(0, 84),
+			Size = UDim2.new(1, 0, 1, -84),
 			CanvasSize = UDim2.new(),
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			ScrollBarThickness = 6,
 			ZIndex = 11,
 			Parent = choix,
 		})
-		UiKit.creer("UIGridLayout", { CellSize = UDim2.fromOffset(200, 96), CellPadding = UDim2.fromOffset(8, 8), Parent = grille })
+		UiKit.creer("UIGridLayout", { CellSize = UDim2.fromOffset(200, 112), CellPadding = UDim2.fromOffset(8, 8), Parent = grille })
+		-- filtre : { style } ou { occasion } (celle de la matière du tissu), ou nil : tous
 		local function remplir(filtre)
 			for _, enfant in ipairs(grille:GetChildren()) do
 				if enfant:IsA("TextButton") then
@@ -182,7 +201,10 @@ return function(ctx)
 				end
 			end
 			for _, t in ipairs(Catalogue.Tissus) do
-				if not filtre or (t.style[filtre] or 0) > 0 then
+				local garde = not filtre
+					or (filtre.style and (t.style[filtre.style] or 0) > 0)
+					or (filtre.occasion and (Catalogue.MATIERES[t.matiere].occasion[filtre.occasion] or 0) > 0)
+				if garde then
 					local ouvert = Deblocages.ouvert(etat, "tissus", t.id)
 					local carte = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Tissu_" .. t.id, Text = "", AutoButtonColor = ouvert, BackgroundColor3 = if ouvert then C.panneau else C.ferme, ZIndex = 12, Parent = grille }), 8)
 					carte:SetAttribute("Ferme", not ouvert)
@@ -190,7 +212,7 @@ return function(ctx)
 					local echantillon = UiKit.arrondir(UiKit.creer("ImageLabel", {
 						BackgroundColor3 = UiKit.couleur(t.motif.couleurs[1]),
 						Position = UDim2.fromOffset(8, 8),
-						Size = UDim2.fromOffset(56, 80),
+						Size = UDim2.fromOffset(56, 96),
 						ScaleType = Enum.ScaleType.Tile,
 						TileSize = UDim2.fromOffset(64, 64),
 						ZIndex = 13,
@@ -200,19 +222,15 @@ return function(ctx)
 						echantillon.ImageContent = motif
 					end
 					UiKit.texte({ Text = t.nom, Font = Enum.Font.GothamBold, TextSize = 14, Position = UDim2.fromOffset(72, 8), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
-					local styles = {}
-					for s, pts in pairs(t.style) do
-						table.insert(styles, { s = s, pts = pts })
-					end
-					table.sort(styles, function(a, b)
-						return a.pts > b.pts
-					end)
+					-- (sous-projet 7) ses quatre étiquettes les plus fortes : styles, occasions, Légère ou Chaude
 					local etiquettes = {}
-					for k = 1, math.min(2, #styles) do
-						table.insert(etiquettes, Catalogue.NOMS_STYLES[styles[k].s])
+					for k, a in ipairs(Etiquettes.apportsTissu(t.id)) do
+						if k <= 4 then
+							table.insert(etiquettes, Etiquettes.nom(a.cle))
+						end
 					end
 					if ouvert then
-						UiKit.texte({ Text = (if t.prix == 0 then "Gratuit" else ("%d po/m"):format(t.prix)) .. " · " .. table.concat(etiquettes, ", "), TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(72, 50), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
+						UiKit.texte({ Name = "Etiquettes", Text = (if t.prix == 0 then "Gratuit" else ("%d po/m"):format(t.prix)) .. " · " .. table.concat(etiquettes, ", "), TextSize = 14, TextColor3 = C.texteDoux, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(72, 46), Size = UDim2.new(1, -80, 0, 60), ZIndex = 13, Parent = carte })
 					else
 						UiKit.texte({ Name = "Raison", Text = Deblocages.raison("tissus", t.id), Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(72, 50), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
 						echantillon.ImageTransparency, echantillon.BackgroundTransparency = 0.6, 0.6
@@ -232,13 +250,17 @@ return function(ctx)
 				end
 			end
 		end
-		local filtres = { { nom = "Tous" } }
-		for _, s in ipairs(Catalogue.STYLES) do
-			table.insert(filtres, { nom = Catalogue.NOMS_STYLES[s], style = s })
+		-- Deux rangées de filtres : « Tous » et les styles, puis les occasions
+		local filtres = { { nom = "Tous", x = 0, y = 0 } }
+		for k, s in ipairs(Catalogue.STYLES) do
+			table.insert(filtres, { nom = Catalogue.NOMS_STYLES[s], style = s, x = k * 106, y = 0 })
 		end
-		for k, f in ipairs(filtres) do
-			UiKit.boutonDoux({ Name = "Filtre_" .. (f.style or "tous"), Text = f.nom, TextSize = 14, Position = UDim2.fromOffset((k - 1) * 106, 0), Size = UDim2.fromOffset(100, 34), ZIndex = 11, Parent = choix }, function()
-				remplir(f.style)
+		for k, o in ipairs(Catalogue.OCCASIONS) do
+			table.insert(filtres, { nom = Catalogue.NOMS_OCCASIONS[o], occasion = o, x = (k - 1) * 106, y = 40 })
+		end
+		for _, f in ipairs(filtres) do
+			UiKit.boutonDoux({ Name = "Filtre_" .. (f.style or f.occasion or "tous"), Text = f.nom, TextSize = 14, Position = UDim2.fromOffset(f.x, f.y), Size = UDim2.fromOffset(100, 34), ZIndex = 11, Parent = choix }, function()
+				remplir(if f.style or f.occasion then f else nil)
 			end)
 		end
 		remplir(nil)
