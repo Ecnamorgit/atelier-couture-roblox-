@@ -1021,6 +1021,14 @@ for _, v in pairs(croquisNouveau) do
 	cliquer("Variante_" .. v)
 	verifier(boutonNomme("Variante_" .. v).BackgroundColor3 == Color3.fromRGB(214, 76, 128), v .. " choisie au carnet")
 end
+cliquer("Tissu_corsage_cache_coeur_devant")
+cliquer("Tissu_toile_jute")
+cliquer("ToutEnUnTissu")
+cliquer("Valider")
+do
+	local croquisServeur = serveur:atelier(joueur).etat.croquis
+	verifier(titre() == "2. Achat du tissu" and croquisServeur.corsage == "corsage_cache_coeur" and croquisServeur.manches == "manches_trois_quarts" and croquisServeur.col == "col_marin" and croquisServeur.jupe == "jupe_crayon", "croquis en variantes nouvelles validé au carnet : le serveur l'accepte")
+end
 robeLibreALaPhoto("toile_jute", croquisNouveau)
 local robeNouvelle, manquantes = scene:FindFirstChild("Robe"), {}
 for _, nom in ipairs({ "Piece_corsage_cache_coeur_devant_unique", "Piece_manche_trois_quarts_gauche", "Piece_col_marin_droite", "Piece_jupe_crayon_dos_unique" }) do

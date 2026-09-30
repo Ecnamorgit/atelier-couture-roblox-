@@ -178,7 +178,7 @@ local function serie(cle)
 end
 local p2 = serie("prestige2")
 local p5, medianeP5 = serie("prestige5")
-local p8, medianeP8 = serie("prestige8")
+local _, medianeP8 = serie("prestige8")
 local tout, medianeTout = serie("toutOuvert")
 local pauvres = serie("plusPauvre")
 local function texte(v)

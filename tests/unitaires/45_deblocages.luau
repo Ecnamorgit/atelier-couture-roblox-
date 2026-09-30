@@ -53,7 +53,7 @@ U.verifier(Deblocages.ouvert(au(100), "tissus", "velours_noir") and not Deblocag
 U.verifier(not Deblocages.ouvert(au(259), "tissus", "crepe_noir") and Deblocages.ouvert(au(260), "tissus", "crepe_noir") and Deblocages.ouvert(au(260), "tissus", "organza_blanc"), "crêpe et organza au prestige 6")
 U.verifier(not Deblocages.ouvert(au(379), "tissus", "brocart_or") and Deblocages.ouvert(au(380), "tissus", "brocart_or") and not Deblocages.ouvert(au(529), "tissus", "tulle_rose") and Deblocages.ouvert(au(530), "tissus", "tulle_rose"), "brocart au 7, tulle au 8")
 -- Chaque niveau de prestige, de 2 à 8, ouvre quelque chose
-local SEUILS_P = { 0, 20, 50, 100, 170, 260, 380, 530 }
+local SEUILS_P = U.module("Progression").SEUILS_PRESTIGE
 for niveau = 2, 8 do
 	U.verifier(#Deblocages.nouveaux(au(SEUILS_P[niveau] - 1), au(SEUILS_P[niveau])) > 0, "le prestige " .. niveau .. " ouvre quelque chose")
 end
@@ -112,6 +112,31 @@ U.verifier(Deblocages.toutOuvert(tout), "prestige 8 et dix amitiés au niveau 4 
 tout.clientes.victoire.amitie = 17
 U.verifier(not Deblocages.toutOuvert(tout), "une amitié en retard : pas tout")
 U.verifier(not Deblocages.toutOuvert(depart), "au départ : pas tout")
+-- Aucune condition n'en écrase une autre : autant de conditions que de sources (matières du prestige, décorations
+-- et variantes du prestige, amitiés, souvenirs)
+local sources = #U.module("Histoire").EVENEMENTS
+for _, t in ipairs(Catalogue.Tissus) do
+	if Deblocages.PRESTIGE_MATIERES[t.matiere] then
+		sources += 1
+	end
+end
+for _, liste in ipairs({ Deblocages.PRESTIGE_ACCESSOIRES, Deblocages.PRESTIGE_VARIANTES }) do
+	for _ in pairs(liste) do
+		sources += 1
+	end
+end
+for _, c in ipairs(Clientes.LISTE) do
+	for _ in pairs(c.deblocages) do
+		sources += 1
+	end
+end
+local conditions = 0
+for _, genre in ipairs(Deblocages.GENRES) do
+	for _ in pairs(Deblocages.CONDITIONS[genre]) do
+		conditions += 1
+	end
+end
+U.verifier(conditions == sources, ("aucune condition n'en écrase une autre (%d conditions, %d sources)"):format(conditions, sources))
 -- Sous-projet 4 : les manches courtes au prestige 6, la jupe crayon au 7 ; les quatre autres variantes et quatre
 -- décorations s'ouvrent à l'amitié des nouvelles clientes (niveaux 2 et 4), jamais par le prestige seul
 for id, niveau in pairs({ manches_courtes = 6, jupe_crayon = 7 }) do

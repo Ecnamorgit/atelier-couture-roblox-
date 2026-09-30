@@ -44,7 +44,7 @@ local function reference(exigences, ouverts)
 					accessoires = impose and { [impose] = 1 } or {},
 				}
 				if Notation.verifierExigences(exigences, bilan) then
-					return true
+					return true, croquis, t.id
 				end
 			end
 		end
@@ -64,7 +64,7 @@ local PROGRES = {
 	{ prestige = 100, clientes = { colette = { amitie = 7 } } },
 	{ prestige = 530, clientes = {} },
 }
-local differences, temoinsFaux = 0, 0
+local differences, temoinsFaux, temoinsAutres = 0, 0, 0
 for n = 1, 1000 do
 	local exigences = {}
 	for _ = 1, rng:NextInteger(1, 3) do
@@ -83,8 +83,11 @@ for n = 1, 1000 do
 	end
 	local ouverts = if n % 4 == 0 then nil else Deblocages.ouverts(PROGRES[n % 3 + 1])
 	local ok, temoin = Commandes.realisable(exigences, ouverts)
-	if ok ~= reference(exigences, ouverts) then
+	local okRef, croquisRef, tissuRef = reference(exigences, ouverts)
+	if ok ~= okRef then
 		differences += 1
+	elseif ok and (temoin.tissu ~= tissuRef or temoin.croquis.corsage ~= croquisRef.corsage or temoin.croquis.manches ~= croquisRef.manches or temoin.croquis.col ~= croquisRef.col or temoin.croquis.jupe ~= croquisRef.jupe) then
+		temoinsAutres += 1
 	end
 	if ok then
 		local bilan = {
@@ -100,6 +103,7 @@ for n = 1, 1000 do
 end
 U.verifier(differences == 0, "mille jeux d'exigences : même réponse que le calcul complet (" .. differences .. " différences)")
 U.verifier(temoinsFaux == 0, "le témoin remplit toujours les exigences (" .. temoinsFaux .. " faux)")
+U.verifier(temoinsAutres == 0, "le témoin est la première robe du calcul complet (" .. temoinsAutres .. " autres)")
 
 -- Une garniture imposée (sans longueur) ne compte pas dans les styles : avec chaque garniture, on demande un peu
 -- plus que le meilleur score d'une robe simple dans un style qu'elle porte ; aucune robe ne l'atteint
