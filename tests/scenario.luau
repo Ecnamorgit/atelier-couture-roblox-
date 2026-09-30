@@ -1570,6 +1570,8 @@ do -- (sous-projet 6) Le coton blanc est entamé par une robe d'avant : ses 6 dm
 	local entame = aAcheter()
 	local conseilCoton = requireModule(dossier.Metrage).conseil({ "corsage_v_devant" })
 	verifier(neuf ~= nil and entame == neuf + math.min(6, conseilCoton), ("au carnet, 6 dm de coton tout entamés ne comptent pas : %s dm à acheter au lieu de %s"):format(tostring(entame), tostring(neuf)))
+	-- (relecture du plan 18) le lin bleu aussi est entamé : deux rouleaux entamés à la table
+	s.entames.lin_bleu, s.stock.lin_bleu = { bas = 6, trous = { { piece = "jupe_droite_devant", x = 2.5, y = 3, angle = 0 } } }, 6
 end
 cliquer("Valider")
 verifier(titre() == "2. Achat du tissu", "robe en six tissus : à l'achat")
@@ -1623,6 +1625,13 @@ do -- (sous-projet 6) « Jeter la bande » : au deuxième appui, la bande de cot
 	local s = serveur:atelier(joueur).etat
 	local avant = s.stock.coton_blanc
 	verifier(boutonNomme("JeterEntame").Visible and boutonNomme("JeterEntame").Position.X.Scale == 1, "coton blanc entamé, rien de coupé : « Jeter la bande », en bas à droite")
+	-- (relecture) Une confirmation armée sur un onglet ne passe pas à un autre : changer d'onglet la désarme
+	cliquer("JeterEntame")
+	cliquer("Onglet_lin_bleu")
+	verifier(boutonNomme("JeterEntame").Text == "Jeter la bande", "changer d'onglet désarme « Jeter la bande »")
+	cliquer("JeterEntame")
+	verifier(s.entames.lin_bleu ~= nil and s.entames.coton_blanc ~= nil, "un seul appui après le changement d'onglet : aucune bande jetée")
+	cliquer("Onglet_coton_blanc")
 	cliquer("JeterEntame")
 	verifier(s.entames.coton_blanc ~= nil and boutonNomme("JeterEntame").Text == "Vraiment ? Touche encore", "premier appui : on demande de confirmer")
 	cliquer("JeterEntame")
@@ -1633,6 +1642,13 @@ do -- (sous-projet 6) « Jeter la bande » : au deuxième appui, la bande de cot
 	verifier(s.entames.coton_blanc == nil and s.stock.coton_blanc == avant - 6 and not fenetre.Contenu.Panneau.JeterEntame.Visible and fenetre.Message.Text == "Bande entamée jetée : 0,60 m de Coton blanc.", "second appui : la bande (0,60 m) quitte le stock, le bouton s'en va (" .. fenetre.Message.Text .. ")")
 	verifier(trous == 0 and string.find(fenetre.Contenu.Panneau.InfoRouleau.Text, "0,00 m entamés", 1, true) == 1 and fenetre.Contenu.Panneau.Statut.Text == "Place libre : tu peux couper.", "le rouleau repart neuf : plus de trous, une place libre proposée")
 	verifier(fenetre.Contenu.Rouleau.Tissu.PieceCourante.Position.Y.Offset < 6 * 36, "la pièce remonte en haut du rouleau neuf (" .. fenetre.Contenu.Rouleau.Tissu.PieceCourante.Position.Y.Offset .. " px)")
+	-- (relecture) Une pièce coupée dans le lin bleu entamé : plus de « Jeter la bande » pour ce tissu
+	cliquer("Onglet_lin_bleu")
+	verifier(boutonNomme("JeterEntame").Visible, "lin bleu entamé, rien de coupé : « Jeter la bande »")
+	cliquer("Proposer")
+	cliquer("Couper")
+	cliquer("Onglet_lin_bleu")
+	verifier(s.coupees.jupe_trapeze_dos ~= nil and s.entames.lin_bleu ~= nil and not fenetre.Contenu.Panneau.JeterEntame.Visible, "une pièce coupée dans le lin bleu : plus de « Jeter la bande » pour lui")
 end
 verifierTailles("découpe à six tissus")
 
