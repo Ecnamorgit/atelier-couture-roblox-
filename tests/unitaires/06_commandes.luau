@@ -28,9 +28,12 @@ for n = 1, 200 do
 	if temoin.accessoire then
 		table.insert(recette.accessoires, { id = temoin.accessoire, piece = 1, u = 0.5, v = 0.5, echelle = 1, angle = 0 })
 	end
+	for _ = 1, temoin.ajout and temoin.ajout.nombre or 0 do -- (sous-projet 7 : les objets d'une robe travaillée)
+		table.insert(recette.accessoires, { id = temoin.ajout.id, piece = 1, u = 0.4, v = 0.4, echelle = 1, angle = 0 })
+	end
 	U.verifier(Notation.verifierExigences(commande.exigences, Notation.bilan(recette)), "la robe témoin remplit la commande " .. n)
 end
-for _, g in ipairs({ "min", "max", "qualite", "teinte", "accessoire" }) do
+for _, g in ipairs({ "min", "max", "qualite", "teinte", "accessoire", "occasion", "matiere", "trait" }) do
 	U.verifier(genres[g] == true, "le générateur produit des exigences « " .. g .. " »")
 end
 

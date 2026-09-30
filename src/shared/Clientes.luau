@@ -1,6 +1,7 @@
 -- Clientes : les dix clientes qui reviennent à l'atelier (contenu original, rien de Dressmaker). Chacune a ses
--- vraies mesures (dm, proches de sa taille), ses styles et sa teinte préférés (ses commandes en viennent), sa
--- tenue, ses répliques, le prestige qu'il faut pour qu'elle vienne, et ce que son amitié ouvre (sous-projet 2).
+-- vraies mesures (dm, proches de sa taille), ses styles, sa teinte et (sous-projet 7) son occasion préférés (ses
+-- commandes en viennent), sa tenue, ses répliques, le prestige qu'il faut pour qu'elle vienne, et ce que son amitié
+-- ouvre (sous-projet 2).
 -- Données, et une règle pure : qui vient à la clochette.
 
 local Clientes = {}
@@ -17,6 +18,7 @@ Clientes.LISTE = {
 		mesures = { poitrine = 8.9, taille = 7.1, hanches = 9.5 },
 		styles = { "romantique", "mignon" },
 		teinte = "rose",
+		occasion = "soiree",
 		prestige = 1,
 		tenue = { peau = rgb(238, 200, 170), haut = rgb(240, 150, 180), bas = rgb(250, 240, 245), cheveux = rgb(150, 80, 50) },
 		deblocages = { [2] = { variante = "jupe_ample" }, [4] = { accessoire = "dentelle_blanche" } },
@@ -34,6 +36,7 @@ Clientes.LISTE = {
 		mesures = { poitrine = 8.1, taille = 6.3, hanches = 8.9 },
 		styles = { "mignon", "decontracte" },
 		teinte = "jaune",
+		occasion = "journee",
 		prestige = 1,
 		tenue = { peau = rgb(250, 214, 180), haut = rgb(250, 210, 80), bas = rgb(120, 180, 220), cheveux = rgb(230, 190, 110) },
 		deblocages = { [2] = { accessoire = "noeud_satin" }, [4] = { accessoire = "etoile_brodee" } },
@@ -51,6 +54,7 @@ Clientes.LISTE = {
 		mesures = { poitrine = 9.7, taille = 7.9, hanches = 10.1 },
 		styles = { "decontracte", "chic" },
 		teinte = "vert",
+		occasion = "journee",
 		prestige = 1,
 		tenue = { peau = rgb(170, 120, 90), haut = rgb(110, 160, 110), bas = rgb(200, 180, 150), cheveux = rgb(40, 30, 25) },
 		deblocages = { [2] = { variante = "corsage_bretelles" }, [4] = { accessoire = "galon_dore" } },
@@ -68,6 +72,7 @@ Clientes.LISTE = {
 		mesures = { poitrine = 8.7, taille = 6.8, hanches = 9.3 },
 		styles = { "elegant", "chic" },
 		teinte = "blanc",
+		occasion = "soiree",
 		prestige = 2,
 		tenue = { peau = rgb(230, 195, 165), haut = rgb(245, 240, 230), bas = rgb(60, 60, 80), cheveux = rgb(60, 40, 30) },
 		deblocages = { [2] = { variante = "col_montant" }, [4] = { accessoire = "broche_camee" } },
@@ -85,6 +90,7 @@ Clientes.LISTE = {
 		mesures = { poitrine = 8.3, taille = 6.5, hanches = 8.7 },
 		styles = { "gothique", "elegant" },
 		teinte = "noir",
+		occasion = "soiree",
 		prestige = 3,
 		tenue = { peau = rgb(240, 220, 205), haut = rgb(30, 25, 35), bas = rgb(90, 40, 90), cheveux = rgb(20, 15, 20) },
 		deblocages = { [2] = { variante = "manches_longues" }, [4] = { accessoire = "croix_argent" } },
@@ -102,6 +108,7 @@ Clientes.LISTE = {
 		mesures = { poitrine = 9.5, taille = 7.7, hanches = 10.3 },
 		styles = { "chic", "elegant" },
 		teinte = "bleu",
+		occasion = "travail",
 		prestige = 4,
 		tenue = { peau = rgb(120, 80, 60), haut = rgb(60, 90, 170), bas = rgb(230, 230, 235), cheveux = rgb(25, 20, 20) },
 		deblocages = { [2] = { variante = "jupe_evasee" }, [4] = { accessoire = "noeud_velours" } },
@@ -120,6 +127,7 @@ Clientes.LISTE = {
 		mesures = { poitrine = 8.7, taille = 7.0, hanches = 9.3 },
 		styles = { "romantique", "chic" },
 		teinte = "violet",
+		occasion = "journee",
 		prestige = 5,
 		tenue = { peau = rgb(236, 196, 164), haut = rgb(150, 110, 190), bas = rgb(240, 235, 245), cheveux = rgb(60, 40, 30) },
 		deblocages = { [2] = { variante = "corsage_cache_coeur" }, [4] = { accessoire = "violette" } },
@@ -137,6 +145,7 @@ Clientes.LISTE = {
 		mesures = { poitrine = 9.7, taille = 7.9, hanches = 10.1 },
 		styles = { "chic", "decontracte" },
 		teinte = "brun",
+		occasion = "travail",
 		prestige = 6,
 		tenue = { peau = rgb(200, 150, 120), haut = rgb(150, 100, 60), bas = rgb(60, 55, 50), cheveux = rgb(40, 30, 25) },
 		deblocages = { [2] = { variante = "manches_trois_quarts" }, [4] = { accessoire = "boucle_ecaille" } },
@@ -154,6 +163,7 @@ Clientes.LISTE = {
 		mesures = { poitrine = 8.3, taille = 6.5, hanches = 8.7 },
 		styles = { "gothique", "romantique" },
 		teinte = "rouge",
+		occasion = "soiree",
 		prestige = 7,
 		tenue = { peau = rgb(245, 220, 205), haut = rgb(150, 20, 40), bas = rgb(30, 25, 30), cheveux = rgb(20, 15, 15) },
 		deblocages = { [2] = { variante = "corsage_bustier" }, [4] = { accessoire = "dentelle_rouge" } },
@@ -171,6 +181,7 @@ Clientes.LISTE = {
 		mesures = { poitrine = 8.8, taille = 6.9, hanches = 9.5 },
 		styles = { "decontracte", "mignon" },
 		teinte = "bleu",
+		occasion = "journee",
 		prestige = 8,
 		tenue = { peau = rgb(230, 190, 160), haut = rgb(40, 70, 140), bas = rgb(245, 245, 250), cheveux = rgb(200, 150, 80) },
 		deblocages = { [2] = { variante = "col_marin" }, [4] = { accessoire = "coquillage" } },
