@@ -57,6 +57,12 @@ local SEUILS_P = { 0, 20, 50, 100, 170, 260, 380, 530 }
 for niveau = 2, 8 do
 	U.verifier(#Deblocages.nouveaux(au(SEUILS_P[niveau] - 1), au(SEUILS_P[niveau])) > 0, "le prestige " .. niveau .. " ouvre quelque chose")
 end
+-- Deux décorations par niveau, du 5 au 8
+for niveau, paire in pairs({ [5] = { "noeud_dore", "perle_noire" }, [6] = { "papillon_soie", "galon_argent" }, [7] = { "broche_etoile", "ruban_velours" }, [8] = { "couronne_fleurs", "dentelle_doree" } }) do
+	for _, id in ipairs(paire) do
+		U.verifier(Catalogue.accessoire(id) ~= nil and not Deblocages.ouvert(au(SEUILS_P[niveau] - 1), "accessoires", id) and Deblocages.ouvert(au(SEUILS_P[niveau]), "accessoires", id), id .. " : ouvert au prestige " .. niveau)
+	end
+end
 
 -- L'amitié ouvre les variantes et accessoires de la cliente
 local amie = { prestige = 0, clientes = { colette = { amitie = 7 } } }
