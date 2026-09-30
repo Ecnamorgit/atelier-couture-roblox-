@@ -1,4 +1,5 @@
--- Écran d'achat : pour chaque tissu du croquis, métrage conseillé, stock, quantité à acheter et coût.
+-- Écran d'achat : pour chaque tissu du croquis, métrage conseillé, stock (le tissu neuf, s'il est entamé), quantité à
+-- acheter et coût.
 -- Toucher l'échantillon d'un tissu montre le rouleau conseillé, avec les pièces rangées dessus.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
@@ -142,8 +143,12 @@ return function(ctx)
 	local function majLigne(idTissu)
 		local l = lignes[idTissu]
 		local stock = etat.stock[idTissu] or 0
+		local entame = etat.entames[idTissu]
 		local q = quantites[idTissu]
-		l.infos.Text = ("Conseillé : %d dm · En stock : %d dm"):format(conseil(idTissu), stock)
+		-- (sous-projet 6) un rouleau entamé : le tissu neuf, et ce qui est entamé en haut du rouleau
+		l.infos.Text = if entame
+			then ("Conseillé : %d dm · Neuf : %d dm (%d entamés)"):format(conseil(idTissu), etat:stockNeuf(idTissu), entame.bas)
+			else ("Conseillé : %d dm · En stock : %d dm"):format(conseil(idTissu), stock)
 		l.quantite.Text = ("%d dm"):format(q)
 		l.cout.Text = q > 0 and ("%d po"):format(EtatAtelier.prix(idTissu, q)) or "—"
 		l.acheter.AutoButtonColor = q > 0
@@ -152,7 +157,7 @@ return function(ctx)
 
 	for i, idTissu in ipairs(etat:tissusUtilises()) do
 		local t = Catalogue.tissu(idTissu)
-		stocksVus[idTissu] = etat.stock[idTissu] or 0
+		stocksVus[idTissu] = etat:stockNeuf(idTissu)
 		quantites[idTissu] = math.max(0, conseil(idTissu) - stocksVus[idTissu])
 		local ligne = UiKit.arrondir(UiKit.creer("Frame", { Name = "Ligne_" .. idTissu, BackgroundColor3 = C.panneau, Position = UDim2.fromOffset(0, (i - 1) * HAUTEUR_LIGNE), Size = UDim2.new(1, -10, 0, 76), Parent = liste }), 10)
 		local echantillon = UiKit.arrondir(UiKit.creer("ImageButton", {
@@ -173,7 +178,7 @@ return function(ctx)
 			echantillon.ImageContent = motif
 		end
 		UiKit.texte({ Text = ("%s — %s"):format(t.nom, if t.prix == 0 then "Gratuit" else ("%d po/m"):format(t.prix)), Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(102, 10), Size = UDim2.fromOffset(320, 24), Parent = ligne })
-		local l = { infos = UiKit.texte({ TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(102, 40), Size = UDim2.fromOffset(320, 24), Parent = ligne }) }
+		local l = { infos = UiKit.texte({ Name = "Infos", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(102, 40), Size = UDim2.fromOffset(320, 24), Parent = ligne }) }
 		UiKit.boutonDoux({ Name = "Moins", Text = "−", TextSize = 22, Position = UDim2.fromOffset(440, 20), Size = UDim2.fromOffset(40, 36), Parent = ligne }, function()
 			quantites[idTissu] = math.max(0, quantites[idTissu] - 1)
 			majLigne(idTissu)
@@ -212,10 +217,11 @@ return function(ctx)
 			ctx.refus(r)
 		end
 	end)
-	-- Le stock change (achat, ou état réparé par le serveur) : la quantité proposée est ce qui manque encore
+	-- Le stock change (achat, bande jetée, ou état réparé par le serveur) : la quantité proposée est ce qui manque
+	-- encore en tissu neuf
 	local desabonner = session:surChangement(function()
 		for idTissu in pairs(lignes) do
-			local stock = etat.stock[idTissu] or 0
+			local stock = etat:stockNeuf(idTissu)
 			if stock ~= stocksVus[idTissu] then
 				stocksVus[idTissu] = stock
 				quantites[idTissu] = math.max(0, conseil(idTissu) - stock)

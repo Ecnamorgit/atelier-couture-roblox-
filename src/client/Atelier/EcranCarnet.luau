@@ -335,8 +335,8 @@ return function(ctx)
 			j.acquis.Size = UDim2.fromScale(f.min / 100, 1)
 			j.plage.Size = UDim2.fromScale(f.max / 100, 1)
 		end
-		-- Tissu à acheter (le stock compte) et son coût
-		local aAcheter, dm = Metrage.aAcheter(pieces, tissus, etat.stock)
+		-- Tissu à acheter (le stock neuf compte, pas la bande entamée) et son coût
+		local aAcheter, dm = Metrage.aAcheter(pieces, tissus, etat:stocksNeufs())
 		local prix = 0
 		for _, t in ipairs(aAcheter) do
 			prix += EtatAtelier.prix(t.tissu, t.manque)

@@ -55,6 +55,10 @@ local ACTIONS = {
 	acheterMercerie = function(a, idAccessoire, quantite)
 		return a.etat:acheterMercerie(idAccessoire, quantite)
 	end,
+	-- (sous-projet 6) jeter la bande entamée d'un rouleau
+	jeterEntame = function(a, idTissu)
+		return a.etat:jeterEntame(idTissu)
+	end,
 	commencerDecoupe = function(a)
 		return a.etat:commencerDecoupe()
 	end,

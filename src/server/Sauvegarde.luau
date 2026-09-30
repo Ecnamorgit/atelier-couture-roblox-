@@ -8,6 +8,7 @@ local HttpService = game:GetService("HttpService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Recette = require(Couture:WaitForChild("Recette"))
+local Coupon = require(Couture:WaitForChild("Coupon"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Clientes = require(Couture:WaitForChild("Clientes"))
 local Histoire = require(Couture:WaitForChild("Histoire"))
@@ -182,6 +183,7 @@ function Sauvegarde.depuisEtat(etat, debloques)
 		lettres = d.lettres,
 		histoire = d.histoire,
 		mercerie = d.mercerie,
+		entames = d.entames,
 	}
 	if d.etape ~= "accueil" then
 		partie.enCours = {}
@@ -257,6 +259,17 @@ function Sauvegarde.versEtat(partie)
 			base.stock[id] = dm
 		end
 	end
+	-- Bandes entamées (sous-projet 6) : d'un tissu en stock, des trous lisibles (1 à 24), pas plus bas que le stock ; le
+	-- bas est recalculé des trous. Une bande illisible est oubliée : le rouleau repart neuf, le stock reste
+	for id, e in pairs(type(partie.entames) == "table" and partie.entames or {}) do
+		local trous = type(id) == "string" and base.stock[id] and type(e) == "table" and Coupon.lireTrous(e.trous, Recette.LONGUEUR_MAX)
+		if trous and #trous > 0 and #trous <= EtatAtelier.TROUS_MAX then
+			local bas = Coupon.bas(trous)
+			if bas <= base.stock[id] then
+				base.entames[id] = { bas = bas, trous = trous }
+			end
+		end
+	end
 	for _, r in ipairs(type(partie.recettes) == "table" and partie.recettes or {}) do
 		local lue, valide = pcall(Recette.valider, r)
 		if lue and valide and #base.robes < EtatAtelier.ROBES_GARDEES then
@@ -270,6 +283,16 @@ function Sauvegarde.versEtat(partie)
 	for _, champ in ipairs(EN_COURS) do
 		if partie.enCours[champ] ~= nil then
 			d[champ] = partie.enCours[champ]
+		end
+	end
+	-- Les rouleaux d'une découpe en cours prennent les trous relus et vérifiés de leur bande (ceux de la partie
+	-- peuvent être abîmés)
+	if type(d.coupons) == "table" then
+		for idTissu, r in pairs(d.coupons) do
+			if type(r) == "table" then
+				local entame = base.entames[idTissu]
+				r.trous = entame and copie(entame.trous) or {}
+			end
 		end
 	end
 	local etat = EtatAtelier.nouveau()

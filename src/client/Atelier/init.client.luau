@@ -15,6 +15,8 @@ local Sons = require(script:WaitForChild("Sons"))
 local Dialogue = require(script:WaitForChild("Dialogue"))
 local Confettis = require(script:WaitForChild("Confettis"))
 local Chat = require(script:WaitForChild("Chat"))
+local Mercerie = require(script:WaitForChild("Mercerie"))
+local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local ECRANS = {
@@ -230,6 +232,14 @@ UiKit.surClic = function()
 end
 local SONS_ACTIONS = { nouvelleCommande = "clochette", acheter = "achat", acheterMercerie = "achat", couper = "couper", epingler = "epingler", abandonner = "echec", vendre = "achat", offrir = "reussite", inviter = "clochette", commandeHistoire = "clochette" }
 session:surAction(function(nom, reponse)
+	-- (sous-projet 6) une bande entamée jetée d'elle-même, au-delà de 24 trous : on le dit
+	if reponse.jetees then
+		local bandes = {}
+		for _, j in ipairs(reponse.jetees) do
+			table.insert(bandes, ("%s, %s m"):format(Catalogue.tissu(j.tissu).nom, Mercerie.metres(j.dm * 10)))
+		end
+		afficherMessage(("Trop de trous : la bande entamée est jetée (%s)."):format(table.concat(bandes, " ; ")), C.texteDoux, 6)
+	end
 	if nom == "rendreCouture" and session.etat.etape == "decorations" then
 		-- La dernière pièce cousue : la robe est terminée, une pluie de confettis et un petit son de fête
 		Confettis.lancer(gui)
