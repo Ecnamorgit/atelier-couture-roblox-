@@ -12,7 +12,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 `docs/superpowers/specs/2026-09-30-fidelite-dressmaker-design.md` pour la fidélité à la présentation de
 *Dressmaker* ; plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 5 en cours, plans 11 et 12 : le carnet dessiné ; paroles, avis et réputation)
+## État actuel (sous-projet 5 terminé côté code, plans 11 à 13 : la fidélité à la présentation de *Dressmaker*)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -84,7 +84,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    style (celle des quatre dernières : le cache-cœur, les manches trois-quarts, le bustier et le col marin, puis
    une décoration). Avec le bustier, manches et col se portent détachés, épaules nues. Rien n'est sauvegardé :
    tout se déduit du prestige et des amitiés. Les commandes ne demandent que ce qui est ouvert, et leurs
-   exigences de style montent avec le prestige. L'accueil annonce ce qui vient de s'ouvrir.
+   exigences de style montent avec le prestige. L'accueil annonce ce qui vient de s'ouvrir, et une affiche
+   « Nouveautés à l'atelier ! » le montre (une carte par nouveauté, huit au plus, l'échantillon de chaque tissu).
    **Robes libres** (après deux commandes livrées) : « Robe libre » à l'accueil, une taille (S, M, L), et l'on
    va droit au carnet, sans cliente ni exigence. À la photo : « Vendre » (prix = (matières + décorations +
    6 po par pièce) × (0,5 + qualité), +6 % par niveau de prestige au-delà du premier ; du prestige, un quinzième
@@ -107,11 +108,14 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    livre, la première du théâtre, le mariage de Colette, le grand défilé du quartier). Le premier
    s'annonce après trois commandes livrées, les suivants à leur prestige. « Commande de l'événement » ouvre une
    conversation avec la cliente (pourquoi elle a besoin de cette robe, ce qu'elle voudrait), puis la commande,
-   avec une tenue imposée. Toutes les robes livrées, l'événement a lieu : son épilogue, un souvenir (une des douze
-   décorations nouvelles) et 15 de prestige ; le carnet d'adresses garde les souvenirs. Les commandes ordinaires
-   continuent à côté.
-10. La suite : la fin du sous-projet 5 (gazette du quartier, affiche des nouveautés, chat de l'atelier) ;
-   porter la robe sur son avatar et les défilés entre joueurs restent à décider.
+   avec une tenue imposée. Toutes les robes livrées, l'événement a lieu : son épilogue fait la une de « La Gazette
+   du Dé », le journal du quartier (numéro, jour de l'atelier, titre, texte en deux colonnes), avec un souvenir (une
+   des douze décorations nouvelles) et 15 de prestige ; le carnet d'adresses garde les souvenirs. Les commandes
+   ordinaires continuent à côté.
+   **Le chat** : un chat roux dort sur son coussin près de la fenêtre de chaque boutique ; « Caresser » (touche F)
+   le fait ronronner, remuer la queue, et de petits cœurs montent. Pour le plaisir seulement.
+10. La suite : porter la robe sur son avatar et les défilés entre joueurs, ou d'autres écarts avec *Dressmaker*
+   (mesures à molettes, compteur de mètres, mercerie en stock, robes plus riches) : à décider.
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
@@ -125,9 +129,10 @@ client. Si la partie n'est pas encore arrivée au bout d'une minute, le joueur e
 
 **Sons** : une musique d'ambiance, un petit clic à chaque bouton, la clochette, la caisse, les ciseaux, la
 machine à coudre (tant qu'on coud, au rythme de la vitesse), le tissu qu'on découd, les décorations, le
-déclic de la photo, la fête de la robe terminée et la réaction de la cliente. Tout vient de la bibliothèque
-libre de Roblox (sons de
-l'interface de Roblox, Pro Sound Effects, APM Music) ; le bouton « Son », dans la barre de titre de la
+déclic de la photo, la fête de la robe terminée, la réaction de la cliente et le ronron du chat. Tout vient de
+la bibliothèque libre de Roblox (sons de
+l'interface de Roblox, Pro Sound Effects, APM Music, et pour le chat « cat purring », de la boutique des créateurs) ;
+le bouton « Son », dans la barre de titre de la
 fenêtre, coupe tout.
 
 **Téléphone et clavier** : tant que la fenêtre de l'atelier est ouverte, l'avatar ne bouge pas (le stick et
@@ -189,7 +194,8 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   perdue. `TableDecoupe` et `MachineCoudre` sont la logique pure de la table
   de découpe, de la machine à coudre et de l'éditeur de décorations (`Decorateur`) ; `Cliente` construit
   l'avatar de la cliente et sa bulle ; `Dialogue`, l'encadré où elle parle fenêtre ouverte ; `Confettis`, la
-  pluie de la robe terminée ; `Scene` tient, dans la boutique du joueur, la cliente, le mannequin,
+  pluie de la robe terminée ; `Chat`, les caresses au chat de l'atelier ; `Scene` tient, dans la boutique du
+  joueur, la cliente, le mannequin,
   la robe épinglée, l'aperçu des décorations, les réglages de la photo et la caméra du poste ; `Sons` joue
   les bruits et la musique ; un module `Ecran…` par étape (`EcranMesures` : la silhouette et les rubans).
 

@@ -9,6 +9,7 @@ local d = Dialogue.nouveau(gui, UiKit)
 local cadre = gui:FindFirstChild("Dialogue")
 U.verifier(cadre ~= nil and cadre:IsA("TextButton") and not cadre.Visible, "un encadré (un bouton : l'appui ne passe pas dessous), caché tant qu'elle n'a rien dit")
 U.verifier(cadre.Position.X.Scale == 0 and cadre.Position.Y.Scale == 0 and cadre.Position.Y.Offset < 40, "en haut à gauche, juste sous les boutons de Roblox")
+U.verifier(cadre.UIStroke.ApplyStrokeMode == Enum.ApplyStrokeMode.Border, "le liseré entoure l'encadré (pas son texte vide)")
 
 d:dire("Colette", "Bonjour ! J'aurais besoin d'une robe.")
 U.verifier(cadre.Visible and cadre.Nom.Text == "Colette" and cadre.Texte.Text == "Bonjour ! J'aurais besoin d'une robe." and not cadre.Etoiles.Visible, "son nom, ses mots ; pas d'étoiles sans avis")

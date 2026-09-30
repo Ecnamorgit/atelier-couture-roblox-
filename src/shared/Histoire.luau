@@ -346,6 +346,43 @@ function Histoire.titreEpilogue(ev)
 	return ("%s %s eu lieu !"):format(ev.nom, if ev.pluriel then "ont" else "a")
 end
 
+-- Sous-projet 5 : quand un événement a lieu, son épilogue fait la une du journal du quartier, en deux colonnes
+Histoire.GAZETTE = "La Gazette du Dé"
+
+-- Le texte en deux colonnes : coupé à la fin de la phrase la plus proche du milieu, si elle n'en est pas à plus
+-- d'un cinquième du texte (sinon, à l'espace le plus proche du milieu) ; jamais devant « ; : ! ? » » ni après
+-- « « » (la typographie française les sépare d'une espace) ; renvoie les deux morceaux (le second est vide pour
+-- un seul mot)
+function Histoire.enColonnes(texte)
+	local milieu = #texte / 2
+	-- p : la position d'un espace
+	local function coupable(p)
+		return not (texte:sub(p + 1, p + 1):match("[;:!?]") or texte:sub(p + 1, p + 2) == "»" or texte:sub(p - 2, p - 1) == "«")
+	end
+	local function finDePhrase(p)
+		return texte:sub(p - 1, p - 1):match("[%.!?]") ~= nil or (texte:sub(p - 2, p - 1) == "»" and texte:sub(p - 4, p - 4):match("[%.!?]") ~= nil)
+	end
+	local phrase, espace
+	local function plusPres(p, q)
+		return not q or math.abs(p - milieu) < math.abs(q - milieu)
+	end
+	for p in texte:gmatch("() ") do
+		if coupable(p) then
+			if finDePhrase(p) and math.abs(p - milieu) <= #texte / 5 and plusPres(p, phrase) then
+				phrase = p
+			end
+			if plusPres(p, espace) then
+				espace = p
+			end
+		end
+	end
+	local coupe = phrase or espace
+	if not coupe then
+		return texte, ""
+	end
+	return texte:sub(1, coupe - 1), texte:sub(coupe + 1)
+end
+
 -- Nombre d'événements qui ont eu lieu
 function Histoire.eus(progres)
 	local n = 0

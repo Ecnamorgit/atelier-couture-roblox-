@@ -14,6 +14,8 @@ local Vignettes = require(script:WaitForChild("Vignettes"))
 local Sons = require(script:WaitForChild("Sons"))
 local Dialogue = require(script:WaitForChild("Dialogue"))
 local Confettis = require(script:WaitForChild("Confettis"))
+local Chat = require(script:WaitForChild("Chat"))
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local ECRANS = {
 	accueil = require(script:WaitForChild("EcranAccueil")),
@@ -216,6 +218,8 @@ end)
 fenetre:GetPropertyChangedSignal("Visible"):Connect(function()
 	boutonAtelier.Visible = not fenetre.Visible
 	dialogue:montrer(fenetre.Visible)
+	-- Fenêtre ouverte, pas d'invite de proximité (le chat) : elle passerait dans la vue du poste et sur la photo
+	ProximityPromptService.Enabled = not fenetre.Visible
 	scene:ouvrir(fenetre.Visible, session.etat)
 end)
 
@@ -248,6 +252,9 @@ boutonSon = UiKit.boutonDoux({
 	boutonSon.Text = if Sons.actif then "Son : oui" else "Son : non"
 end)
 Sons.boucle("musique", true)
+-- Le chat de chaque boutique se caresse (invite « Caresser ») : il ronronne, pour ce joueur seulement
+Chat.brancher(ProximityPromptService, Sons)
+ProximityPromptService.Enabled = not fenetre.Visible
 
 -- Fenêtre au centre, ou panneau à droite (titre et argent sur deux lignes)
 local function disposer(panneau)
