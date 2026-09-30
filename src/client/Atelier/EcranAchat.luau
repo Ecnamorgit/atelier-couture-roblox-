@@ -171,7 +171,7 @@ return function(ctx)
 		if motif then
 			echantillon.ImageContent = motif
 		end
-		UiKit.texte({ Text = ("%s — %d po/m"):format(t.nom, t.prix), Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(102, 10), Size = UDim2.fromOffset(320, 24), Parent = ligne })
+		UiKit.texte({ Text = ("%s — %s"):format(t.nom, if t.prix == 0 then "Gratuit" else ("%d po/m"):format(t.prix)), Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(102, 10), Size = UDim2.fromOffset(320, 24), Parent = ligne })
 		local l = { infos = UiKit.texte({ TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(102, 40), Size = UDim2.fromOffset(320, 24), Parent = ligne }) }
 		UiKit.boutonDoux({ Name = "Moins", Text = "−", TextSize = 22, Position = UDim2.fromOffset(440, 20), Size = UDim2.fromOffset(40, 36), Parent = ligne }, function()
 			quantites[idTissu] = math.max(0, quantites[idTissu] - 1)

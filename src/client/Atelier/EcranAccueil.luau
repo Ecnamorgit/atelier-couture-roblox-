@@ -49,7 +49,10 @@ return function(ctx)
 		annonce = ("Robe vendue ! +%d pièces d'or (qualité %d %%). Elle part en vitrine."):format(r.prix, math.floor(r.bilan.qualite * 100 + 0.5))
 	elseif action == "offrir" then
 		local fiche = Clientes.get(r.cliente)
-		annonce = ("%s adore la robe que tu lui offres ! Elle part en vitrine."):format(fiche and fiche.nom:match("^(%S+)") or "La cliente")
+		local prenom = fiche and fiche.nom:match("^(%S+)") or "La cliente"
+		annonce = if r.amitie and r.amitie.gain >= 3
+			then ("%s adore la robe que tu lui offres ! Elle part en vitrine."):format(prenom)
+			else ("%s te remercie pour la robe. Elle part en vitrine."):format(prenom)
 		table.insert(suite, ligneAmitie(r.amitie))
 	end
 	if annonce then
@@ -130,6 +133,11 @@ return function(ctx)
 					end
 				end)
 			end
+			-- « × » : on renonce, rien n'est commencé
+			UiKit.boutonDoux({ Name = "AnnulerTaille", Text = "×", TextSize = 18, Position = UDim2.fromOffset(276, 8), Size = UDim2.fromOffset(34, 34), Parent = choix }, function()
+				choix:Destroy()
+				libre.Visible = true
+			end)
 		end)
 	end
 	-- La jauge de prestige : « Prestige 3 — 62 / 100 »

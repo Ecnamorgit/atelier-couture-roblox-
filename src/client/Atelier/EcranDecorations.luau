@@ -104,7 +104,7 @@ return function(ctx)
 			ctx.message("Une garniture a besoin de deux points, sur au moins 0,5 dm.", C.erreur)
 		end
 	end)
-	UiKit.bouton({ Name = "Presenter", Text = "Présenter à la cliente", Position = UDim2.fromOffset(0, 350), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
+	UiKit.bouton({ Name = "Presenter", Text = if ctx.session.etat.commande.libre then "Présenter la robe" else "Présenter à la cliente", Position = UDim2.fromOffset(0, 350), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
 		local r = session:decorer(deco:resultat())
 		if not r.ok then
 			ctx.refus(r)

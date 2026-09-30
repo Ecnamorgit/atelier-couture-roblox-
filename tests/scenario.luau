@@ -947,12 +947,18 @@ verifier(boutonNomme("RobeLibre") ~= nil, "deux commandes livrées : « Robe lib
 cliquer("RobeLibre")
 local boutonL, boutonCarnet = boutonNomme("RobeLibre_L"), boutonNomme("OuvrirCarnetAdresses")
 verifier(boutonL.AbsolutePosition.X + boutonL.AbsoluteSize.X <= boutonCarnet.AbsolutePosition.X, "le choix de la taille ne recouvre pas « Carnet d'adresses »")
+cliquer("AnnulerTaille")
+verifier(fenetre.Contenu:FindFirstChild("ChoixTaille") == nil and boutonNomme("RobeLibre") ~= nil and serveur:atelier(joueur).etat.etape == "accueil", "« × » : on renonce à la robe libre, rien n'est commencé")
+cliquer("RobeLibre")
 cliquer("RobeLibre_M")
 verifier(titre() == "1. Carnet de croquis" and texte("Robe libre (taille M) : à ton idée.") ~= nil, "robe libre : droit au carnet, sans exigence")
 verifier(scene:FindFirstChild("Cliente") == nil and serveur:atelier(joueur).etat.commande.libre, "robe libre : personne n'entre")
 cliquer("Tissu_corsage_droit_devant")
 verifier(boutonNomme("Tissu_toile_jute") ~= nil and texte("Gratuit · Décontracté") ~= nil, "la toile de jute est gratuite")
-cliquer("FermerChoix")
+cliquer("Tissu_toile_jute")
+cliquer("ToutEnUnTissu")
+cliquer("Valider")
+verifier(titre() == "2. Achat du tissu" and texte("Toile de jute — Gratuit") ~= nil, "à l'achat aussi, la toile de jute est « Gratuit »")
 -- La robe menée jusqu'à la photo sur le serveur (coupée, épinglée, cousue), sans repasser par tous les postes
 local function robeLibreALaPhoto(tissu)
 	local e = serveur:atelier(joueur).etat
@@ -965,8 +971,11 @@ local function robeLibreALaPhoto(tissu)
 		e.coutures[id] = 0.9
 	end
 	e.commande.matieres = if tissu == "toile_jute" then 0 else 10
-	e.etape = "photo"
+	e.etape = "decorations"
 	requireModule(scriptClient.Session).courante:actualiser()
+	verifier(boutonNomme("Presenter").Text == "Présenter la robe", "robe libre : « Présenter la robe » (pas de cliente)")
+	cliquer("Presenter")
+	verifier(titre() == "7. Photo et vente" and string.find(fenetre.Contenu.Qualite.Text, "ajustement", 1, true) == nil and boutonNomme("Vendre").TextSize <= 14, "photo d'une robe libre : « 7. Photo et vente », la qualité sans ajustement, « Vendre » en 14 px")
 end
 robeLibreALaPhoto("coton_blanc")
 local prixLibre = serveur:atelier(joueur).etat:prixVente()
@@ -991,7 +1000,8 @@ verifier(texte("Robe libre (taille S) : à ton idée.") ~= nil, "une autre robe 
 robeLibreALaPhoto("toile_jute")
 cliquer("Offrir")
 cliquer("Offrir_colette")
-verifier(titre() == "Aiguille & Dentelle" and texte("Colette adore la robe que tu lui offres !") ~= nil and texte("Amitié de Colette : +") ~= nil, "offerte à Colette : l'accueil l'annonce")
+local gainCadeau = serveur:atelier(joueur).etat.clientes.colette.amitie - amitieColette
+verifier(titre() == "Aiguille & Dentelle" and texte(if gainCadeau >= 3 then "Colette adore la robe que tu lui offres !" else "Colette te remercie pour la robe.") ~= nil and texte("Amitié de Colette : +") ~= nil, "offerte à Colette : l'accueil l'annonce, selon ce qu'elle en pense (+" .. gainCadeau .. ")")
 verifier(serveur:atelier(joueur).etat.clientes.colette.amitie > amitieColette, "son amitié monte")
 end
 
