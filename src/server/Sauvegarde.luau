@@ -8,6 +8,7 @@ local HttpService = game:GetService("HttpService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Recette = require(Couture:WaitForChild("Recette"))
+local Coupon = require(Couture:WaitForChild("Coupon"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Clientes = require(Couture:WaitForChild("Clientes"))
 local Histoire = require(Couture:WaitForChild("Histoire"))
@@ -182,6 +183,7 @@ function Sauvegarde.depuisEtat(etat, debloques)
 		lettres = d.lettres,
 		histoire = d.histoire,
 		mercerie = d.mercerie,
+		entames = d.entames,
 	}
 	if d.etape ~= "accueil" then
 		partie.enCours = {}
@@ -255,6 +257,17 @@ function Sauvegarde.versEtat(partie)
 	for id, dm in pairs(type(partie.stock) == "table" and partie.stock or {}) do
 		if type(id) == "string" and Catalogue.tissu(id) and nombre(dm, -1) >= 0 then
 			base.stock[id] = dm
+		end
+	end
+	-- Bandes entamées (sous-projet 6) : d'un tissu en stock, des trous lisibles (1 à 24), pas plus bas que le stock ; le
+	-- bas est recalculé des trous. Une bande illisible est oubliée : le rouleau repart neuf, le stock reste
+	for id, e in pairs(type(partie.entames) == "table" and partie.entames or {}) do
+		local trous = type(id) == "string" and base.stock[id] and type(e) == "table" and Coupon.lireTrous(e.trous, Recette.LONGUEUR_MAX)
+		if trous and #trous > 0 and #trous <= EtatAtelier.TROUS_MAX then
+			local bas = Coupon.nouveau(Recette.LONGUEUR_MAX, trous):longueurUtilisee()
+			if bas <= base.stock[id] then
+				base.entames[id] = { bas = bas, trous = trous }
+			end
 		end
 	end
 	for _, r in ipairs(type(partie.recettes) == "table" and partie.recettes or {}) do
