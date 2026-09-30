@@ -2,7 +2,11 @@
 -- (sa bulle, au-dessus de sa tête, reste pour la rue) : son prénom, ses mots, et son avis en étoiles quand elle en
 -- donne un. À gauche de la fenêtre quand la place existe ; sinon en haut à gauche de l'écran, sous les boutons de
 -- Roblox, par-dessus la fenêtre : il s'efface alors seul après quelques secondes. Un appui le referme jusqu'à sa
--- prochaine parole.
+-- prochaine parole. Sous-projet 7 : son portrait à gauche, selon ce qu'elle dit (contente, neutre, déçue).
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Clientes = require(ReplicatedStorage:WaitForChild("Couture"):WaitForChild("Clientes"))
+local Portrait = require(script.Parent:WaitForChild("Portrait"))
+
 local Dialogue = {}
 Dialogue.__index = Dialogue
 
@@ -14,6 +18,7 @@ Dialogue.DUREE_PAR_DESSUS = 6 -- secondes de lecture quand il passe par-dessus l
 local MARGE = 14
 local HAUT_TEXTE = 30 -- sous le prénom
 local HAUTEUR_ETOILES = 28
+Dialogue.PORTRAIT = Vector2.new(64, 80) -- (sous-projet 7) le portrait, à gauche du texte
 
 function Dialogue.nouveau(parent, UiKit)
 	local C = UiKit.COULEURS
@@ -36,6 +41,7 @@ function Dialogue.nouveau(parent, UiKit)
 	self.nom = UiKit.texte({ Name = "Nom", Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = C.accent, Position = UDim2.fromOffset(MARGE, 8), Size = UDim2.new(1, -2 * MARGE, 0, 20), ZIndex = 41, Parent = self.cadre })
 	self.texte = UiKit.texte({ Name = "Texte", TextSize = Dialogue.TAILLE_TEXTE, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(MARGE, HAUT_TEXTE), Size = UDim2.new(1, -2 * MARGE, 0, 20), ZIndex = 41, Parent = self.cadre })
 	self.etoiles = UiKit.creer("Frame", { Name = "Etoiles", BackgroundTransparency = 1, Size = UDim2.fromOffset(5 * 28, HAUTEUR_ETOILES), Visible = false, ZIndex = 41, Parent = self.cadre })
+	self.portrait = Portrait.creer(UiKit, { Name = "Portrait", Position = UDim2.fromOffset(MARGE, 10), Size = UDim2.fromOffset(Dialogue.PORTRAIT.X, Dialogue.PORTRAIT.Y), ZIndex = 41, Parent = self.cadre })
 	for k = 1, 5 do
 		UiKit.texte({ Name = "Etoile" .. k, Text = "★", TextSize = 26, TextColor3 = Dialogue.ETEINTE, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset((k - 1) * 28, 0), Size = UDim2.fromOffset(26, HAUTEUR_ETOILES), ZIndex = 41, Parent = self.etoiles })
 	end
@@ -46,8 +52,9 @@ function Dialogue.nouveau(parent, UiKit)
 	return self
 end
 
--- La cliente dit ce texte (nil : plus rien à dire) ; etoiles : son avis (1 à 5), ou nil
-function Dialogue:dire(nom, texte, etoiles)
+-- La cliente dit ce texte (nil : plus rien à dire) ; etoiles : son avis (1 à 5), ou nil ; idCliente (facultatif) : son
+-- portrait
+function Dialogue:dire(nom, texte, etoiles, idCliente)
 	self.parole, self.referme = texte, false
 	self.paroles += 1
 	local numero = self.paroles
@@ -58,16 +65,25 @@ function Dialogue:dire(nom, texte, etoiles)
 		end
 	end)
 	if texte then
-		local hauteurTexte = self.UiKit.lignes(texte, Dialogue.LARGEUR - 2 * MARGE, Dialogue.TAILLE_TEXTE) * (Dialogue.TAILLE_TEXTE + 4)
+		local fiche = idCliente and Clientes.get(idCliente)
+		Portrait.maj(self.portrait, fiche and fiche.id, Portrait.expression(fiche, texte, etoiles))
+		local gauche = if fiche then MARGE + Dialogue.PORTRAIT.X + 10 else MARGE
+		local hauteurTexte = self.UiKit.lignes(texte, Dialogue.LARGEUR - gauche - MARGE, Dialogue.TAILLE_TEXTE) * (Dialogue.TAILLE_TEXTE + 4)
 		self.nom.Text = nom or ""
+		self.nom.Position, self.nom.Size = UDim2.fromOffset(gauche, 8), UDim2.new(1, -gauche - MARGE, 0, 20)
 		self.texte.Text = texte
-		self.texte.Size = UDim2.new(1, -2 * MARGE, 0, hauteurTexte)
+		self.texte.Position = UDim2.fromOffset(gauche, HAUT_TEXTE)
+		self.texte.Size = UDim2.new(1, -gauche - MARGE, 0, hauteurTexte)
 		self.etoiles.Visible = etoiles ~= nil
-		self.etoiles.Position = UDim2.fromOffset(MARGE - 2, HAUT_TEXTE + hauteurTexte + 2)
+		self.etoiles.Position = UDim2.fromOffset(gauche - 2, HAUT_TEXTE + hauteurTexte + 2)
 		for k = 1, 5 do
 			self.etoiles["Etoile" .. k].TextColor3 = if etoiles and k <= etoiles then Dialogue.OR else Dialogue.ETEINTE
 		end
-		self.cadre.Size = UDim2.fromOffset(Dialogue.LARGEUR, HAUT_TEXTE + hauteurTexte + (if etoiles then HAUTEUR_ETOILES + 4 else 0) + 10)
+		local hauteur = HAUT_TEXTE + hauteurTexte + (if etoiles then HAUTEUR_ETOILES + 4 else 0) + 10
+		if fiche then
+			hauteur = math.max(hauteur, 10 + Dialogue.PORTRAIT.Y + 10)
+		end
+		self.cadre.Size = UDim2.fromOffset(Dialogue.LARGEUR, hauteur)
 	end
 	self:maj()
 end

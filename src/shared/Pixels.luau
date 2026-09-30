@@ -320,4 +320,203 @@ function Pixels.croquis(croquis, tissus, largeur, hauteur)
 	return buf, largeur, hauteur
 end
 
+---------------------------------------------------------------------------
+-- Portrait d'une cliente (sous-projet 7) : un buste de face au crayon, 128 × 160 — ses épaules dans le haut de sa
+-- tenue, son visage et son cou dans sa peau, sa coiffure dans ses cheveux ; les yeux, les sourcils et la bouche selon
+-- l'expression (« contente », « neutre », « decue »). Fond transparent. Retourne buffer, largeur, hauteur.
+---------------------------------------------------------------------------
+Pixels.PORTRAIT_LARGEUR, Pixels.PORTRAIT_HAUTEUR = 128, 160
+Pixels.EXPRESSIONS = { "contente", "neutre", "decue" }
+Pixels.COIFFURES = { "carre", "chignon", "longs", "courts", "tresse", "boucles", "queue" }
+local JOUE = { 240, 150, 150 }
+local TRAIT_CLAIR = { 250, 238, 228 } -- (relecture) les traits du visage sur une peau foncée
+
+-- Luminance relative d'une couleur (0 à 1) et contraste de deux couleurs (1 à 21), comme pour un texte à l'écran
+local function luminance(c)
+	local function lineaire(v)
+		v /= 255
+		return if v <= 0.03928 then v / 12.92 else ((v + 0.055) / 1.055) ^ 2.4
+	end
+	return 0.2126 * lineaire(c[1]) + 0.7152 * lineaire(c[2]) + 0.0722 * lineaire(c[3])
+end
+local function contraste(a, b)
+	local la, lb = luminance(a), luminance(b)
+	return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05)
+end
+
+local function rvb(c)
+	return { math.floor(c.R * 255 + 0.5), math.floor(c.G * 255 + 0.5), math.floor(c.B * 255 + 0.5) }
+end
+local function dansEllipse(x, y, cx, cy, rx, ry)
+	return ((x - cx) / rx) ^ 2 + ((y - cy) / ry) ^ 2 <= 1
+end
+-- Les cheveux derrière la tête et les épaules (ils descendent plus ou moins bas selon la coiffure)
+local function cheveuxDerriere(coiffure, x, y)
+	if coiffure == "longs" then
+		return dansEllipse(x, y, 64, 62, 36, 40) or (y >= 62 and y <= 136 and x >= 29 and x <= 99)
+	elseif coiffure == "carre" then
+		return dansEllipse(x, y, 64, 66, 36, 38) and y <= 100
+	elseif coiffure == "chignon" then
+		return dansEllipse(x, y, 64, 30, 15, 13)
+	elseif coiffure == "tresse" then
+		return dansEllipse(x, y, 64, 62, 34, 36) and y <= 80
+	elseif coiffure == "boucles" then
+		for k = 0, 10 do
+			local a = math.pi * (0.9 + 1.2 * k / 10)
+			if dansEllipse(x, y, 64 + 33 * math.cos(a), 64 + 36 * math.sin(a), 11, 11) then
+				return true
+			end
+		end
+		return false
+	elseif coiffure == "queue" then
+		return (dansEllipse(x, y, 64, 62, 33, 36) and y <= 76) or dansEllipse(x, y, 97, 80, 9, 24)
+	end
+	return false -- courts : rien derrière
+end
+-- La tresse, ramenée devant, sur l'épaule droite (à gauche du dessin)
+local function tresse(x, y)
+	for k = 0, 5 do
+		if dansEllipse(x, y, 36 - k * 2, 88 + k * 10, 7, 6) then
+			return true
+		end
+	end
+	return false
+end
+-- La ligne des cheveux sur le front : au-dessus, les cheveux (une frange droite pour le carré)
+local function ligneCheveux(coiffure, x)
+	if coiffure == "carre" then
+		return 52
+	end
+	local t = (x - 64) / 28
+	return 43 + 10 * t * t
+end
+-- Un trait de crayon : les points à moins d'un demi-pixel du segment
+local function trait(buf, largeur, hauteur, a, b, couleur, epaisseur)
+	local pas = math.max(1, math.ceil(math.sqrt((b[1] - a[1]) ^ 2 + (b[2] - a[2]) ^ 2) * 2))
+	for t = 0, pas do
+		local x, y = a[1] + (b[1] - a[1]) * t / pas, a[2] + (b[2] - a[2]) * t / pas
+		for dy = -epaisseur, epaisseur do
+			for dx = -epaisseur, epaisseur do
+				local i, j = math.floor(x + dx + 0.5), math.floor(y + dy + 0.5)
+				if i >= 0 and j >= 0 and i < largeur and j < hauteur and dx * dx + dy * dy <= epaisseur * epaisseur + 0.5 then
+					buffer.writeu32(buf, (j * largeur + i) * 4, couleur)
+				end
+			end
+		end
+	end
+end
+-- Une courbe y = f(x) de x0 à x1, en petits traits
+local function courbe(buf, largeur, hauteur, x0, x1, f, couleur)
+	local precedent = { x0, f(x0) }
+	for k = 1, 12 do
+		local x = x0 + (x1 - x0) * k / 12
+		local point = { x, f(x) }
+		trait(buf, largeur, hauteur, precedent, point, couleur, 1)
+		precedent = point
+	end
+end
+
+function Pixels.portrait(cliente, expression)
+	local L, H = Pixels.PORTRAIT_LARGEUR, Pixels.PORTRAIT_HAUTEUR
+	local peau, haut, cheveux = rvb(cliente.tenue.peau), rvb(cliente.tenue.haut), rvb(cliente.tenue.cheveux)
+	local coiffure = cliente.coiffure
+	-- Chaque pixel reçoit une matière (0 : rien, 1 : tenue, 2 : peau, 3 : cheveux), dans l'ordre du dessin : cheveux de
+	-- derrière, épaules, tresse, cou, oreilles, visage, cheveux du front
+	local matiere = buffer.create(L * H)
+	for j = 0, H - 1 do
+		local y = j + 0.5
+		for i = 0, L - 1 do
+			local x = i + 0.5
+			local m = if cheveuxDerriere(coiffure, x, y) then 3 else 0
+			local epaules = y >= 120 and math.abs(x - 64) <= 30 + (y - 120) * 1.3 and math.abs(x - 64) <= 56
+			if epaules then
+				m = if dansEllipse(x, y, 64, 118, 15, 13) then 2 else 1 -- l'encolure
+			end
+			if coiffure == "tresse" and tresse(x, y) then
+				m = 3
+			end
+			if x >= 55 and x <= 73 and y >= 90 and y <= 124 then
+				m = 2 -- le cou
+			end
+			if dansEllipse(x, y, 37, 72, 5, 8) or dansEllipse(x, y, 91, 72, 5, 8) then
+				m = 2 -- les oreilles
+			end
+			if dansEllipse(x, y, 64, 68, 27, 33) then
+				m = if y < ligneCheveux(coiffure, x) then 3 else 2
+			end
+			buffer.writeu8(matiere, j * L + i, m)
+		end
+	end
+	local function matiereEn(i, j)
+		if i < 0 or j < 0 or i >= L or j >= H then
+			return 0
+		end
+		return buffer.readu8(matiere, j * L + i)
+	end
+	local couleurs = { haut, peau, cheveux }
+	local crayon = empaqueter(CRAYON[1], CRAYON[2], CRAYON[3])
+	local buf = buffer.create(L * H * 4)
+	for j = 0, H - 1 do
+		for i = 0, L - 1 do
+			local m = matiereEn(i, j)
+			local valeur = 0
+			if m > 0 then
+				if matiereEn(i - 1, j) ~= m or matiereEn(i + 1, j) ~= m or matiereEn(i, j - 1) ~= m or matiereEn(i, j + 1) ~= m then
+					valeur = crayon -- le contour, au crayon
+				else
+					local c = couleurs[m]
+					valeur = empaqueter(c[1], c[2], c[3])
+				end
+			end
+			buffer.writeu32(buf, (j * L + i) * 4, valeur)
+		end
+	end
+	-- Le visage : un petit nez, les yeux, les sourcils et la bouche selon l'expression, au crayon, ou en clair sur une peau
+	-- où le crayon ne se lirait pas (relecture : un contraste d'au moins 3 contre 1)
+	crayon = if contraste(CRAYON, peau) >= 3 then crayon else empaqueter(TRAIT_CLAIR[1], TRAIT_CLAIR[2], TRAIT_CLAIR[3])
+	trait(buf, L, H, { 64, 73 }, { 62, 80 }, crayon, 0)
+	trait(buf, L, H, { 62, 80 }, { 66, 81 }, crayon, 0)
+	for _, cx in ipairs({ 53, 75 }) do
+		if expression == "contente" then
+			courbe(buf, L, H, cx - 4, cx + 4, function(x)
+				return 71 - 3 * (1 - ((x - cx) / 4) ^ 2)
+			end, crayon) -- des yeux rieurs
+		else
+			for dy = -3, 3 do
+				for dx = -2, 2 do
+					if (dx / 2.5) ^ 2 + (dy / 3.5) ^ 2 <= 1 then
+						buffer.writeu32(buf, ((70 + dy) * L + cx + dx) * 4, crayon)
+					end
+				end
+			end
+		end
+		local interieur = if cx < 64 then cx + 5 else cx - 5
+		local exterieur = if cx < 64 then cx - 5 else cx + 5
+		local hautInterieur = if expression == "decue" then 57 else 61
+		trait(buf, L, H, { exterieur, 61 }, { interieur, hautInterieur }, crayon, 0) -- le sourcil
+	end
+	if expression == "contente" then
+		courbe(buf, L, H, 55, 73, function(x)
+			return 85 + 5 * (1 - ((x - 64) / 9) ^ 2)
+		end, crayon)
+		local joue = empaqueter(JOUE[1], JOUE[2], JOUE[3])
+		for _, cx in ipairs({ 47, 81 }) do
+			for dy = -2, 2 do
+				for dx = -4, 4 do
+					if buffer.readu8(matiere, (80 + dy) * L + cx + dx) == 2 then
+						buffer.writeu32(buf, ((80 + dy) * L + cx + dx) * 4, joue)
+					end
+				end
+			end
+		end
+	elseif expression == "decue" then
+		courbe(buf, L, H, 56, 72, function(x)
+			return 90 - 5 * (1 - ((x - 64) / 8) ^ 2)
+		end, crayon)
+	else
+		trait(buf, L, H, { 58, 87 }, { 70, 87 }, crayon, 0)
+	end
+	return buf, L, H
+end
+
 return Pixels

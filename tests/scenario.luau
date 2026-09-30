@@ -215,6 +215,7 @@ verifier(clienteMesuree.Head.Bulle.Texte.Text == Clientes.get("colette").repliqu
 do -- Sous-projet 5 : fenêtre ouverte, elle parle dans l'encadré de dialogue, à son nom ; sa bulle est pour la rue
 	local dialogue = gui.Atelier:FindFirstChild("Dialogue")
 	verifier(dialogue ~= nil and dialogue.Visible and dialogue.Nom.Text == "Colette" and dialogue.Texte.Text == Clientes.get("colette").repliques.presentation and not clienteMesuree.Head.Bulle.Enabled, "fenêtre ouverte : elle se présente dans l'encadré, à son nom, pas dans sa bulle")
+	verifier(dialogue.Portrait.Visible and dialogue.Portrait:GetAttribute("Cliente") == "colette" and dialogue.Portrait:GetAttribute("Expression") == "neutre", "(sous-projet 7) son portrait dans l'encadré, neutre")
 	cliquer("Fermer")
 	verifier(not dialogue.Visible and clienteMesuree.Head.Bulle.Enabled, "fenêtre fermée : sa bulle, pas d'encadré")
 	cliquer("OuvrirAtelier")
@@ -1157,6 +1158,7 @@ do -- Son avis : une étoile
 	local etoiles = gui.Atelier.Dialogue.Etoiles
 	local OR = requireModule(scriptClient.Dialogue).OR
 	verifier(gui.Atelier.Dialogue.Visible and gui.Atelier.Dialogue.Texte.Text == Clientes.get("colette").repliques.deception and etoiles.Visible and etoiles.Etoile1.TextColor3 == OR and etoiles.Etoile2.TextColor3 ~= OR, "robe refusée : sa déception dans l'encadré, une étoile")
+	verifier(gui.Atelier.Dialogue.Portrait:GetAttribute("Expression") == "decue", "(sous-projet 7) son portrait, déçue")
 	do -- (la fenêtre en panneau commence à 16 px du bord droit de l'écran)
 		local e = fenetre.UIScale.Scale
 		local bordFenetre = workspace.CurrentCamera.ViewportSize.X - 16 - requireModule(scriptClient.UiKit).LARGEUR_PANNEAU * e
@@ -1233,6 +1235,11 @@ verifier(scene:FindFirstChild("Lettre") ~= nil, "une lettre dépasse de la boît
 -- Le carnet d'adresses : les clientes déjà venues, leur amitié, ce que le prochain niveau ouvrira
 cliquer("OuvrirCarnetAdresses")
 verifier(texte("Colette Marchand — amitié niveau 5") ~= nil and fenetre.Contenu.CarnetAdresses:FindFirstChild("Adresse_margot") == nil, "carnet d'adresses : Colette, pas encore Margot")
+do -- (sous-projet 7) son portrait, contente (amitié de niveau 5), à gauche de sa ligne
+	local medaillon = fenetre.Contenu.CarnetAdresses.Liste:FindFirstChild("Portrait_colette")
+	local ligne = fenetre.Contenu.CarnetAdresses.Liste.Adresse_colette
+	verifier(medaillon ~= nil and medaillon.Visible and medaillon:GetAttribute("Expression") == "contente" and ligne.Position.X.Offset >= medaillon.Size.X.Offset, "carnet d'adresses : le portrait de Colette, contente, devant sa ligne")
+end
 do -- Le rang de la couturière, en tête du carnet d'adresses
 	local e = requireModule(scriptClient.Session).courante.etat
 	verifier(fenetre.Contenu.CarnetAdresses.TitreAdresses.Text == "Carnet d'adresses — " .. requireModule(dossier.Progression).texteRang(e.livraisons + e.ventes), "carnet d'adresses : le rang de la couturière (" .. fenetre.Contenu.CarnetAdresses.TitreAdresses.Text .. ")")

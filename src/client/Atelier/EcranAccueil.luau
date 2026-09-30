@@ -15,6 +15,7 @@ local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Histoire = require(Couture:WaitForChild("Histoire"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 local Mercerie = require(script.Parent:WaitForChild("Mercerie"))
+local Portrait = require(script.Parent:WaitForChild("Portrait"))
 
 -- « Amitié de Colette : +3 (niveau 2 !) » ; nil sans cliente
 local function ligneAmitie(amitie)
@@ -324,12 +325,15 @@ return function(ctx)
 			local points = if seuil then ("%d / %d"):format(v.fiche.amitie, seuil) else ("%d, au plus haut"):format(v.fiche.amitie)
 			local prochain = Deblocages.prochainDeCliente(v.cliente.id, v.fiche.amitie)
 			local ouvre = if prochain then ("prochain : %s (niveau %d)"):format(prochain.nom, prochain.niveau) else "tout ce qu'elle ouvre est ouvert"
+			-- (sous-projet 7) son portrait : contente à partir d'une amitié de niveau 3
+			local medaillon = Portrait.creer(UiKit, { Name = "Portrait_" .. v.cliente.id, Position = UDim2.fromOffset(0, 2 + (k - 1) * 34), Size = UDim2.fromOffset(24, 30), ZIndex = 21, Parent = liste })
+			Portrait.maj(medaillon, v.cliente.id, if niveau >= 3 then "contente" else "neutre")
 			UiKit.texte({
 				Name = "Adresse_" .. v.cliente.id,
 				Text = ("%s — amitié niveau %d (%s) · %s"):format(v.cliente.nom, niveau, points, ouvre),
 				TextSize = 16,
-				Position = UDim2.fromOffset(0, 4 + (k - 1) * 34),
-				Size = UDim2.new(1, -14, 0, 30),
+				Position = UDim2.fromOffset(30, 4 + (k - 1) * 34),
+				Size = UDim2.new(1, -44, 0, 30),
 				ZIndex = 21,
 				Parent = liste,
 			})
