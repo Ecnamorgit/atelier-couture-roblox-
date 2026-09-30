@@ -39,6 +39,8 @@ function Chat.caresser(chat, Sons)
 		c.Name = "Coeur" .. k
 		c.BackgroundTransparency = 1
 		c.Text = "♥"
+		c.Font = Enum.Font.GothamBold
+		c.TextTransparency = 1 -- (invisible jusqu'à ce qu'il monte)
 		c.TextColor3 = ROSE
 		c.TextSize = rng:NextInteger(18, 28)
 		c.Size = UDim2.fromOffset(30, 30)

@@ -1,7 +1,9 @@
 -- Sons : les bruits de l'atelier et la musique. Tout vient de la bibliothèque libre de Roblox : sons de
 -- l'interface de Roblox, effets de Pro Sound Effects, musique d'APM Music (sous licence pour les jeux
--- Roblox ; le ronron du chat : « cat purring », de la boutique des créateurs) ; rien n'est repris de Dressmaker. Chaque son est un objet Sound de SoundService (entendu par ce
--- joueur seulement), créé une fois. « actif » coupe tout (bouton « Son » à gauche de l'écran).
+-- Roblox) ; le ronron du chat, lui, est un envoi d'un créateur de la boutique de Roblox (« cat purring », de
+-- Bloonkii) : il pourrait être retiré, le chat se tairait alors. Rien n'est repris de Dressmaker. Chaque son est
+-- un objet Sound de SoundService (entendu par ce joueur seulement), créé une fois. « actif » coupe tout (bouton
+-- « Son » à gauche de l'écran).
 local SoundService = game:GetService("SoundService")
 
 local Sons = {}
@@ -18,7 +20,7 @@ Sons.IDS = {
 	decoration = 17208204604, -- Roblox GUI - Bubble
 	photo = 17208312548, -- Roblox GUI - Camera Shutter
 	reussite = 1839881844, -- APM Music : « Spinning Around (b) », 2 s enjouées
-	ronron = 17867246413, -- boutique des créateurs de Roblox : « cat purring », le chat qu'on caresse
+	ronron = 17867246413, -- boutique des créateurs (Bloonkii) : « cat purring », 3 s, le chat qu'on caresse
 	fete = 9045129322, -- APM Music : « It's All A Big Joke - Tag2 », 3 s de bois et de guitare sautillants (robe terminée)
 	echec = 17208214688, -- Roblox GUI - Call Decline
 	musique = 1837589367, -- APM Music : « Fishing For Compliments », jazz tranquille (en boucle)

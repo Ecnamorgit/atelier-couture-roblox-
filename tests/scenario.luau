@@ -1063,11 +1063,14 @@ local imageAvant = Vignettes.piece(idVignette, tissuVignette, placeVignette, 256
 -- lettre arrive
 serveur:atelier(joueur).etat.prestige = 45
 serveur:atelier(joueur).etat.livraisons = 5
+serveur:atelier(joueur).etat.ventes = 24 -- (vingt-neuf robes en tout : celle-ci, la trentième, fait monter le rang)
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Aiguille & Dentelle" and argent() > avantLivraison, "robe acceptée : payée")
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_reussite", "robe acceptée : une petite fanfare")
 verifier(texte("Colette est ravie") ~= nil, "l'accueil annonce la paie")
+verifier(texte("Nouveau rang : Première main !") ~= nil, "la trentième robe livrée : « Nouveau rang : Première main ! »")
+serveur:atelier(joueur).etat.ventes = 0
 do -- Sous-projet 5 : son avis en étoiles, dans l'annonce
 	local qualite = requireModule(scriptClient.Session).courante.derniere.reponse.bilan.qualite
 	local n = requireModule(dossier.Progression).etoiles(true, qualite)
@@ -1373,6 +1376,7 @@ do -- Le passage au prestige 6 allonge l'annonce (« Nouveau : » sur deux ligne
 end
 e.prestige = 530 -- (tout reste ouvert pour la suite)
 cliquer("FermerEpilogue")
+boutonNomme("FermerSuite").Activated:Fire() -- second appui d'un double clic : il tombe sur le « Fermer » de dessous
 local suite = fenetre.Contenu.Suite
 verifier(suite.Visible and suite.Interlocutrice.Text == "Colette Marchand" and suite.Replique.Text == def.repliques.merci, "sous l'épilogue : la suite de l'histoire de Colette, lisible")
 cliquer("FermerSuite")
@@ -1396,6 +1400,8 @@ do -- Sous-projet 5 : le chat de l'atelier ; une caresse le fait ronronner, remu
 	local repos = queue.CFrame
 	M.services.ProximityPromptService.PromptTriggered:Fire(chat.Corps.Caresser, joueur)
 	verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_ronron" and chat.Tete:FindFirstChild("Coeurs") ~= nil, "caresser le chat : il ronronne, des cœurs montent")
+	local coeur = chat.Tete.Coeurs:FindFirstChild("Coeur1")
+	verifier(coeur ~= nil and coeur.Font == Enum.Font.GothamBold and coeur.TextTransparency == 1, "les cœurs, dans la police du jeu, invisibles avant de monter")
 	M.avancer(0.2)
 	verifier(queue.CFrame ~= repos, "il remue la queue")
 	M.services.ProximityPromptService.PromptTriggered:Fire(chat.Corps.Caresser, joueur)
