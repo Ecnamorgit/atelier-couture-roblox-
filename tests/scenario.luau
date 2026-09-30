@@ -261,11 +261,51 @@ verifier(serveur:atelier(joueur).etat.commande.ajustement == 1 and serveur:ateli
 -- Carnet de croquis
 ---------------------------------------------------------------------------
 verifier(titre() == "1. Carnet de croquis", "mesures prises : le carnet")
--- Déblocages : au départ, ce qui est fermé est grisé, avec ce qu'il faut pour l'ouvrir, et ne se choisit pas
-local jupeAmple = boutonNomme("Variante_jupe_ample")
-verifier(jupeAmple:GetAttribute("Ferme") == true and jupeAmple.TextColor3 == GRIS and boutonNomme("Variante_jupe_droite"):GetAttribute("Ferme") == false, "jupe ample fermée au départ : grisée ; la jupe droite ouverte")
-cliquer("Variante_jupe_ample")
-verifier(fenetre.Message.Visible and fenetre.Message.Text == "Pas encore ouvert : Jupe ample froncée (Amitié de Colette : 2)." and boutonNomme("Variante_jupe_droite").BackgroundColor3 == Color3.fromRGB(214, 76, 128), "toucher une variante fermée : ce qu'il faut pour l'ouvrir, la jupe droite reste choisie")
+-- Sous-projet 5 : le carnet est une page de croquis. Chaque famille se choisit par ◀ ▶ ; le modèle choisi est
+-- dessiné, colorié de ses tissus
+local function choisirModele(id)
+	local v = Catalogue.variante(id)
+	for _ = 1, #Catalogue.variantesDe(v.famille) do
+		if fenetre.Contenu.Page["Modele_" .. v.famille].Text:sub(1, #v.nom) == v.nom then
+			return
+		end
+		cliquer("Suivant_" .. v.famille)
+	end
+	verifier(fenetre.Contenu.Page["Modele_" .. v.famille].Text:sub(1, #v.nom) == v.nom, "modèle trouvé par ▶ : " .. id)
+end
+do
+	local page = fenetre.Contenu:FindFirstChild("Page")
+	local dessin = page and page:FindFirstChild("Dessin")
+	verifier(dessin ~= nil and dessin:IsA("ImageButton") and dessin.ImageContent ~= nil and dessin.ImageContent.statique, "le carnet montre la robe dessinée")
+	verifier(page.Modele_corsage.Text == "Droit" and page.Modele_jupe.Text == "Droite" and #page.Points_jupe:GetChildren() >= #Catalogue.variantesDe("jupe"), "le modèle de chaque famille, et un point par modèle")
+	local ACCENT = Color3.fromRGB(214, 76, 128)
+	local environDroite = page.Environ.Text
+	verifier(string.match(environDroite, "^Environ %d+,%d m de tissu$") ~= nil and page.Points_jupe.Point1.BackgroundColor3 == ACCENT and page.Points_jupe.Point2.BackgroundColor3 ~= ACCENT, "environ X m de tissu, et le point du modèle choisi est marqué (" .. environDroite .. ")")
+	local dessinAvant = dessin.ImageContent
+	cliquer("Suivant_jupe")
+	verifier(page.Modele_jupe.Text == "Trapèze" and dessin.ImageContent ~= dessinAvant and page.Points_jupe.Point2.BackgroundColor3 == ACCENT and page.Points_jupe.Point1.BackgroundColor3 ~= ACCENT, "▶ : le modèle suivant, dessiné, son point marqué")
+	cliquer("Precedent_jupe")
+	verifier(page.Modele_jupe.Text == "Droite", "◀ : retour au modèle précédent")
+	-- Mémoire des images pleine : un mot à la place du dessin (pas l'ancien), le carnet marche quand même
+	local VignettesCarnet = requireModule(scriptClient.Vignettes)
+	local peindre, colAvant = VignettesCarnet.croquis, page.Modele_col.Text
+	VignettesCarnet.croquis = function()
+		return nil
+	end
+	cliquer("Suivant_col")
+	verifier(dessin.SansDessin.Visible and dessin.ImageTransparency == 1 and page.Modele_col.Text ~= colAvant, "mémoire des images pleine : un mot à la place du dessin, les modèles se choisissent quand même")
+	VignettesCarnet.croquis = peindre
+	cliquer("Precedent_col")
+	verifier(not dessin.SansDessin.Visible and dessin.ImageTransparency == 0 and page.Modele_col.Text == colAvant, "le dessin revient")
+	-- Déblocages : au départ, ce qui est fermé est grisé, avec ce qu'il faut pour l'ouvrir ; son patron ne se trace pas
+	choisirModele("jupe_ample")
+	verifier(page.Modele_jupe:GetAttribute("Ferme") == true and page.Modele_jupe.TextColor3 == GRIS and string.find(page.Modele_jupe.Text, "Amitié de Colette : 2", 1, true) ~= nil, "jupe ample fermée au départ : grisée, avec ce qu'il faut pour l'ouvrir")
+	verifier(page.Environ.Text ~= environDroite, "le métrage suit le modèle : une jupe froncée demande plus de tissu (" .. page.Environ.Text .. ")")
+	cliquer("Valider")
+	verifier(fenetre.Message.Visible and fenetre.Message.Text == "Pas encore ouvert : Jupe ample froncée (Amitié de Colette : 2)." and titre() == "1. Carnet de croquis", "tracer le patron d'un modèle fermé : ce qu'il faut pour l'ouvrir")
+	choisirModele("jupe_droite")
+	verifier(page.Modele_jupe:GetAttribute("Ferme") == false, "la jupe droite, ouverte")
+end
 cliquer("Tissu_corsage_droit_devant")
 local carteSoie = boutonNomme("Tissu_soie_rose_fleurs")
 verifier(carteSoie:GetAttribute("Ferme") == true and carteSoie.Raison.Text == "Prestige 5" and boutonNomme("Tissu_coton_blanc"):GetAttribute("Ferme") == false, "soie fermée : la carte grisée dit « Prestige 5 » ; le coton est ouvert")
@@ -296,16 +336,22 @@ for _, c in ipairs(Clientes.LISTE) do
 end
 requireModule(scriptClient.Session).courante:actualiser()
 verifier(requireModule(scriptClient.Session).courante.etat.prestige == 530, "la copie du client suit le serveur")
-verifier(boutonNomme("Variante_jupe_ample"):GetAttribute("Ferme") == false, "prestige et amitiés au plus haut : la jupe ample s'ouvre dans le carnet")
--- Sous-projet 4 : cinq variantes par ligne, dans la colonne de gauche, le nom sur deux lignes au besoin
-local gaucheCarnet, debordent = fenetre.Contenu.Gauche, {}
-for _, id in ipairs({ "corsage_bustier", "manches_trois_quarts", "col_marin", "jupe_crayon" }) do
-	local b = boutonNomme("Variante_" .. id)
-	if b:GetAttribute("Ferme") ~= false or b.Position.X.Offset + b.Size.X.Offset > gaucheCarnet.Size.X.Offset or not b.TextWrapped then
-		table.insert(debordent, id)
+choisirModele("jupe_ample")
+verifier(fenetre.Contenu.Page.Modele_jupe:GetAttribute("Ferme") == false and fenetre.Contenu.Page.Modele_jupe.Text == "Ample froncée", "prestige et amitiés au plus haut : la jupe ample s'ouvre dans le carnet")
+choisirModele("jupe_droite")
+do -- Les 19 modèles se parcourent, et ▶ revient au premier après le dernier
+	local vus, nbVus = {}, 0
+	for _, famille in ipairs(Catalogue.FAMILLES) do
+		for _ = 1, #Catalogue.variantesDe(famille) do
+			local nom = fenetre.Contenu.Page["Modele_" .. famille].Text
+			if not vus[nom] then
+				vus[nom], nbVus = true, nbVus + 1
+			end
+			cliquer("Suivant_" .. famille)
+		end
 	end
+	verifier(nbVus == #Catalogue.Variantes and fenetre.Contenu.Page.Modele_corsage.Text == "Droit" and fenetre.Contenu.Page.Modele_jupe.Text == "Droite", "les " .. #Catalogue.Variantes .. " modèles se parcourent par ▶, qui revient au premier (" .. nbVus .. ")")
 end
-verifier(#debordent == 0, "cinq variantes par ligne, ouvertes, dans la colonne de gauche, le nom sur deux lignes au besoin (en défaut : " .. table.concat(debordent, ", ") .. ")")
 verifierTailles("carnet")
 verifier(texte("Colette (taille M) veut") ~= nil, "le carnet dit qui commande, et sa taille")
 verifier(M.services.Workspace.AtelierLocal:FindFirstChild("Cliente") == clienteMesuree and clienteMesuree.Parent ~= nil, "mesures validées : la même cliente reste là (pas reconstruite)")
@@ -318,10 +364,20 @@ local hauteurDroite = fenetre.Size.Y.Offset + fenetre.Contenu.Size.Y.Offset + fe
 verifier(ligneMetrage.AnchorPoint.Y == 1 and ligneMetrage.Position.Y.Scale == 1 and derniereJauge.Position.Y.Offset + derniereJauge.Size.Y.Offset < hauteurDroite + ligneMetrage.Position.Y.Offset - ligneMetrage.Size.Y.Offset, "la ligne du métrage est en bas de la colonne, sous les jauges, loin des boutons du carnet")
 -- Robe : décolleté en V, manches ballon, col Claudine, jupe trapèze
 for _, v in ipairs({ "corsage_v", "manches_ballon", "col_claudine", "jupe_trapeze" }) do
-	cliquer("Variante_" .. v)
-	verifier(boutonNomme("Variante_" .. v).BackgroundColor3 == Color3.fromRGB(214, 76, 128), v .. " en surbrillance")
+	choisirModele(v)
+	verifier(fenetre.Contenu.Page["Modele_" .. Catalogue.variante(v).famille].Text == Catalogue.variante(v).nom, v .. " choisi")
 end
-local pieces = fenetre.Contenu.Gauche.Pieces
+-- Toucher le dessin : le choix du tissu de la partie touchée (ici la jupe, ses deux pièces)
+do
+	local d = fenetre.Contenu.Page.Dessin
+	local point = Vector2.new(d.AbsolutePosition.X + d.AbsoluteSize.X * 0.5, d.AbsolutePosition.Y + d.AbsoluteSize.Y * 70 / 130)
+	M.avancer(0.5)
+	d.Activated:Fire({ Position = Vector3.new(point.X, point.Y, 0) }, 1)
+	local ouvert = fenetre.Contenu:FindFirstChild("ChoixTissu")
+	verifier(ouvert ~= nil and ouvert:GetAttribute("Famille") == "jupe", "toucher la jupe dessinée : le choix de son tissu")
+	cliquer("FermerChoix")
+end
+local pieces = fenetre.Contenu.Page.Pieces
 local nbBoutonsTissu = 0
 for _, d in ipairs(pieces:GetChildren()) do
 	if d.Name:sub(1, 6) == "Tissu_" then
@@ -355,16 +411,20 @@ cliquer("Filtre_romantique")
 cliquer("Tissu_soie_rose_fleurs")
 verifier(fenetre.Contenu:FindFirstChild("ChoixTissu") == nil, "le choix du tissu se ferme")
 verifier(texte("Soie rose fleurie") ~= nil, "le corsage devant est en soie rose fleurie")
-local pastille = pieces:FindFirstChild("Pastille")
+local pastille
+for _, d in ipairs(pieces:GetDescendants()) do
+	pastille = pastille or (d.Name == "Pastille" and d or nil)
+end
 verifier(pastille:IsA("ImageLabel") and pastille.ImageContent.statique == true, "la pastille de la pièce montre le motif du tissu")
 cliquer("ToutEnUnTissu")
 local nbSoie = 0
-for _, d in ipairs(pieces:GetChildren()) do
+for _, d in ipairs(pieces:GetDescendants()) do
 	if d:IsA("TextLabel") and d.Text == "Soie rose fleurie" then
 		nbSoie += 1
 	end
 end
 verifier(nbSoie == 6, "toute la robe en soie rose fleurie")
+verifier(fenetre.Contenu.Page.Echantillons:FindFirstChild("Echantillon_1") ~= nil and fenetre.Contenu.Page.Echantillons:FindFirstChild("Echantillon_2") == nil, "l'échantillon de la soie est épinglé à la page (un par tissu)")
 local jaugeApres = fenetre.Contenu.Droite.Jauge_romantique.Acquis.Size
 verifier(jaugeApres.X.Scale > jaugeAvant.X.Scale, "la jauge Romantique monte avec la soie")
 -- Métrage et coût en direct : le conseil pour toute la robe (en soie), au prix de la soie
@@ -377,10 +437,12 @@ verifier(ligneMetrage.Text == ("Tissu à acheter : %d dm, %d po (tu as %d po).")
 local etatCarnet = requireModule(scriptClient.Session).courante.etat
 local argentVrai = etatCarnet.argent
 etatCarnet.argent = prixRobe - 10
-cliquer("Variante_jupe_trapeze") -- même croquis : le carnet se redessine
+cliquer("Suivant_jupe") -- aller et retour : même croquis, le carnet se redessine
+cliquer("Precedent_jupe")
 verifier(ligneMetrage.Text == ("Tissu à acheter : %d dm, %d po — il te manque 10 po."):format(dmRobe, prixRobe) and ligneMetrage.TextColor3 == requireModule(scriptClient.UiKit).COULEURS.erreur, "pas assez d'argent : ce qui manque, en rouge")
 etatCarnet.argent = argentVrai
-cliquer("Variante_jupe_trapeze")
+cliquer("Suivant_jupe")
+cliquer("Precedent_jupe")
 -- L'état change sans action du carnet (réparé par le serveur) : la ligne suit
 serveur:atelier(joueur).etat.argent = argentVrai + 1000
 M.avancer(0.5)
@@ -1033,8 +1095,8 @@ verifier(texte("Robe libre (taille S) : à ton idée.") ~= nil, "une autre robe 
 -- Celle-ci en variantes nouvelles (sous-projet 4) : choisies au carnet, cousues, montrées en 3D jusqu'à la photo
 local croquisNouveau = { corsage = "corsage_cache_coeur", manches = "manches_trois_quarts", col = "col_marin", jupe = "jupe_crayon" }
 for _, v in pairs(croquisNouveau) do
-	cliquer("Variante_" .. v)
-	verifier(boutonNomme("Variante_" .. v).BackgroundColor3 == Color3.fromRGB(214, 76, 128), v .. " choisie au carnet")
+	choisirModele(v)
+	verifier(fenetre.Contenu.Page["Modele_" .. Catalogue.variante(v).famille].Text == Catalogue.variante(v).nom, v .. " choisie au carnet")
 end
 cliquer("Tissu_corsage_cache_coeur_devant")
 cliquer("Tissu_toile_jute")
@@ -1222,7 +1284,7 @@ verifier(titre() == "1. Carnet de croquis", "Margot mesurée : le carnet")
 -- Robe en six tissus : la mise en page tient (lignes d'achat, onglets de la découpe)
 ---------------------------------------------------------------------------
 for _, v in ipairs({ "corsage_v", "manches_ballon", "col_claudine", "jupe_trapeze" }) do
-	cliquer("Variante_" .. v)
+	choisirModele(v)
 end
 local SIX = {
 	{ "corsage_v_devant", "coton_blanc" },
