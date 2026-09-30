@@ -82,7 +82,7 @@ U.verifier(#Deblocages.nouveaux(au(50), au(99)) == 0, "rien de neuf sans changer
 U.verifier(Deblocages.resume(nouveaux) == "les satins (4), Dentelle noire", "en une ligne : les satins ensemble (" .. Deblocages.resume(nouveaux) .. ")")
 -- Chaque matière ouverte par le prestige a son nom au pluriel dans l'annonce (« les crêpes (4) », pas « crepe (4) »)
 local resume6 = Deblocages.resume(Deblocages.nouveaux(au(SEUILS_P[6] - 1), au(SEUILS_P[6])))
-U.verifier(resume6 == "Manches courtes, les crêpes (4), les organzas (4), Papillon de soie, Galon argenté", "prestige 6 en une ligne : les manches courtes, les crêpes et les organzas ensemble (" .. resume6 .. ")")
+U.verifier(resume6 == "Manches courtes, Corsage ceinturé, les crêpes (4), les organzas (4), Papillon de soie, Galon argenté", "prestige 6 en une ligne : les manches courtes, le corsage ceinturé (plan 23), les crêpes et les organzas ensemble (" .. resume6 .. ")")
 for matiere in pairs(Deblocages.PRESTIGE_MATIERES) do
 	local tissus = {}
 	for _, t in ipairs(Catalogue.Tissus) do

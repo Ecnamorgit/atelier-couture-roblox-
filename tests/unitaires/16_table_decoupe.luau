@@ -140,6 +140,18 @@ local ok, pourquoi = suivrePropositions({ corsage = "corsage_v", manches = "manc
 	jupe_trapeze_dos = "coton_blanc",
 })
 U.verifier(ok, "corsage, manche pliée et jupe dans 8 dm de lin : " .. tostring(pourquoi))
+-- (plan 23) De larges bandes, les deux étages : en suivant les propositions, la robe tient dans le métrage conseillé
+local okEtages, pourquoiEtages = suivrePropositions({ corsage = "corsage_bretelles", manches = "manches_courtes", col = "col_marin", jupe = "jupe_etages" }, {
+	etage_devant = "lin_bleu",
+	etage_dos = "lin_bleu",
+	jupe_droite_dos = "lin_bleu",
+	corsage_bretelles_devant = "lin_bleu",
+	corsage_bretelles_dos = "lin_bleu",
+	jupe_droite_devant = "soie_rouge",
+	manche_courte = "soie_rouge",
+	col_marin = "coton_blanc",
+})
+U.verifier(okEtages, "deux étages, une jupe et un corsage dans le même lin : dans le métrage conseillé (" .. tostring(pourquoiEtages) .. ")")
 local rng = Random.new(42)
 local echecs, premier = 0, nil
 for _ = 1, 150 do

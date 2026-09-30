@@ -64,7 +64,13 @@ U.verifier(rayon(bas) > rayon(haut) + 0.3, "le volant s'évase depuis son haut")
 ---------------------------------------------------------------------------
 -- Une couche ne traverse pas celle du dessous : le volant sur la jupe droite, la basque sur toutes les jupes
 ---------------------------------------------------------------------------
-local paires = { { "volant_devant", "jupe_droite_devant" }, { "volant_dos", "jupe_droite_dos" } }
+local paires = {
+	{ "volant_devant", "jupe_droite_devant" }, { "volant_dos", "jupe_droite_dos" },
+	-- (plan 23) l'étage sur la jupe droite, la jupe de dessus sur le jupon, la basque sur la jupe de dessus
+	{ "etage_devant", "jupe_droite_devant" }, { "etage_dos", "jupe_droite_dos" },
+	{ "jupe_dessus_devant", "jupon_devant" }, { "jupe_dessus_dos", "jupon_dos" },
+	{ "basque_devant", "jupe_dessus_devant" }, { "basque_dos", "jupe_dessus_dos" },
+}
 for id, def in pairs(Catalogue.Pieces) do
 	if def.enroulement.type == "jupe" and not def.enroulement.couche then
 		table.insert(paires, { "basque_" .. def.enroulement.cote, id })
@@ -86,6 +92,33 @@ for _, paire in ipairs(paires) do
 	end
 end
 U.verifier(recouvertes >= #paires and #ratees == 0, ("chaque couche passe au moins 0,03 dm au-dessus de celle du dessous (%d cas ; en défaut : %s)"):format(recouvertes, table.concat(ratees, " ; ")))
+
+---------------------------------------------------------------------------
+-- (plan 23) La ceinture, une couche de corsage : partout, au moins 0,03 dm au-dessus du corsage droit, à la même
+-- hauteur au-dessus de la taille
+---------------------------------------------------------------------------
+local ceintures = {}
+for _, cote in ipairs({ "devant", "dos" }) do
+	local dessus, dessous = "ceinture_" .. cote, "corsage_droit_" .. cote
+	for nom, mesures in pairs(tailles) do
+		for j = 0, 8 do
+			local h = hauteur(dessus) * j / 8
+			for i = 0, 16 do
+				local pD = point(dessus, i / 16, 1 - h / hauteur(dessus), mesures)
+				local pS = point(dessous, i / 16, 1 - h / hauteur(dessous), mesures)
+				if math.abs(pD.Y - pS.Y) > 1e-9 or rayon(pD) - rayon(pS) < 0.03 then
+					ceintures[dessus .. " (" .. nom .. ")"] = true
+				end
+			end
+		end
+	end
+end
+local listeCeintures = {}
+for n in pairs(ceintures) do
+	table.insert(listeCeintures, n)
+end
+table.sort(listeCeintures)
+U.verifier(#listeCeintures == 0, "la ceinture passe au moins 0,03 dm au-dessus du corsage (en défaut : " .. table.concat(listeCeintures, " ; ") .. ")")
 
 ---------------------------------------------------------------------------
 -- (plan 20) Les manches passent au-dehors des couches, pour les tailles du catalogue et toutes les mesures qu'on peut

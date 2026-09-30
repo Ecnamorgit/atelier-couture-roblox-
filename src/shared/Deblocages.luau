@@ -31,6 +31,9 @@ Deblocages.PRESTIGE_VARIANTES = {
 	jupe_crayon = 7,
 	jupe_volant = 4, -- (sous-projet 7)
 	corsage_basque = 5,
+	jupe_etages = 5,
+	corsage_ceinture = 6,
+	jupe_jupon = 7,
 }
 Deblocages.GENRES = { "variantes", "tissus", "accessoires" }
 

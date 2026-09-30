@@ -118,6 +118,7 @@ local function corsage(e, u, v, hauteur, m)
 	else
 		r = rP + (rE - rP) * lisse((h - LIGNE_POITRINE) / math.max(0.1, hauteur - LIGNE_POITRINE))
 	end
+	r += (e.couche or 0) * Patron.ECART_COUCHE -- (plan 23) une ceinture, par-dessus le corsage
 	local phi = angleCote(e.cote, u)
 	local dehors = Vector3.new(math.cos(phi), 0, math.sin(phi))
 	return Vector3.new(r * EX * math.cos(phi), h, r * EZ * math.sin(phi)), dehors

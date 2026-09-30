@@ -34,6 +34,9 @@ local AVANT = {
 	jupe_ample = { "jupe_ample_devant", "jupe_ample_dos" },
 	jupe_evasee = { "jupe_evasee_devant", "jupe_evasee_dos" },
 	jupe_crayon = { "jupe_crayon_devant", "jupe_crayon_dos" },
+	-- (plan 23) celles du plan 19
+	corsage_basque = { "corsage_droit_devant", "corsage_droit_dos", "basque_devant", "basque_dos" },
+	jupe_volant = { "jupe_droite_devant", "jupe_droite_dos", "volant_devant", "volant_dos" },
 }
 local changees = {}
 for id, pieces in pairs(AVANT) do
@@ -70,6 +73,8 @@ for _, co in ipairs(listes.corsage) do
 						local eS = Catalogue.piece(dessous).enroulement
 						if eD.type == "jupe" and eS.type == "jupe" and eD.cote == eS.cote and (eD.couche or 0) > (eS.couche or 0) then
 							local verifiee = (dessus:match("^basque_") and not eS.couche) or (dessus:match("^volant_") and dessous:match("^jupe_droite_"))
+								or (dessus:match("^etage_") and dessous:match("^jupe_droite_")) or (dessus:match("^jupe_dessus_") and dessous:match("^jupon_"))
+								or (dessus:match("^basque_") and dessous:match("^jupe_dessus_"))
 							if not verifiee then
 								inconnues[dessus .. " sur " .. dessous] = true
 							end

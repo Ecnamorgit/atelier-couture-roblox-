@@ -84,6 +84,26 @@ function TableDecoupe:proposer()
 	local angle = def.biais and 45 or 0
 	local l, h, dx, dy = Metrage.encombrement(id, angle)
 	local coupon = self:coupon()
+	-- (plan 23) Tant que le joueur suit les propositions (la pièce choisie est la suivante de la table, et chaque pièce
+	-- déjà coupée dans ce tissu est à sa place prévue), la place que prévoit le métrage conseillé (Metrage.disposition des
+	-- pièces de ce tissu) : la robe tient dans la longueur conseillée, même avec de larges bandes (des étages). Sinon, et
+	-- sur une bande entamée, la première place libre
+	local ids = {}
+	for _, idPiece in ipairs(self.etat:piecesDuCroquis()) do
+		if self.etat.tissus[idPiece] == self.tissu then
+			table.insert(ids, idPiece)
+		end
+	end
+	local prevues = Metrage.disposition(ids)
+	local suivies = self:piecesRestantes()[1] == id and #coupon.trous == 0 and prevues[id] ~= nil
+	for idCoupee, pose in pairs(coupon.poses) do
+		local prevue = prevues[idCoupee]
+		suivies = suivies and prevue ~= nil and math.abs(prevue.x - pose.x) < 1e-6 and math.abs(prevue.y - pose.y) < 1e-6 and prevue.angle == pose.angle
+	end
+	if suivies and coupon:verifier(id, prevues[id]) then
+		self.placement = prevues[id]
+		return
+	end
 	local limiteX = def.pliee and Catalogue.PLI - Metrage.MARGE / 2 or Catalogue.LARGEUR_ROULEAU
 	local xs, ys, boites = {}, {}, {}
 	local vus = {}

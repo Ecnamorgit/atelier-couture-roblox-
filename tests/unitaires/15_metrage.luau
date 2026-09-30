@@ -23,7 +23,7 @@ for _, c in ipairs(Catalogue.variantesDe("corsage")) do
 		end
 	end
 end
-U.verifier(n == 720, "720 croquis vérifiés (sous-projet 7 : avec le corsage à basque et la jupe à volant)")
+U.verifier(n == 1120, "1 120 croquis vérifiés (sous-projet 7 : avec les corsages à basque et ceinturé, les jupes à volant, à étages et à jupon)")
 
 -- Tissu à acheter : le conseil de chaque tissu, moins le stock ; les pièces sans tissu ne comptent pas
 local PIECES = { "corsage_droit_devant", "corsage_droit_dos", "jupe_droite_devant", "jupe_droite_dos" }
