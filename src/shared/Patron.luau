@@ -137,7 +137,7 @@ local function col(e, u, v, hauteur, m)
 	elseif e.forme == "marin" then
 		-- À plat sur les épaules comme le Claudine, mais il retombe de plus en plus vers le milieu du dos ; il s'élargit
 		-- avec la poitrine (taille M : 8,8 dm) pour rester hors du buste
-		rayon, y = RAYON_COU + v * hauteur * 0.8 * m.poitrine / 8.8, HAUTEUR_COU - v * hauteur * (0.3 + 0.6 * u)
+		rayon, y = RAYON_COU + v * hauteur * 0.8 * m.poitrine / Catalogue.TAILLES.M.poitrine, HAUTEUR_COU - v * hauteur * (0.3 + 0.6 * u)
 	else
 		-- v = 1 (bord bas, cousu) à l'encolure : le haut du patron reste en haut, l'imprimé n'est pas inversé
 		rayon, y = RAYON_COU + 0.05, HAUTEUR_COU + (1 - v) * hauteur

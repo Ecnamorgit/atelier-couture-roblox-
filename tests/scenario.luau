@@ -272,6 +272,21 @@ verifier(carteSoie:GetAttribute("Ferme") == true and carteSoie.Raison.Text == "P
 cliquer("Tissu_soie_rose_fleurs")
 verifier(fenetre.Contenu:FindFirstChild("ChoixTissu") ~= nil and fenetre.Message.Text == "Pas encore ouvert : Soie rose fleurie (Prestige 5).", "toucher un tissu fermé : ce qu'il faut pour l'ouvrir, le choix reste ouvert")
 cliquer("FermerChoix")
+do -- Au départ, les jauges du carnet ne promettent que ce que les tissus ouverts peuvent donner
+	local Notation = requireModule(dossier.Notation)
+	local etatC = requireModule(scriptClient.Session).courante.etat
+	local croquisDepart = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
+	local imposes = Notation.accessoiresImposes(etatC.commande.exigences)
+	local fTous = Notation.fourchette(croquisDepart, {}, imposes)
+	local fOuverts = Notation.fourchette(croquisDepart, {}, imposes, requireModule(dossier.Deblocages).ouverts(etatC).tissus)
+	local ecarts = {}
+	for _, style in ipairs(Catalogue.STYLES) do
+		if math.abs(fenetre.Contenu.Droite["Jauge_" .. style].Plage.Size.X.Scale - fOuverts[style].max / 100) > 1e-9 then
+			table.insert(ecarts, style)
+		end
+	end
+	verifier(fOuverts.elegant.max < fTous.elegant.max and #ecarts == 0, "au départ, les six jauges s'arrêtent à ce que les tissus ouverts peuvent donner (en défaut : " .. table.concat(ecarts, ", ") .. ")")
+end
 -- Pour la suite, une couturière confirmée : tout le catalogue ouvert (prestige et amitiés au plus haut)
 local etatServeur = serveur:atelier(joueur).etat
 etatServeur.prestige = 530
@@ -1173,7 +1188,8 @@ verifier(fenetre.Contenu.Courrier.Text == "Courrier (boîte pleine) :" and invit
 do -- Le passage au prestige 6 allonge l'annonce (« Nouveau : » sur deux lignes) : sa hauteur compte les lignes
 	-- repliées, et l'introduction reste dessous
 	local annonce, intro = fenetre.Contenu.Annonce, fenetre.Contenu.Intro
-	verifier(string.find(annonce.Text, "Nouveau : Manches courtes", 1, true) ~= nil and annonce.Size.Y.Offset == 24 * requireModule(scriptClient.UiKit).lignes(annonce.Text, fenetre.Size.X.Offset + fenetre.Contenu.Size.X.Offset, 18) + 2 and intro.Position.Y.Offset >= annonce.Size.Y.Offset + 10, "annonce longue (prestige 6) : sa hauteur compte les lignes repliées, l'introduction reste dessous")
+	local taille, hauteur = requireModule(scriptClient.UiKit).mesureAnnonce(annonce.Text, fenetre.Size.X.Offset + fenetre.Contenu.Size.X.Offset)
+	verifier(string.find(annonce.Text, "Nouveau : Manches courtes", 1, true) ~= nil and annonce.TextSize == taille and annonce.Size.Y.Offset == hauteur and intro.Position.Y.Offset >= hauteur + 10, "annonce longue (prestige 6) : sa hauteur compte les lignes repliées, l'introduction reste dessous")
 end
 e.prestige = 530 -- (tout reste ouvert pour la suite)
 cliquer("FermerEpilogue")

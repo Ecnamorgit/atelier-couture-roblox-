@@ -93,6 +93,8 @@ for matiere in pairs(Deblocages.PRESTIGE_MATIERES) do
 	U.verifier(string.sub(Deblocages.resume(tissus), 1, 4) == "les ", matiere .. " : son nom au pluriel dans l'annonce (" .. Deblocages.resume(tissus) .. ")")
 end
 U.verifier(Deblocages.message("tissus", "soie_rouge") == "Pas encore ouvert : Soie rouge (Prestige 5).", "le refus dit ce qu'il faut pour ouvrir")
+-- « de » s'élide devant une voyelle ou un h muet (« d'Hélène », « d'Inès », « d'Organza blanc »)
+U.verifier(Deblocages.de("Colette") == "de Colette" and Deblocages.de("Hélène") == "d'Hélène" and Deblocages.de("Inès") == "d'Inès" and Deblocages.de("Apolline") == "d'Apolline" and Deblocages.de("Organza blanc") == "d'Organza blanc" and Deblocages.de("Soie rouge") == "de Soie rouge" and Deblocages.de("Élodie") == "d'Élodie", "« de » s'élide devant une voyelle ou un h muet")
 local prochain = Deblocages.prochainDeCliente("colette", 0)
 U.verifier(prochain ~= nil and prochain.niveau == 2 and prochain.nom == "Jupe ample froncée", "carnet d'adresses : l'amitié de Colette ouvrira ensuite la jupe ample (niveau 2)")
 prochain = Deblocages.prochainDeCliente("colette", 7)

@@ -30,7 +30,7 @@ Histoire.EVENEMENTS = {
 		nom = "Le bal des lanternes",
 		prestige = 1,
 		souvenir = "lanterne_papier",
-		epilogue = "Sous les lanternes de papier, Colette et Margot ont dansé jusqu'à minuit. Tout le quartier parle de ton atelier.",
+		epilogue = "Sous les lanternes de papier, Colette a dansé jusqu'à minuit, et Margot a vendu toute sa limonade. Tout le quartier parle de ton atelier.",
 		commandes = {
 			commande("lanternes_colette", "colette", { min("mignon", 30), teinte("rose") },
 				"Il y a un bal samedi, sous les lanternes du square. J'y vais… et je crois que quelqu'un m'y attend.",
@@ -39,7 +39,7 @@ Histoire.EVENEMENTS = {
 			commande("lanternes_margot", "margot", { min("mignon", 30), avec("fleur_rose") },
 				"Je tiens le stand de limonade au bal des lanternes. Il me faut une tenue qui fasse sourire !",
 				"Toute mignonne, avec une fleur rose. Une vraie, en tissu !",
-				"Tout le monde voulait savoir d'où venait ma robe. J'ai donné ton adresse à tout le monde !"),
+				"Tout le monde voulait savoir d'où venait ma robe. J'ai donné ton adresse à la moitié du quartier !"),
 		},
 	},
 	{
@@ -82,7 +82,7 @@ Histoire.EVENEMENTS = {
 		pluriel = true, -- « ont eu lieu »
 		prestige = 3,
 		souvenir = "ancre_doree",
-		epilogue = "Le bateau de Colette a fini deuxième, sous les applaudissements ; sur la rive, Hélène tenait le chronomètre comme une reine.",
+		epilogue = "Le bateau qui emmenait Colette a fini deuxième, sous les applaudissements ; sur la rive, Hélène tenait le chronomètre comme une reine.",
 		commandes = {
 			commande("regates_colette", "colette", { min("mignon", 20), teinte("bleu") },
 				"Il m'emmène aux régates, sur son bateau ! Je n'ai jamais mis les pieds sur un bateau…",
@@ -158,7 +158,7 @@ Histoire.EVENEMENTS = {
 		nom = "Le grand bal d'hiver",
 		prestige = 6,
 		souvenir = "flocon_argent",
-		epilogue = "Sous les flocons, tout le quartier a dansé dans la grande salle. Victoire a levé son verre : « À notre couturière. » Ton atelier est devenu le cœur du quartier.",
+		epilogue = "Dehors, la neige tombait ; dans la grande salle, tout le quartier a dansé. Victoire a levé son verre : « À notre couturière. » Ton atelier est devenu le cœur du quartier.",
 		commandes = {
 			commande("bal_colette", "colette", { min("romantique", 45) },
 				"Le grand bal d'hiver ! Il va me demander quelque chose ce soir-là, je le sens.",

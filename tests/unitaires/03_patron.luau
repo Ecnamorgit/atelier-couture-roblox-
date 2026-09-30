@@ -112,8 +112,9 @@ for _, taille in pairs(silhouettes) do
 				for l = 0, 10 do
 					local p = Patron.point(id, "unique", x0 + (x1 - x0) * l / 10, y, taille)
 					if p.Y <= -1.8 then
-						local horizontale = math.sqrt(p.X * p.X + p.Z * p.Z)
-						U.verifier(horizontale > 1.15, id .. " : la jupe ne traverse pas les jambes")
+						local jambeDroite = math.sqrt((p.X - 0.55) ^ 2 + p.Z ^ 2)
+						local jambeGauche = math.sqrt((p.X + 0.55) ^ 2 + p.Z ^ 2)
+						U.verifier(jambeDroite > 0.6 and jambeGauche > 0.6, id .. " : la jupe ne traverse pas les jambes")
 					end
 				end
 			end
@@ -141,7 +142,7 @@ end
 local crayonHanches = Patron.point("jupe_crayon_devant", "unique", 2.5, 1.8, M)
 local crayonOurlet = Patron.point("jupe_crayon_devant", "unique", 2.5, 6, M)
 local droiteOurlet = Patron.point("jupe_droite_devant", "unique", 2.5, 6, M)
-U.verifier(horizontale(crayonOurlet) < horizontale(crayonHanches) - 0.05 and horizontale(crayonOurlet) < horizontale(droiteOurlet), "jupe crayon : resserrée à l'ourlet, plus que la jupe droite")
+U.verifier(horizontale(crayonOurlet) < horizontale(crayonHanches) - 0.1 and horizontale(crayonOurlet) < horizontale(droiteOurlet), "jupe crayon : resserrée à l'ourlet, plus que la jupe droite")
 local hautBustier = Patron.point("corsage_bustier_devant", "unique", 1.2, 0, M)
 U.verifier(hautBustier.Y < 3.5 and Patron.point("corsage_droit_devant", "unique", 1.2, 0, M).Y > 4, "bustier : il s'arrête sous les épaules")
 

@@ -35,7 +35,7 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    cache-cœur et le bustier, cinq manches, quatre cols dont le col marin, cinq jupes dont la jupe crayon) ; un
    tissu par pièce (41 tissus en onze matières, filtre par style, dont la toile de jute, gratuite).
    Les jauges de style, l'état des exigences, le métrage et le coût du tissu à acheter se mettent à jour en
-   direct. Ce qui n'est pas encore ouvert est grisé, avec ce qu'il faut pour l'ouvrir (« Prestige 3 »,
+   direct (la plage d'une jauge ne compte que les tissus ouverts). Ce qui n'est pas encore ouvert est grisé, avec ce qu'il faut pour l'ouvrir (« Prestige 3 »,
    « Amitié d'Hélène : 2 ») ; le serveur le refuse aussi.
 3. **Achat** : métrage conseillé par tissu, quantité réglable, coût au mètre ; toucher l'échantillon d'un tissu
    montre le rouleau conseillé, avec les pièces rangées dessus.
@@ -48,8 +48,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
 6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé
    pendant que le tissu tire ; vitesse tortue, normale ou lapin, découd-vite, assistance (note plafonnée à 85 %).
    Une pièce finie n'est rendue qu'avec « Pièce suivante » : la dernière couture se défait encore.
-7. **Décorations** : 30 objets (boutons, nœuds, fleurs, broches, perles, étoile, croix, couronne, violette,
-   boucle, coquillage, et les douze souvenirs du quartier une fois leur événement passé) et 9 garnitures
+7. **Décorations** : 30 objets (boutons, nœuds, papillon, fleurs, broches, perles, étoile, croix, couronne,
+   violette, boucle, coquillage, et les douze souvenirs du quartier une fois leur événement passé) et 9 garnitures
    (dentelles, rubans, galons). On touche la robe pour poser, on tourne (Q/E), agrandit, supprime, annule ; une garniture
    se pose point par point sur une pièce. Glisser sur la scène fait tourner la vue autour du mannequin.
    Le coût s'affiche en direct ; ce qu'on retire est remboursé.
@@ -62,7 +62,7 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    un abandon −1 ; niveaux 0 à 5 (seuils 3, 7, 12, 18, 25). Elle rapporte aussi du prestige à l'atelier
    (paie / 10) ; niveaux 1 à 8. L'accueil annonce ce qui a été gagné, et montre la jauge de prestige
    (« Prestige 3 — 62 / 100 »). Un abandon ne fait jamais perdre un niveau d'amitié.
-   **Déblocages** : au départ, cotons et lins, huit variantes et six accessoires. Le prestige ouvre les laines (2),
+   **Déblocages** : au départ, cotons, lins et toile de jute, huit variantes et six accessoires. Le prestige ouvre les laines (2),
    les satins (3), les velours (4), les soies (5), le crêpe et l'organza (6), le brocart (7) et le tulle (8) ; le
    ruban noir (2), la dentelle noire (3) et deux décorations par niveau du 5 au 8 ; les manches courtes (6) et la
    jupe crayon (7) ; l'amitié de chaque cliente (niveaux 2 et 4) ouvre une variante ou un accessoire de son

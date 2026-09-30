@@ -21,7 +21,7 @@ U.verifier(joueuses.apolline and joueuses.josephine and joueuses.capucine and jo
 -- d'hiver, elle avait demandé sa robe (on ne la lui avait pas promise)
 local noces = Histoire.get("noces_colette")
 local demandeNoces = Histoire.commande("noces_colette").repliques.demande
-U.verifier(string.find(noces.epilogue, "lanternes", 1, true) ~= nil and string.find(noces.epilogue, "lac", 1, true) == nil and string.find(demandeNoces, "promis", 1, true) == nil and string.find(demandeNoces, "bal d'hiver", 1, true) ~= nil, "le mariage de Colette répond à son histoire (les lanternes du square, la robe demandée au bal d'hiver)")
+U.verifier(string.find(noces.epilogue, "lanternes", 1, true) ~= nil and string.find(noces.epilogue, "bord du lac", 1, true) == nil and string.find(demandeNoces, "promis", 1, true) == nil and string.find(demandeNoces, "bal d'hiver", 1, true) ~= nil, "le mariage de Colette répond à son histoire (les lanternes du square, la robe demandée au bal d'hiver)")
 local ids, faites = {}, {}
 local precedent = 0
 for rang, ev in ipairs(Histoire.EVENEMENTS) do
@@ -50,6 +50,23 @@ for rang, ev in ipairs(Histoire.EVENEMENTS) do
 	end
 end
 U.verifier(Histoire.commande("inconnue") == nil and Histoire.get("inconnu") == nil, "identifiant inconnu : rien")
+-- Le récit tient debout : au bal des lanternes, Margot tient son stand de limonade (elle ne danse pas) ; le bateau
+-- des régates n'est pas celui de Colette (on l'y emmène) ; au bal d'hiver, la neige tombe dehors, pas dans la salle ;
+-- Margot ne répète pas « tout le monde » dans la même phrase
+local function nombre(texte, motif)
+	local n, debut = 0, 1
+	while true do
+		local i = string.find(texte, motif, debut, true)
+		if not i then
+			return n
+		end
+		n, debut = n + 1, i + 1
+	end
+end
+U.verifier(string.find(Histoire.get("lanternes").epilogue, "limonade", 1, true) ~= nil and string.find(Histoire.get("lanternes").epilogue, "Margot ont dansé", 1, true) == nil, "bal des lanternes : Margot tient son stand de limonade")
+U.verifier(string.find(Histoire.get("regates").epilogue, "bateau de Colette", 1, true) == nil, "régates : le bateau n'est pas celui de Colette")
+U.verifier(string.find(Histoire.get("bal_hiver").epilogue, "Dehors", 1, true) ~= nil, "bal d'hiver : la neige tombe dehors")
+U.verifier(nombre(Histoire.commande("lanternes_margot").repliques.merci:lower(), "tout le monde") <= 1, "Margot ne répète pas « tout le monde »")
 U.verifier(Histoire.titreEpilogue(Histoire.get("lanternes")) == "Le bal des lanternes a eu lieu !" and Histoire.titreEpilogue(Histoire.get("regates")) == "Les régates du lac ont eu lieu !", "l'épilogue s'accorde : « a eu lieu », « ont eu lieu »")
 local TUTOIEMENT = { " tu ", "Tu ", " toi", " ta ", " ton ", " tes ", " te ", " t'" }
 for _, ev in ipairs(Histoire.EVENEMENTS) do

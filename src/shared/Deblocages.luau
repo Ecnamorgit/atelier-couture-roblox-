@@ -106,11 +106,17 @@ function Deblocages.ouvert(progres, genre, id)
 	return Progression.niveauAmitie(fiche and fiche.amitie or 0) >= c.amitie
 end
 
--- « de Colette », « d'Hélène »
+-- « de Colette », « d'Hélène », « d'Organza blanc » : « de » s'élide devant une voyelle ou un h muet (les noms du
+-- jeu n'ont pas de h aspiré)
+function Deblocages.de(mot)
+	local voyelle = mot:match("^[AEIOUYHaeiouyh]") ~= nil
+	for _, accentuee in ipairs({ "É", "È", "Ê", "À", "Â", "Î", "Ô", "é", "è", "ê", "à", "â", "î", "ô" }) do
+		voyelle = voyelle or mot:sub(1, #accentuee) == accentuee
+	end
+	return (voyelle and "d'" or "de ") .. mot
+end
 local function deCliente(id)
-	local prenom = Clientes.get(id).nom:match("^(%S+)")
-	local voyelle = prenom:match("^[AEIOUH]") ~= nil or prenom:sub(1, 2) == "É"
-	return (voyelle and "d'" or "de ") .. prenom
+	return Deblocages.de(Clientes.get(id).nom:match("^(%S+)"))
 end
 
 -- Ce qu'il faut pour ouvrir : « Prestige 3 » ou « Amitié d'Hélène : 2 » ; nil si ouvert au départ
