@@ -25,6 +25,7 @@ for id, piece in pairs(Catalogue.Pieces) do
 	end
 	local e = piece.enroulement
 	U.verifier(e.type == "corsage" or e.type == "jupe" or e.type == "manche" or e.type == "col", id .. " : enroulement connu")
+	U.verifier(e.type ~= "col" or e.forme == "claudine" or e.forme == "montant" or e.forme == "marin", id .. " : forme de col connue")
 	if e.type == "corsage" or e.type == "jupe" then
 		U.verifier(e.cote == "devant" or e.cote == "dos", id .. " : côté devant ou dos")
 		U.verifier(not piece.pliee, id .. " : devant/dos ne sont pas coupés pliés")
@@ -63,6 +64,20 @@ for _, c in ipairs(Catalogue.variantesDe("corsage")) do
 	end
 end
 U.verifier(minimum == 4 and maximum == 6, ("4 à 6 pièces par robe (obtenu %d à %d)"):format(minimum, maximum))
+-- Sous-projet 4 : dix-neuf variantes (cinq corsages, cinq manches, quatre cols, cinq jupes : 500 croquis)
+local parFamille = {}
+for _, v in ipairs(Catalogue.Variantes) do
+	parFamille[v.famille] = (parFamille[v.famille] or 0) + 1
+end
+U.verifier(#Catalogue.Variantes == 19 and parFamille.corsage == 5 and parFamille.manches == 5 and parFamille.col == 4 and parFamille.jupe == 5, "19 variantes : cinq corsages, cinq manches, quatre cols, cinq jupes")
+for _, id in ipairs({ "corsage_cache_coeur", "corsage_bustier", "manches_courtes", "manches_trois_quarts", "col_marin", "jupe_crayon" }) do
+	local v = Catalogue.variante(id)
+	local points = 0
+	for _, p in pairs(v and v.style or {}) do
+		points += p
+	end
+	U.verifier(v ~= nil and points >= 8, id .. " : variante nouvelle, avec du style")
+end
 
 -- Tissus
 local teintes = {}

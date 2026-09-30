@@ -23,19 +23,20 @@ return function(ctx)
 	local dernierTissu = nil
 	local rafraichir
 
-	-- Colonne de gauche : variantes, puis pièces et tissus
+	-- Colonne de gauche : variantes (jusqu'à cinq par ligne, le nom sur deux lignes au besoin), puis pièces et tissus
 	local gauche = UiKit.creer("Frame", { Name = "Gauche", BackgroundTransparency = 1, Size = UDim2.new(0, 540, 1, -56), Parent = contenu })
 	local boutonsVariantes = {}
 	for i, famille in ipairs(Catalogue.FAMILLES) do
 		local y = (i - 1) * 46
-		UiKit.texte({ Text = NOMS_FAMILLES[famille], Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, y + 8), Size = UDim2.fromOffset(90, 24), Parent = gauche })
+		UiKit.texte({ Text = NOMS_FAMILLES[famille], Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, y + 8), Size = UDim2.fromOffset(78, 24), Parent = gauche })
 		for k, v in ipairs(Catalogue.variantesDe(famille)) do
 			boutonsVariantes[v.id] = UiKit.boutonDoux({
 				Name = "Variante_" .. v.id,
 				Text = v.nom,
 				TextSize = 14,
-				Position = UDim2.fromOffset(90 + (k - 1) * 112, y),
-				Size = UDim2.fromOffset(106, 38),
+				TextWrapped = true,
+				Position = UDim2.fromOffset(80 + (k - 1) * 91, y),
+				Size = UDim2.fromOffset(87, 38),
 				Parent = gauche,
 			}, function()
 				if not Deblocages.ouvert(etat, "variantes", v.id) then

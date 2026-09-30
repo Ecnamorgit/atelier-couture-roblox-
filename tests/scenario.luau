@@ -282,6 +282,15 @@ end
 requireModule(scriptClient.Session).courante:actualiser()
 verifier(requireModule(scriptClient.Session).courante.etat.prestige == 530, "la copie du client suit le serveur")
 verifier(boutonNomme("Variante_jupe_ample"):GetAttribute("Ferme") == false, "prestige et amitiés au plus haut : la jupe ample s'ouvre dans le carnet")
+-- Sous-projet 4 : cinq variantes par ligne, dans la colonne de gauche, le nom sur deux lignes au besoin
+local gaucheCarnet, debordent = fenetre.Contenu.Gauche, {}
+for _, id in ipairs({ "corsage_bustier", "manches_trois_quarts", "col_marin", "jupe_crayon" }) do
+	local b = boutonNomme("Variante_" .. id)
+	if b:GetAttribute("Ferme") ~= false or b.Position.X.Offset + b.Size.X.Offset > gaucheCarnet.Size.X.Offset or not b.TextWrapped then
+		table.insert(debordent, id)
+	end
+end
+verifier(#debordent == 0, "cinq variantes par ligne, ouvertes, dans la colonne de gauche, le nom sur deux lignes au besoin (en défaut : " .. table.concat(debordent, ", ") .. ")")
 verifierTailles("carnet")
 verifier(texte("Colette (taille M) veut") ~= nil, "le carnet dit qui commande, et sa taille")
 verifier(M.services.Workspace.AtelierLocal:FindFirstChild("Cliente") == clienteMesuree and clienteMesuree.Parent ~= nil, "mesures validées : la même cliente reste là (pas reconstruite)")
@@ -969,9 +978,9 @@ cliquer("ToutEnUnTissu")
 cliquer("Valider")
 verifier(titre() == "2. Achat du tissu" and texte("Toile de jute — Gratuit") ~= nil, "à l'achat aussi, la toile de jute est « Gratuit »")
 -- La robe menée jusqu'à la photo sur le serveur (coupée, épinglée, cousue), sans repasser par tous les postes
-local function robeLibreALaPhoto(tissu)
+local function robeLibreALaPhoto(tissu, croquis)
 	local e = serveur:atelier(joueur).etat
-	e.croquis = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
+	e.croquis = croquis or { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
 	e.tissus = {}
 	for _, id in ipairs(e:piecesDuCroquis()) do
 		e.tissus[id] = tissu
@@ -1006,7 +1015,20 @@ local amitieColette = serveur:atelier(joueur).etat.clientes.colette.amitie
 cliquer("RobeLibre")
 cliquer("RobeLibre_S")
 verifier(texte("Robe libre (taille S) : à ton idée.") ~= nil, "une autre robe libre, taille S")
-robeLibreALaPhoto("toile_jute")
+-- Celle-ci en variantes nouvelles (sous-projet 4) : choisies au carnet, cousues, montrées en 3D jusqu'à la photo
+local croquisNouveau = { corsage = "corsage_cache_coeur", manches = "manches_trois_quarts", col = "col_marin", jupe = "jupe_crayon" }
+for _, v in pairs(croquisNouveau) do
+	cliquer("Variante_" .. v)
+	verifier(boutonNomme("Variante_" .. v).BackgroundColor3 == Color3.fromRGB(214, 76, 128), v .. " choisie au carnet")
+end
+robeLibreALaPhoto("toile_jute", croquisNouveau)
+local robeNouvelle, manquantes = scene:FindFirstChild("Robe"), {}
+for _, nom in ipairs({ "Piece_corsage_cache_coeur_devant_unique", "Piece_manche_trois_quarts_gauche", "Piece_col_marin_droite", "Piece_jupe_crayon_dos_unique" }) do
+	if not (robeNouvelle and robeNouvelle:FindFirstChild(nom, true)) then
+		table.insert(manquantes, nom)
+	end
+end
+verifier(#manquantes == 0, "robe en variantes nouvelles montrée en 3D à la photo (manquent : " .. table.concat(manquantes, ", ") .. ")")
 cliquer("Offrir")
 cliquer("Offrir_colette")
 local gainCadeau = serveur:atelier(joueur).etat.clientes.colette.amitie - amitieColette

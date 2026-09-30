@@ -77,38 +77,48 @@ function Commandes.realisable(exigences, ouverts)
 	if ouverts and accessoireImpose and not ouverts.accessoires[accessoireImpose] then
 		return false
 	end
-	-- Styles, teinte et accessoires à vérifier (la qualité, au plus 0,9, est tenue d'office ; seul le dernier
-	-- accessoire demandé est posé sur la robe témoin)
+	-- Les exigences les plus fermées d'abord, une fois pour toutes : les accessoires (seul le dernier demandé est
+	-- posé sur la robe témoin) et la teinte (seuls les tissus ouverts de cette teinte restent candidats) ;
+	-- restent les styles, à vérifier robe par robe (la qualité, au plus 0,9, est tenue d'office)
 	local aVerifier = {}
 	for _, e in ipairs(exigences) do
-		if e.type ~= "qualite" then
+		if e.type == "accessoire" and e.id ~= accessoireImpose then
+			return false
+		elseif e.type == "min" or e.type == "max" then
 			table.insert(aVerifier, e)
 		end
+	end
+	local tissus = {}
+	for _, t in ipairs(Catalogue.Tissus) do
+		local permis = not ouverts or ouverts.tissus[t.id]
+		for _, e in ipairs(exigences) do
+			if e.type == "teinte" and e.teinte ~= t.teinte then
+				permis = false
+			end
+		end
+		if permis then
+			table.insert(tissus, t)
+		end
+	end
+	if #tissus == 0 then
+		return false
 	end
 	local pa = pointsImpose(accessoireImpose)
 	for i, croquis in ipairs(CROQUIS) do
 		if not ouverts or (ouverts.variantes[croquis.corsage] and ouverts.variantes[croquis.manches] and ouverts.variantes[croquis.col] and ouverts.variantes[croquis.jupe]) then
 			local pc = POINTS_CROQUIS[i]
-			for _, t in ipairs(Catalogue.Tissus) do
-				if not ouverts or ouverts.tissus[t.id] then
-					local pt = POINTS_TISSU[t.id]
-					local ok = true
-					for _, e in ipairs(aVerifier) do
-						if e.type == "teinte" then
-							ok = t.teinte == e.teinte
-						elseif e.type == "accessoire" then
-							ok = e.id == accessoireImpose
-						else
-							local v = math.clamp(pc[e.style] + pt[e.style] + pa[e.style], 0, 100)
-							ok = if e.type == "min" then v >= e.valeur - 1e-9 else v <= e.valeur + 1e-9
-						end
-						if not ok then
-							break
-						end
+			for _, t in ipairs(tissus) do
+				local pt = POINTS_TISSU[t.id]
+				local ok = true
+				for _, e in ipairs(aVerifier) do
+					local v = math.clamp(pc[e.style] + pt[e.style] + pa[e.style], 0, 100)
+					ok = if e.type == "min" then v >= e.valeur - 1e-9 else v <= e.valeur + 1e-9
+					if not ok then
+						break
 					end
-					if ok then
-						return true, { croquis = croquis, tissu = t.id, accessoire = accessoireImpose }
-					end
+				end
+				if ok then
+					return true, { croquis = croquis, tissu = t.id, accessoire = accessoireImpose }
 				end
 			end
 		end
