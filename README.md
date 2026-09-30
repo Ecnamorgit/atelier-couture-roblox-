@@ -28,8 +28,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    près). Le serveur refuse un ruban à plus de 1,5 dm de la vraie mesure. Quand elle revient, « Reprendre ses
    mesures » les reprend du carnet. Le mannequin et le patron suivent les mesures prises ; l'ajustement
    (100 % jusqu'à 0,2 dm d'écart par tour, puis moins, 50 % au pire) multiplie la qualité de la robe.
-2. **Carnet de croquis** : corsage, manches, col et jupe au choix ; un tissu par pièce (25 tissus, filtre par style,
-   dont la toile de jute, gratuite).
+2. **Carnet de croquis** : corsage, manches, col et jupe au choix ; un tissu par pièce (41 tissus en dix matières,
+   filtre par style, dont la toile de jute, gratuite).
    Les jauges de style, l'état des exigences, le métrage et le coût du tissu à acheter se mettent à jour en
    direct. Ce qui n'est pas encore ouvert est grisé, avec ce qu'il faut pour l'ouvrir (« Prestige 3 »,
    « Amitié d'Hélène : 2 ») ; le serveur le refuse aussi.
@@ -44,9 +44,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
 6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé
    pendant que le tissu tire ; vitesse tortue, normale ou lapin, découd-vite, assistance (note plafonnée à 85 %).
    Une pièce finie n'est rendue qu'avec « Pièce suivante » : la dernière couture se défait encore.
-7. **Décorations** : 18 objets (boutons, nœuds, fleurs, broche, perle, étoile, croix, et les huit souvenirs du
-   quartier une fois leur événement passé) et 5 garnitures (dentelles,
-   rubans, galon). On touche la robe pour poser, on tourne (Q/E), agrandit, supprime, annule ; une garniture
+7. **Décorations** : 23 objets (boutons, nœuds, fleurs, broches, perles, étoile, croix, couronne, et les huit
+   souvenirs du quartier une fois leur événement passé) et 8 garnitures (dentelles, rubans, galons). On touche la robe pour poser, on tourne (Q/E), agrandit, supprime, annule ; une garniture
    se pose point par point sur une pièce. Glisser sur la scène fait tourner la vue autour du mannequin.
    Le coût s'affiche en direct ; ce qu'on retire est remboursé.
 8. **Photo et livraison** : on règle la photo (décor, lumière, couleur du mannequin) et on la prend
@@ -59,7 +58,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    (paie / 10) ; niveaux 1 à 8. L'accueil annonce ce qui a été gagné, et montre la jauge de prestige
    (« Prestige 3 — 62 / 100 »). Un abandon ne fait jamais perdre un niveau d'amitié.
    **Déblocages** : au départ, cotons et lins, huit variantes et six accessoires. Le prestige ouvre les laines (2),
-   les satins (3), les velours (4) et les soies (5), le ruban noir (2) et la dentelle noire (3) ; l'amitié de
+   les satins (3), les velours (4), les soies (5), le crêpe et l'organza (6), le brocart (7) et le tulle (8) ; le
+   ruban noir (2), la dentelle noire (3) et deux décorations par niveau du 5 au 8 ; l'amitié de
    chaque cliente (niveaux 2 et 4) ouvre une variante ou un accessoire de son style. Rien n'est sauvegardé :
    tout se déduit du prestige et des amitiés. Les commandes ne demandent que ce qui est ouvert, et leurs
    exigences de style montent avec le prestige. L'accueil annonce ce qui vient de s'ouvrir.
@@ -76,7 +76,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    le prochain niveau ouvrira.
    **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8, une robe libre de
    jute vendue sur quatre robes, les lettres invitées) atteint le prestige 2 à la 3e robe au plus tard, le 5 vers
-   la 19e, et tout est ouvert vers la 62e (médianes).
+   la 19e, le 8 vers la 58e, et tout est ouvert vers la 66e (médianes). Le tirage d'une commande ne recalcule
+   jamais les styles robe par robe (les points de chaque croquis et de chaque tissu sont précalculés).
 9. **L'histoire** : huit événements du quartier se suivent (le bal des lanternes, la kermesse, le vernissage, les
    régates, la veillée des contes, le mariage de Margot, le concert du kiosque, le grand bal d'hiver). Le premier
    s'annonce après trois commandes livrées, les suivants à leur prestige. « Commande de l'événement » ouvre une
