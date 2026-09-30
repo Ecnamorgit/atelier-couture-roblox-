@@ -33,7 +33,7 @@ for nomTaille, mesures in pairs(tailles) do
 		if t == "corsage" or t == "jupe" then
 			local b = Polygone.boite(def.contour)
 			for j = 0, 12 do
-				local y = b.minY + (b.maxY - b.minY) * j / 12
+				local y = math.min(b.minY + (b.maxY - b.minY) * j / 12, b.maxY) -- (l'arrondi ne sort pas de la pièce)
 				local x0, x1 = Polygone.etendueLigne(def.contour, y)
 				for i = 0, 8 do
 					local p = Patron.point(id, "unique", x0 + (x1 - x0) * i / 8, y, mesures)

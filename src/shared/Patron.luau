@@ -14,6 +14,9 @@ local LIGNE_POITRINE = 2.4 -- dm au-dessus de la taille
 local HAUTEUR_EPAULE = 4.0
 local HAUTEUR_COU, RAYON_COU = 4.3, 0.62
 local INCLINAISON_BRAS = math.rad(12)
+Patron.ELLIPSE = { x = EX, z = EZ }
+-- Sous-projet 7 : écart de rayon par couche (0,06 dm d'air, plus les fronces du dessous, 0,14 dm au plus)
+Patron.ECART_COUCHE = 0.2
 
 local function lisse(t)
 	t = math.clamp(t, 0, 1)
@@ -89,12 +92,16 @@ local function angleCote(cote, u)
 	return math.pi - u * math.pi
 end
 
+-- Jupe : de la taille vers le bas. Sous-projet 7 : une pièce peut partir plus bas (depart, dm sous la taille), se
+-- poser par-dessus d'autres (couche : chaque couche l'écarte de ECART_COUCHE) et s'évaser depuis son propre haut
+-- (ampleur, dm de rayon par dm de hauteur) : un volant, une basque
 local function jupe(e, u, v, hauteur, m)
-	local yd = v * hauteur
+	local yd = (e.depart or 0) + v * hauteur
 	local rT = m.taille / (2 * math.pi) + 0.12
 	local rH = m.hanches / (2 * math.pi) + 0.15
 	local phi = angleCote(e.cote, u)
 	local r = rT + (rH - rT) * lisse(yd / LIGNE_HANCHES) + e.evasement * math.max(0, yd - LIGNE_HANCHES)
+		+ (e.ampleur or 0) * v * hauteur + (e.couche or 0) * Patron.ECART_COUCHE
 	r += e.fronces * v * 0.5 * (0.5 + 0.5 * math.sin(phi * 16))
 	local dehors = Vector3.new(math.cos(phi), 0, math.sin(phi))
 	return Vector3.new(r * EX * math.cos(phi), -yd, r * EZ * math.sin(phi)), dehors

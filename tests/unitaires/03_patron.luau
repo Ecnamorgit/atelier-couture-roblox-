@@ -107,7 +107,7 @@ for _, taille in pairs(silhouettes) do
 			local def = Catalogue.piece(id)
 			local b = Polygone.boite(def.contour)
 			for k = 0, 20 do
-				local y = b.minY + (b.maxY - b.minY) * k / 20
+				local y = math.min(b.minY + (b.maxY - b.minY) * k / 20, b.maxY) -- (l'arrondi ne sort pas de la pièce)
 				local x0, x1 = Polygone.etendueLigne(def.contour, y)
 				for l = 0, 10 do
 					local p = Patron.point(id, "unique", x0 + (x1 - x0) * l / 10, y, taille)
