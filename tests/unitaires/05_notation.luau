@@ -70,6 +70,11 @@ for _, id in ipairs(pieces) do
 end
 local f2 = Notation.fourchette(croquis, tous)
 U.verifier(U.proche(f2.decontracte.min, 29) and U.proche(f2.decontracte.max, 29), "tous les tissus choisis : fourchette réduite au score")
+-- Avec les tissus ouverts seulement (une couturière débutante) : la fourchette ne promet pas ce que seuls les
+-- tissus fermés donneraient
+local ouvertsDepart = U.module("Deblocages").ouverts({ prestige = 0, clientes = {} }).tissus
+local fOuverts = Notation.fourchette(croquis, {}, nil, ouvertsDepart)
+U.verifier(fOuverts.elegant.max < f.elegant.max and fOuverts.elegant.min >= f.elegant.min, ("tissus ouverts seulement : la fourchette se resserre (élégant au plus %g au lieu de %g)"):format(fOuverts.elegant.max, f.elegant.max))
 
 -- Bilan d'une recette complète
 local recette = {

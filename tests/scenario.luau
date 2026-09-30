@@ -272,6 +272,16 @@ verifier(carteSoie:GetAttribute("Ferme") == true and carteSoie.Raison.Text == "P
 cliquer("Tissu_soie_rose_fleurs")
 verifier(fenetre.Contenu:FindFirstChild("ChoixTissu") ~= nil and fenetre.Message.Text == "Pas encore ouvert : Soie rose fleurie (Prestige 5).", "toucher un tissu fermé : ce qu'il faut pour l'ouvrir, le choix reste ouvert")
 cliquer("FermerChoix")
+do -- Au départ, les jauges du carnet ne promettent que ce que les tissus ouverts peuvent donner
+	local Notation = requireModule(dossier.Notation)
+	local etatC = requireModule(scriptClient.Session).courante.etat
+	local croquisDepart = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
+	local imposes = Notation.accessoiresImposes(etatC.commande.exigences)
+	local fTous = Notation.fourchette(croquisDepart, {}, imposes)
+	local fOuverts = Notation.fourchette(croquisDepart, {}, imposes, requireModule(dossier.Deblocages).ouverts(etatC).tissus)
+	local plage = fenetre.Contenu.Droite.Jauge_elegant.Plage.Size.X.Scale
+	verifier(fOuverts.elegant.max < fTous.elegant.max and math.abs(plage - fOuverts.elegant.max / 100) < 1e-9, "au départ, la jauge « élégant » s'arrête à ce que les tissus ouverts peuvent donner")
+end
 -- Pour la suite, une couturière confirmée : tout le catalogue ouvert (prestige et amitiés au plus haut)
 local etatServeur = serveur:atelier(joueur).etat
 etatServeur.prestige = 530

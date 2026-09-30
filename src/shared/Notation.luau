@@ -153,7 +153,9 @@ end
 -- la commande ({ { id } }, voir accessoiresImposes), qui seront forcément sur la robe.
 -- Retourne { [style] = { acquis, min, max } } : acquis = points des variantes seules,
 -- min / max = fourchette possible selon les tissus encore à choisir.
-function Notation.fourchette(croquis, choix, accessoires)
+-- tissusOuverts (facultatif, { [idTissu] = true }, voir Deblocages.ouverts) : les pièces sans tissu ne comptent que
+-- les tissus ouverts, la fourchette ne promet rien de plus.
+function Notation.fourchette(croquis, choix, accessoires, tissusOuverts)
 	local K = Catalogue.K
 	local pieces = Patron.piecesDuCroquis(croquis)
 	local aireTotale = 0
@@ -165,7 +167,12 @@ function Notation.fourchette(croquis, choix, accessoires)
 	for _, s in ipairs(Catalogue.STYLES) do
 		local mini, maxi = math.huge, -math.huge
 		for _, t in ipairs(Catalogue.Tissus) do
-			mini, maxi = math.min(mini, t.style[s] or 0), math.max(maxi, t.style[s] or 0)
+			if not tissusOuverts or tissusOuverts[t.id] then
+				mini, maxi = math.min(mini, t.style[s] or 0), math.max(maxi, t.style[s] or 0)
+			end
+		end
+		if mini > maxi then
+			mini, maxi = 0, 0
 		end
 		local bas, haut = 0, 0
 		for _, id in ipairs(pieces) do

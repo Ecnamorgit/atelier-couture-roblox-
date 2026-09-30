@@ -216,7 +216,7 @@ return function(ctx)
 		for _, id in ipairs(pieces) do
 			choixPieces[id] = tissus[id]
 		end
-		local fourchette = Notation.fourchette(croquis, choixPieces, Notation.accessoiresImposes(etat.commande.exigences))
+		local fourchette = Notation.fourchette(croquis, choixPieces, Notation.accessoiresImposes(etat.commande.exigences), Deblocages.ouverts(etat).tissus)
 		for style, j in pairs(jauges) do
 			local f = fourchette[style]
 			j.acquis.Size = UDim2.fromScale(f.min / 100, 1)
