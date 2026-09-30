@@ -364,6 +364,14 @@ Catalogue.Accessoires = {
 		{ forme = "cylindre", taille = 0.45, couleur = { 214, 170, 60 }, reflet = 0.4 }),
 	objet("flocon_argent", "Flocon d'argent", 6, { elegant = 4, romantique = 1 },
 		{ forme = "croix", taille = 0.5, couleur = { 220, 225, 235 }, reflet = 0.5 }),
+	objet("marque_page", "Marque-page doré", 4, { chic = 3, elegant = 1 },
+		{ forme = "bloc", taille = 0.5, couleur = { 214, 170, 60 }, reflet = 0.3 }),
+	objet("masque_theatre", "Masque de théâtre", 5, { gothique = 2, chic = 2, elegant = 1 },
+		{ forme = "bloc", taille = 0.55, couleur = { 245, 240, 230 }, reflet = 0.2 }),
+	objet("alliance_or", "Alliance d'or", 6, { romantique = 3, elegant = 2 },
+		{ forme = "cylindre", taille = 0.35, couleur = { 230, 190, 80 }, reflet = 0.5 }),
+	objet("rosette_honneur", "Rosette d'honneur", 7, { elegant = 3, chic = 3 },
+		{ forme = "fleur", taille = 0.6, couleur = { 40, 70, 150 }, reflet = 0.2 }),
 }
 
 ---------------------------------------------------------------------------
