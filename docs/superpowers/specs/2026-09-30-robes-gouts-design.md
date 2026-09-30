@@ -94,3 +94,20 @@ image ni son de *Dressmaker*. La robe portée par l'avatar et les défilés rest
 
 Robe portée par l'avatar et défilés (piste C) : à la décision du commanditaire. Une cinquième ligne au carnet
 (« Taille ») : écartée (question 1).
+
+## 8. Amendements (pendant les plans, décidés en autonomie ; détail dans les plans et leurs registres)
+
+- **Couches** : l'écart entre couches est de 0,2 dm (plan 19). La jupe de dessus du jupon est une demi-couche (0,5) :
+  une basque, en couche 1, passe encore par-dessus. Une robe a au plus 10 pièces et 12 copies (sous les 12 et 16).
+- **Traîne** : elle a son propre devant (la forme de la jupe longue), couché avec elle, pour que les coutures de côté
+  restent jointes ; elle se couche à 8,7 dm sous la taille, au-dessus du plancher des boutiques (qui dépasse le sol du
+  monde de 0,05 stud) ; elle est coupée droit-fil (en biais, elle dépasserait la largeur du rouleau).
+- **Table de découpe** : tant que le joueur suit ses propositions, elle propose les places du métrage conseillé et dans
+  leur ordre (de larges étages tiennent alors dans la longueur conseillée).
+- **Étiquettes** : richesse = (poids − 4) / 4 + décorations / 8 − 1 (chaque terme borné) ; une commande « Travaillée »
+  se réalise avec juste assez d'un même objet ouvert. La Soirée se demande au prestige 4, pas 2 (avant la jupe longue
+  évasée, aucune robe ne l'atteint à 60) ; la garde « 60 quand elle est demandée » compte une amitié de niveau 2 avec
+  les clientes déjà venues ; une occasion, une matière et un trait au plus par commande.
+- **Paie** : étage et jupon pèsent 1 ; volant, basque et ceinture 0,5.
+- **Portraits** : « l'avis avec les étoiles » est l'encadré de dialogue, où l'avis en étoiles paraît ; l'annonce de
+  l'accueil reste une ligne de texte.
