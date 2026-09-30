@@ -111,7 +111,7 @@ end
 -- Accueil
 ---------------------------------------------------------------------------
 verifier(fenetre.Visible, "la fenêtre s'ouvre au démarrage")
-verifier(titre() == "Atelier de couture", "écran d'accueil")
+verifier(titre() == "Aiguille & Dentelle", "écran d'accueil")
 verifier(argent() == 150, "150 pièces d'or au départ")
 local parties = M.magasins.AtelierCouture_v2
 local cleJoueur = "joueur_" .. joueur.UserId
@@ -712,6 +712,7 @@ etatJeu.clientes.ines.amitie = 25
 -- La palette ne montre que des rangées entières (une rangée coupée attirerait les clics à côté)
 local palette = contenuD.Palette
 verifier(palette.Size.Y.Offset % 44 == 0, "palette : rangées entières")
+verifier(palette:FindFirstChild("Deco_lanterne_papier") == nil and palette:FindFirstChild("Deco_fleur_oranger") == nil and palette:FindFirstChild("Deco_perle") ~= nil, "les souvenirs fermés ne sont pas dans la palette (ils ne dévoilent pas l'histoire)")
 -- Point de la robe (monde) à la place (u, v) d'une pièce
 local function point3D(id, copie, u, v)
 	local b = PolygoneModule.boite(Catalogue.piece(id).contour)
@@ -910,7 +911,7 @@ serveur:atelier(joueur).etat.prestige = 45
 serveur:atelier(joueur).etat.livraisons = 5
 cliquer("Livrer")
 cliquer("Livrer")
-verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe acceptée : payée")
+verifier(titre() == "Aiguille & Dentelle" and argent() > avantLivraison, "robe acceptée : payée")
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_reussite", "robe acceptée : une petite fanfare")
 verifier(texte("Colette est ravie") ~= nil, "l'accueil annonce la paie")
 verifier(texte("Amitié de Colette : +") ~= nil and texte("Prestige : +") ~= nil, "l'accueil annonce l'amitié et le prestige gagnés")
@@ -978,7 +979,7 @@ verifier(not fenetre.Contenu.ChoixCliente.Visible, "annuler : le choix se ferme"
 local avantVente = argent()
 cliquer("Vendre")
 cliquer("Vendre")
-verifier(titre() == "Atelier de couture" and argent() == avantVente + prixLibre and texte(("Robe vendue ! +%d pièces d'or"):format(prixLibre)) ~= nil, "robe vendue : le prix dans la caisse, annoncé")
+verifier(titre() == "Aiguille & Dentelle" and argent() == avantVente + prixLibre and texte(("Robe vendue ! +%d pièces d'or"):format(prixLibre)) ~= nil, "robe vendue : le prix dans la caisse, annoncé")
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_achat" and serveur:atelier(joueur).etat.ventes == 1, "vendue : la caisse sonne")
 M.avancer(1)
 verifier(maVitrine:GetAttribute("Recette") == requireModule(dossier.Recette).encoder(serveur:atelier(joueur).etat.robes[1]), "la robe vendue part en vitrine")
@@ -990,7 +991,7 @@ verifier(texte("Robe libre (taille S) : à ton idée.") ~= nil, "une autre robe 
 robeLibreALaPhoto("toile_jute")
 cliquer("Offrir")
 cliquer("Offrir_colette")
-verifier(titre() == "Atelier de couture" and texte("Colette adore la robe que tu lui offres !") ~= nil and texte("Amitié de Colette : +") ~= nil, "offerte à Colette : l'accueil l'annonce")
+verifier(titre() == "Aiguille & Dentelle" and texte("Colette adore la robe que tu lui offres !") ~= nil and texte("Amitié de Colette : +") ~= nil, "offerte à Colette : l'accueil l'annonce")
 verifier(serveur:atelier(joueur).etat.clientes.colette.amitie > amitieColette, "son amitié monte")
 end
 
@@ -1020,17 +1021,67 @@ e.etape = "photo"
 requireModule(scriptClient.Session).courante:actualiser()
 cliquer("Livrer")
 cliquer("Livrer")
-verifier(titre() == "Atelier de couture" and texte("Colette est ravie") ~= nil and texte("Amitié de Colette : +4") ~= nil, "commande venue par lettre : +4 d'amitié (+3 et +1 de la lettre)")
+verifier(titre() == "Aiguille & Dentelle" and texte("Colette est ravie") ~= nil and texte("Amitié de Colette : +4") ~= nil, "commande venue par lettre : +4 d'amitié (+3 et +1 de la lettre)")
+M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
+end
+
+---------------------------------------------------------------------------
+-- L'histoire : l'événement du quartier en cours ; une conversation, puis la commande ; la dernière robe livrée
+-- le fait avoir lieu (épilogue, souvenir), et le suivant s'annonce
+---------------------------------------------------------------------------
+do
+local Histoire = requireModule(dossier.Histoire)
+local e = serveur:atelier(joueur).etat
+verifier(texte("Événement : Le bal des lanternes — robes livrées 0 / 2") ~= nil and boutonNomme("CommandeHistoire") ~= nil, "l'événement en cours s'annonce à l'accueil")
+e.histoire.faites.lanternes_margot = true -- (la robe de Margot, déjà livrée : celle de Colette sera la dernière)
+local def = Histoire.commande("lanternes_colette")
+cliquer("CommandeHistoire")
+local conversation = fenetre.Contenu.Conversation
+verifier(conversation.Visible and conversation.Interlocutrice.Text == "Colette Marchand" and conversation.Replique.Text == def.repliques.demande, "une conversation : Colette dit pourquoi elle a besoin d'une robe")
+cliquer("SuivantConversation")
+verifier(conversation.Replique.Text == def.repliques.detail and boutonNomme("AccepterCommande") ~= nil, "« Suivant » : ce qu'elle voudrait ; puis « Accepter la commande »")
+cliquer("AccepterCommande")
+verifier(titre() == "Les mesures" and e.commande.histoire == "lanternes_colette" and e.commande.exigences[1].style == def.exigences[1].style, "la commande de l'événement commence, avec la tenue du tableau")
+M.avancer(0.5)
+verifier(scene.Cliente.Head.Bulle.Texte.Text == def.repliques.demande, "aux mesures, elle redit sa demande")
+cliquer("ReprendreMesures")
+verifier(scene.Cliente.Head.Bulle.Texte.Text == def.repliques.detail, "au carnet, ce qu'elle voudrait")
+-- La robe menée jusqu'à la photo sur le serveur, sans repasser par tous les postes
+e.commande.exigences = { { type = "qualite", valeur = 0.1 } }
+e.croquis = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
+e.tissus = {}
+for _, id in ipairs(e:piecesDuCroquis()) do
+	e.tissus[id] = "coton_blanc"
+	e.coupees[id] = { x = 0, y = 0, angle = 0 }
+	e.epinglees[id] = true
+	e.coutures[id] = 0.9
+end
+e.etape = "photo"
+requireModule(scriptClient.Session).courante:actualiser()
+local laColette = scene.Cliente
+cliquer("Livrer")
+cliquer("Livrer")
+verifier(titre() == "Aiguille & Dentelle" and fenetre.Contenu.Epilogue.Visible and texte("Le bal des lanternes a eu lieu !") ~= nil and texte("Souvenir : Lanterne de papier") ~= nil, "la dernière robe livrée : le bal a lieu, épilogue et souvenir")
+verifier(texte(Histoire.get("lanternes").epilogue) ~= nil and laColette.Head.Bulle.Texte.Text == def.repliques.merci, "l'épilogue ; Colette raconte la suite")
+verifierTailles("épilogue")
+cliquer("FermerEpilogue")
+local suite = fenetre.Contenu.Suite
+verifier(suite.Visible and suite.Interlocutrice.Text == "Colette Marchand" and suite.Replique.Text == def.repliques.merci, "sous l'épilogue : la suite de l'histoire de Colette, lisible")
+cliquer("FermerSuite")
+verifier(not fenetre.Contenu.Epilogue.Visible and texte("Événement : La kermesse du square — robes livrées 0 / 2") ~= nil, "l'événement suivant s'annonce")
+cliquer("OuvrirCarnetAdresses")
+verifier(texte("Le bal des lanternes — souvenir : Lanterne de papier") ~= nil, "le carnet d'adresses garde les souvenirs du quartier")
+cliquer("FermerCarnetAdresses")
 M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
 end
 -- La touche E sonne la clochette, fenêtre ouverte seulement (comme au comptoir)
 local toucheE = { KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }
 cliquer("Fermer")
 UIS.InputBegan:Fire(toucheE, false)
-verifier(titre() == "Atelier de couture", "fenêtre fermée : E ne sonne pas")
+verifier(titre() == "Aiguille & Dentelle", "fenêtre fermée : E ne sonne pas")
 cliquer("OuvrirAtelier")
 UIS.InputBegan:Fire(toucheE, true)
-verifier(titre() == "Atelier de couture", "E tapé dans le chat : rien")
+verifier(titre() == "Aiguille & Dentelle", "E tapé dans le chat : rien")
 M.avancer(0.5)
 UIS.InputBegan:Fire(toucheE, false)
 verifier(scene:FindFirstChild("Cliente") ~= nil and scene.Cliente ~= laCliente, "E : la cliente suivante entre")

@@ -75,6 +75,9 @@ local ACTIONS = {
 	inviter = function(a, indice)
 		return a.etat:inviter(indice)
 	end,
+	commandeHistoire = function(a)
+		return a.etat:commandeHistoire()
+	end,
 	nouvelleRobeLibre = function(a, taille)
 		return a.etat:nouvelleRobeLibre(taille)
 	end,

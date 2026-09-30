@@ -32,7 +32,15 @@ return function(ctx)
 		Parent = contenu,
 	})
 
-	-- Palette : objets à l'unité, garnitures au dm
+	-- Palette : objets à l'unité, garnitures au dm. Les souvenirs des événements n'y sont qu'une fois ouverts (fermés,
+	-- ils dévoileraient l'histoire)
+	local visibles = {}
+	for _, a in ipairs(Catalogue.Accessoires) do
+		local c = Deblocages.CONDITIONS.accessoires[a.id]
+		if not (c and c.evenement) or Deblocages.ouvert(ctx.session.etat, "accessoires", a.id) then
+			table.insert(visibles, a)
+		end
+	end
 	local palette = UiKit.creer("ScrollingFrame", {
 		Name = "Palette",
 		BackgroundTransparency = 1,
@@ -40,11 +48,11 @@ return function(ctx)
 		ScrollBarThickness = 6,
 		Position = UDim2.fromOffset(0, 70),
 		Size = UDim2.new(1, 0, 0, 3 * LIGNE_PALETTE), -- trois rangées entières, le reste défile
-		CanvasSize = UDim2.fromOffset(0, math.ceil(#Catalogue.Accessoires / 2) * LIGNE_PALETTE),
+		CanvasSize = UDim2.fromOffset(0, math.ceil(#visibles / 2) * LIGNE_PALETTE),
 		Parent = contenu,
 	})
 	local boutons = {}
-	for k, a in ipairs(Catalogue.Accessoires) do
+	for k, a in ipairs(visibles) do
 		local prix = a.genre == "garniture" and ("%d po/dm"):format(a.prix) or ("%d po"):format(a.prix)
 		-- fermé : ce qu'il faut pour l'ouvrir à la place du prix
 		local detail = if Deblocages.ouvert(ctx.session.etat, "accessoires", a.id) then prix else Deblocages.raison("accessoires", a.id)

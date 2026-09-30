@@ -245,6 +245,23 @@ Catalogue.Accessoires = {
 	garniture("ruban_rose", "Ruban rose", 1, { mignon = 3 }, { largeur = 0.2, couleur = { 240, 150, 190 }, transparence = 0 }),
 	garniture("galon_dore", "Galon doré", 3, { elegant = 3, chic = 2 }, { largeur = 0.15, couleur = { 214, 170, 60 }, transparence = 0 }),
 	garniture("ruban_noir", "Ruban noir", 1, { gothique = 2, chic = 2 }, { largeur = 0.2, couleur = { 30, 25, 30 }, transparence = 0 }),
+	-- Les souvenirs des événements du quartier (sous-projet 3) : chacun s'ouvre quand son événement a lieu
+	objet("lanterne_papier", "Lanterne de papier", 4, { romantique = 3, mignon = 2 },
+		{ forme = "boule", taille = 0.5, couleur = { 245, 150, 70 }, reflet = 0 }),
+	objet("cocarde", "Cocarde", 3, { decontracte = 3, mignon = 2 },
+		{ forme = "fleur", taille = 0.55, couleur = { 220, 60, 70 }, reflet = 0 }),
+	objet("broche_palette", "Broche palette", 5, { chic = 3, elegant = 2 },
+		{ forme = "cylindre", taille = 0.5, couleur = { 200, 160, 110 }, reflet = 0.1 }),
+	objet("ancre_doree", "Ancre dorée", 5, { chic = 4 },
+		{ forme = "croix", taille = 0.55, couleur = { 214, 170, 60 }, reflet = 0.4 }),
+	objet("plume_corbeau", "Plume de corbeau", 4, { gothique = 4, elegant = 1 },
+		{ forme = "bloc", taille = 0.6, couleur = { 25, 22, 30 }, reflet = 0.1 }),
+	objet("fleur_oranger", "Fleur d'oranger", 4, { romantique = 4, elegant = 2 },
+		{ forme = "fleur", taille = 0.5, couleur = { 252, 250, 240 }, reflet = 0 }),
+	objet("cle_de_sol", "Clé de sol", 6, { elegant = 3, chic = 2 },
+		{ forme = "cylindre", taille = 0.45, couleur = { 214, 170, 60 }, reflet = 0.4 }),
+	objet("flocon_argent", "Flocon d'argent", 6, { elegant = 4, romantique = 1 },
+		{ forme = "croix", taille = 0.5, couleur = { 220, 225, 235 }, reflet = 0.5 }),
 }
 
 ---------------------------------------------------------------------------

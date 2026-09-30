@@ -14,6 +14,7 @@ local Mannequin = require(Couture:WaitForChild("Mannequin"))
 local ConstructeurRobe = require(Couture:WaitForChild("ConstructeurRobe"))
 local Boutique = require(Couture:WaitForChild("Boutique"))
 local Clientes = require(Couture:WaitForChild("Clientes"))
+local Histoire = require(Couture:WaitForChild("Histoire"))
 local Lighting = game:GetService("Lighting")
 local Cliente = require(script.Parent:WaitForChild("Cliente"))
 
@@ -141,6 +142,13 @@ local function replique(etat)
 	end
 	local visite = etat.clientes[fiche.id]
 	local revient = visite ~= nil and visite.vues > 1
+	-- Une commande d'histoire : sa demande aux mesures (après sa présentation, la première fois), son détail au carnet
+	local histoire = etat.commande.histoire and Histoire.commande(etat.commande.histoire)
+	if histoire and etat.etape == "mesures" and revient then
+		return histoire.repliques.demande
+	elseif histoire and etat.etape == "carnet" then
+		return histoire.repliques.detail
+	end
 	if etat.etape == "mesures" then
 		return if revient then fiche.repliques.arrivee else fiche.repliques.presentation
 	elseif etat.etape == "carnet" then
@@ -181,13 +189,15 @@ function Scene:suivreCliente(etat, derniere)
 		end
 		self.cliente = modele
 		self.clienteId = commande.cliente
+		self.clienteHistoire = commande.histoire
 	end
 	if commande then
 		Cliente.dire(self.cliente, replique(etat))
 	elseif self.cliente then
 		local reussie = derniere and derniere.action == "livrer" and derniere.reponse.reussie
 		local fiche = self.clienteId and Clientes.get(self.clienteId)
-		local merci = fiche and fiche.repliques.merci or Scene.PAROLES.merci
+		local histoire = self.clienteHistoire and Histoire.commande(self.clienteHistoire)
+		local merci = histoire and histoire.repliques.merci or fiche and fiche.repliques.merci or Scene.PAROLES.merci
 		Cliente.dire(self.cliente, reussie and merci or Scene.PAROLES.abandon)
 		local partante = self.cliente
 		self.partante, self.cliente, self.clienteCommande = partante, nil, nil

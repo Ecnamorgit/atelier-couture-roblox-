@@ -10,6 +10,7 @@ local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Recette = require(Couture:WaitForChild("Recette"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Clientes = require(Couture:WaitForChild("Clientes"))
+local Histoire = require(Couture:WaitForChild("Histoire"))
 
 local Sauvegarde = {}
 Sauvegarde.__index = Sauvegarde
@@ -100,6 +101,9 @@ local function commandeLisible(c, etape)
 	if c.parLettre ~= nil and c.parLettre ~= true then
 		return false
 	end
+	if c.histoire ~= nil and not (type(c.histoire) == "string" and Histoire.commande(c.histoire)) then
+		return false
+	end
 	if type(c.exigences) ~= "table" or #c.exigences < 1 or #c.exigences > 3 then
 		return false
 	end
@@ -169,6 +173,7 @@ function Sauvegarde.depuisEtat(etat, debloques)
 		visites = d.visites,
 		ventes = d.ventes,
 		lettres = d.lettres,
+		histoire = d.histoire,
 	}
 	if d.etape ~= "accueil" then
 		partie.enCours = {}
@@ -203,6 +208,13 @@ function Sauvegarde.versEtat(partie)
 	end
 	base.prestige, base.livraisons, base.visites = entier(partie.prestige), entier(partie.livraisons), entier(partie.visites)
 	base.ventes = entier(partie.ventes)
+	-- Histoire : les commandes livrées, connues du tableau seulement
+	local histoire = type(partie.histoire) == "table" and type(partie.histoire.faites) == "table" and partie.histoire.faites or {}
+	for id, fait in pairs(histoire) do
+		if fait == true and type(id) == "string" and Histoire.commande(id) then
+			base.histoire.faites[id] = true
+		end
+	end
 	-- Courrier : trois lettres au plus, d'une cliente connue, avec une commande qu'on peut jouer
 	for _, l in ipairs(type(partie.lettres) == "table" and partie.lettres or {}) do
 		if type(l) == "table" and type(l.cliente) == "string" and type(l.commande) == "table" and l.commande.cliente == l.cliente
