@@ -28,8 +28,9 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    près). Le serveur refuse un ruban à plus de 1,5 dm de la vraie mesure. Quand elle revient, « Reprendre ses
    mesures » les reprend du carnet. Le mannequin et le patron suivent les mesures prises ; l'ajustement
    (100 % jusqu'à 0,2 dm d'écart par tour, puis moins, 50 % au pire) multiplie la qualité de la robe.
-2. **Carnet de croquis** : corsage, manches, col et jupe au choix ; un tissu par pièce (41 tissus en dix matières,
-   filtre par style, dont la toile de jute, gratuite).
+2. **Carnet de croquis** : corsage, manches, col et jupe au choix (19 variantes : cinq corsages dont le
+   cache-cœur et le bustier, cinq manches, quatre cols dont le col marin, cinq jupes dont la jupe crayon) ; un
+   tissu par pièce (41 tissus en onze matières, filtre par style, dont la toile de jute, gratuite).
    Les jauges de style, l'état des exigences, le métrage et le coût du tissu à acheter se mettent à jour en
    direct. Ce qui n'est pas encore ouvert est grisé, avec ce qu'il faut pour l'ouvrir (« Prestige 3 »,
    « Amitié d'Hélène : 2 ») ; le serveur le refuse aussi.
@@ -59,7 +60,9 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    (« Prestige 3 — 62 / 100 »). Un abandon ne fait jamais perdre un niveau d'amitié.
    **Déblocages** : au départ, cotons et lins, huit variantes et six accessoires. Le prestige ouvre les laines (2),
    les satins (3), les velours (4), les soies (5), le crêpe et l'organza (6), le brocart (7) et le tulle (8) ; le
-   ruban noir (2), la dentelle noire (3) et deux décorations par niveau du 5 au 8 ; l'amitié de
+   ruban noir (2), la dentelle noire (3) et deux décorations par niveau du 5 au 8 ; les manches courtes (6), la
+   jupe crayon (7), et en attendant les nouvelles clientes, le cache-cœur, le bustier, les manches trois-quarts et
+   le col marin (8) ; l'amitié de
    chaque cliente (niveaux 2 et 4) ouvre une variante ou un accessoire de son style. Rien n'est sauvegardé :
    tout se déduit du prestige et des amitiés. Les commandes ne demandent que ce qui est ouvert, et leurs
    exigences de style montent avec le prestige. L'accueil annonce ce qui vient de s'ouvrir.
@@ -77,7 +80,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8, une robe libre de
    jute vendue sur quatre robes, les lettres invitées) atteint le prestige 2 à la 3e robe au plus tard, le 5 vers
    la 19e, le 8 vers la 58e, et tout est ouvert vers la 66e (médianes). Le tirage d'une commande ne recalcule
-   jamais les styles robe par robe (les points de chaque croquis et de chaque tissu sont précalculés).
+   jamais les styles robe par robe (les points de chaque croquis et de chaque tissu sont précalculés ; les tissus
+   d'une autre teinte que celle demandée sont écartés d'abord).
 9. **L'histoire** : huit événements du quartier se suivent (le bal des lanternes, la kermesse, le vernissage, les
    régates, la veillée des contes, le mariage de Margot, le concert du kiosque, le grand bal d'hiver). Le premier
    s'annonce après trois commandes livrées, les suivants à leur prestige. « Commande de l'événement » ouvre une

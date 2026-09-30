@@ -51,6 +51,23 @@ for _, c in ipairs(Clientes.LISTE) do
 		U.verifier(Commandes.realisable(commande.exigences, ouverts), c.id .. " : commande " .. n .. " réalisable dès son arrivée")
 	end
 end
+-- Plus tard aussi (prestiges 6, 7 et 8, amitié nulle ou au plus haut) : réalisables avec ce qui est ouvert
+for _, prestige in ipairs({ 260, 380, 530 }) do
+	for _, amitie in ipairs({ 0, 25 }) do
+		for _, c in ipairs(Clientes.LISTE) do
+			local progres = { prestige = prestige, clientes = { [c.id] = { amitie = amitie } } }
+			local ouverts = Deblocages.ouverts(progres)
+			local rng = Random.new(prestige + amitie)
+			local ratees = 0
+			for _ = 1, 10 do
+				if not Commandes.realisable(Commandes.generer(rng, c, progres).exigences, ouverts) then
+					ratees += 1
+				end
+			end
+			U.verifier(ratees == 0, ("%s au prestige %d, amitié %d : commandes réalisables avec ce qui est ouvert"):format(c.id, prestige, amitie))
+		end
+	end
+end
 
 -- Le carnet refuse une variante ou un tissu fermés ; l'amitié les ouvre
 local e = EtatAtelier.nouveau(1000)
