@@ -34,6 +34,7 @@ Deblocages.PRESTIGE_VARIANTES = {
 	jupe_etages = 5,
 	corsage_ceinture = 6,
 	jupe_jupon = 7,
+	jupe_traine = 8,
 }
 Deblocages.GENRES = { "variantes", "tissus", "accessoires" }
 

@@ -101,6 +101,9 @@ local BASQUE = { { x = 0.8, y = 0 }, { x = 5.6, y = 0 }, { x = 6.4, y = 1.2 }, {
 -- (en vitrine, 24 colonnes : avec 16, chaque sommet tomberait sur un creux des fronces, et le volant serait lisse)
 local GRILLE_VOLANT = { robe = { colonnes = 32, lignes = 3 }, vitrine = { colonnes = 24, lignes = 2 } }
 local GRILLE_BASQUE = { robe = { colonnes = 12, lignes = 4 }, vitrine = { colonnes = 6, lignes = 2 } }
+-- Plan 23 : la traîne, la jupe longue évasée côté dos qui continue 2 dm au-delà du sol (coupée droit-fil : en biais,
+-- elle ne tiendrait pas dans la largeur du rouleau)
+local TRAINE = { { x = 3, y = 0 }, { x = 7, y = 0 }, { x = 10, y = 11 }, { x = 0, y = 11 } }
 -- Plan 23 : un étage froncé, posé sur le bas de la jupe droite (serré comme le volant : ses fronces se voient ; 31 × 7
 -- sommets, sous le plafond d'une pièce)
 local GRILLE_ETAGE = { robe = { colonnes = 30, lignes = 6 }, vitrine = { colonnes = 24, lignes = 3 } }
@@ -191,6 +194,12 @@ Catalogue.Pieces = {
 		enroulement = { type = "corsage", cote = "devant", couche = 1 } },
 	ceinture_dos = { nom = "Ceinture dos", contour = rectangle(4.8, 0.6), coutures = { 3 }, poids = 0.5,
 		enroulement = { type = "corsage", cote = "dos", couche = 1 } },
+	-- (le devant de la jupe à traîne est celui de la jupe longue, couché lui aussi passé le sol : ses côtés restent
+	-- cousus à ceux de la traîne jusqu'en bas)
+	traine_devant = { nom = "Jupe à traîne devant", contour = EVASEE, coutures = { 1, 2, 4 }, biais = true,
+		enroulement = { type = "jupe", cote = "devant", evasement = 0.45, fronces = 0, traine = true } },
+	traine_dos = { nom = "Traîne", contour = TRAINE, coutures = { 1, 2, 4 },
+		enroulement = { type = "jupe", cote = "dos", evasement = 0.45, fronces = 0, traine = true } },
 }
 
 ---------------------------------------------------------------------------
@@ -262,6 +271,9 @@ Catalogue.Variantes = {
 	{ id = "corsage_ceinture", famille = "corsage", nom = "Ceinturé",
 		pieces = { "corsage_droit_devant", "corsage_droit_dos", "ceinture_devant", "ceinture_dos" }, style = { chic = 8, elegant = 4 },
 		occasion = { travail = 8, journee = 2 } },
+	{ id = "jupe_traine", famille = "jupe", nom = "À traîne",
+		pieces = { "traine_devant", "traine_dos" }, style = { elegant = 12, romantique = 6, decontracte = -6 },
+		occasion = { soiree = 14 } },
 }
 
 ---------------------------------------------------------------------------
