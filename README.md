@@ -55,8 +55,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    pièces pliées coupées en double au pli, chevauchements refusés, place proposée ; une ligne marque le tissu
    entamé. **Le tissu entamé** : les pièces coupées laissent leurs trous dans une bande en haut du rouleau, qui reste
    dans le stock ; à la robe suivante dans ce tissu, les trous sont grisés et interdits, on coupe dans leurs vides
-   ou dessous (« Proposer une place » les évite). Au-delà de 24 trous, la bande est jetée d'elle-même (elle quitte
-   alors le stock), et on l'annonce. Une robe libre compte en matières ce qu'elle ajoute à la bande.
+   ou dessous (« Proposer une place » les évite). Au-delà de 24 trous ou de 5 m, la bande est jetée d'elle-même
+   (elle quitte alors le stock), et on l'annonce. Une robe libre compte en matières ce qu'elle ajoute à la bande.
 5. **Épinglage** : le mannequin prend les mesures de la cliente ; chaque pièce touchée s'y épingle,
    dans le tissu exactement tel qu'il a été découpé.
 6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé

@@ -85,3 +85,25 @@ for _ = 1, 8 do
 	end
 end
 U.verifier(acceptes == Commande.APPELS_PAR_SECONDE, "rafale : « jeterEntame » est limitée comme les autres actions (" .. acceptes .. " sur 8)")
+
+---------------------------------------------------------------------------
+-- (relecture) Une bande abîmée pendant une découpe en cours : le rouleau en cours prend les trous relus (aucun ici),
+-- la pièce déjà coupée reste ; la robe finie, le stock reste entier
+---------------------------------------------------------------------------
+local CROQUIS_DROIT = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
+local EN_COTON = { corsage_droit_devant = "coton_blanc", corsage_droit_dos = "coton_blanc", jupe_droite_devant = "coton_blanc", jupe_droite_dos = "coton_blanc" }
+local abimee = EtatAtelier.nouveau(1000)
+U.commander(abimee, Random.new(9))
+assert(abimee:validerCroquis(CROQUIS_DROIT, EN_COTON).ok)
+abimee.stock.coton_blanc = 60
+abimee.entames.coton_blanc = { bas = 6, trous = { JUPE, CORSAGE } }
+assert(abimee:commencerDecoupe().ok and abimee:couper("jupe_droite_dos", { x = 2.5, y = 9.1, angle = 0 }).ok)
+local pa = M.transmettre(Sauvegarde.depuisEtat(abimee))
+pa.entames.coton_blanc.trous = trous(30) -- (plus de 24 trous : la bande sera oubliée)
+pa.enCours.coupons.coton_blanc.trous = trous(30)
+local ra = Sauvegarde.versEtat(pa)
+U.verifier(ra.etape == "decoupe" and ra.entames.coton_blanc == nil and #ra.coupons.coton_blanc.trous == 0 and ra.coupons.coton_blanc.poses.jupe_droite_dos ~= nil, "bande abîmée, découpe en cours : le rouleau prend les trous relus (aucun), la pièce coupée reste")
+for id, place in pairs({ corsage_droit_devant = { x = 2.4, y = 2.1, angle = 0 }, corsage_droit_dos = { x = 7.2, y = 2.1, angle = 0 }, jupe_droite_devant = { x = 7.5, y = 9.1, angle = 0 } }) do
+	assert(ra:couper(id, place).ok, id)
+end
+U.verifier(ra.etape == "epinglage" and ra.stock.coton_blanc == 60 and ra.entames.coton_blanc ~= nil and #ra.entames.coton_blanc.trous == 4 and ra.entames.coton_blanc.bas == 13, "la robe finie : une bande de quatre trous, le stock entier (60 dm)")

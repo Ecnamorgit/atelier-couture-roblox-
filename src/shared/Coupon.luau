@@ -140,6 +140,17 @@ function Coupon.lireTrous(trous, longueur)
 	return out
 end
 
+-- Le bas d'une liste de trous (dm entiers, arrondi au-dessus), sans prendre leurs cases
+function Coupon.bas(trous)
+	local bas = 0
+	for _, t in ipairs(trous) do
+		for _, contour in ipairs(Coupon.contoursPoses(t.piece, t)) do
+			bas = math.max(bas, Polygone.boite(contour).maxY)
+		end
+	end
+	return math.max(0, math.ceil(bas - EPSILON))
+end
+
 -- Retourne ok (bool), erreur (string?), et les contours et cases occupées si ok
 function Coupon:verifier(idPiece, placement)
 	if Catalogue.piece(idPiece) and self.poses[idPiece] then

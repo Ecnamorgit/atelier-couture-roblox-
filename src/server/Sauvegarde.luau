@@ -264,7 +264,7 @@ function Sauvegarde.versEtat(partie)
 	for id, e in pairs(type(partie.entames) == "table" and partie.entames or {}) do
 		local trous = type(id) == "string" and base.stock[id] and type(e) == "table" and Coupon.lireTrous(e.trous, Recette.LONGUEUR_MAX)
 		if trous and #trous > 0 and #trous <= EtatAtelier.TROUS_MAX then
-			local bas = Coupon.nouveau(Recette.LONGUEUR_MAX, trous):longueurUtilisee()
+			local bas = Coupon.bas(trous)
 			if bas <= base.stock[id] then
 				base.entames[id] = { bas = bas, trous = trous }
 			end
@@ -283,6 +283,16 @@ function Sauvegarde.versEtat(partie)
 	for _, champ in ipairs(EN_COURS) do
 		if partie.enCours[champ] ~= nil then
 			d[champ] = partie.enCours[champ]
+		end
+	end
+	-- Les rouleaux d'une découpe en cours prennent les trous relus et vérifiés de leur bande (ceux de la partie
+	-- peuvent être abîmés)
+	if type(d.coupons) == "table" then
+		for idTissu, r in pairs(d.coupons) do
+			if type(r) == "table" then
+				local entame = base.entames[idTissu]
+				r.trous = entame and copie(entame.trous) or {}
+			end
 		end
 	end
 	local etat = EtatAtelier.nouveau()

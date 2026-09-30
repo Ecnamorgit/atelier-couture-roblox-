@@ -51,6 +51,7 @@ EtatAtelier.SOUVENIRS_OFFERTS = 5 -- exemplaires du souvenir d'un événement qu
 -- Sous-projet 6 : le tissu coupé laisse une bande entamée en haut du rouleau, avec ses trous ; au-delà de 24 trous,
 -- elle est jetée d'elle-même
 EtatAtelier.TROUS_MAX = 24
+EtatAtelier.ENTAME_MAX = 50 -- dm : au-delà, la bande est jetée aussi (sous elle, un rouleau de 10 m garde de quoi couper toute robe)
 
 local function refus(message)
 	return { ok = false, erreur = message }
@@ -187,10 +188,10 @@ function EtatAtelier:tissusUtilises()
 	return out
 end
 
--- Le tissu du stock qui n'est pas entamé (dm)
+-- Le tissu neuf du rouleau déroulé (10 m au plus), sous la bande entamée (dm)
 function EtatAtelier:stockNeuf(idTissu)
 	local entame = self.entames[idTissu]
-	return math.max(0, (self.stock[idTissu] or 0) - (entame and entame.bas or 0))
+	return math.max(0, math.min(self.stock[idTissu] or 0, Recette.LONGUEUR_MAX) - (entame and entame.bas or 0))
 end
 
 -- Le tissu neuf de chaque tissu en stock ([idTissu] = dm) : ce que le métrage conseillé compte
@@ -203,7 +204,7 @@ function EtatAtelier:stocksNeufs()
 end
 
 -- Le tissu coupé reste sur le rouleau : les pièces de chaque rouleau deviennent des trous de sa bande entamée, qui
--- descend jusqu'au bas de la plus basse. Au-delà de 24 trous, la bande est jetée (retirée du stock). Renvoie les bandes
+-- descend jusqu'au bas de la plus basse. Au-delà de 24 trous ou de 5 m, la bande est jetée (retirée du stock). Renvoie les bandes
 -- jetées ({ { tissu, dm } }), ou nil
 local function entamer(self)
 	local jetees = {}
@@ -219,7 +220,7 @@ local function entamer(self)
 				table.insert(trous, { piece = idPiece, x = p.x, y = p.y, angle = p.angle })
 			end
 			local bas = coupon:longueurUtilisee()
-			if #trous > EtatAtelier.TROUS_MAX then
+			if #trous > EtatAtelier.TROUS_MAX or bas > EtatAtelier.ENTAME_MAX then
 				self.stock[idTissu] = math.max(0, (self.stock[idTissu] or 0) - bas)
 				self.entames[idTissu] = nil
 				table.insert(jetees, { tissu = idTissu, dm = bas })
@@ -986,16 +987,22 @@ function EtatAtelier:charger(d)
 			change = true
 		end
 	end
-	if not pareil(rouleauxExportes(self.coupons), d.coupons) then
+	local exportes = rouleauxExportes(self.coupons)
+	if not pareil(exportes, d.coupons) then
 		change = true
-		self.coupons = {}
+		local rouleaux = {}
 		for idTissu, r in pairs(d.coupons) do
-			local coupon = Coupon.nouveau(r.longueur, r.trous)
-			for idPiece, pose in pairs(r.poses) do
-				coupon:poser(idPiece, pose)
+			if self.coupons[idTissu] and pareil(exportes[idTissu], r) then
+				rouleaux[idTissu] = self.coupons[idTissu] -- (inchangé : pas reconstruit, ses trous coûtent à prendre)
+			else
+				local coupon = Coupon.nouveau(r.longueur, r.trous)
+				for idPiece, pose in pairs(r.poses) do
+					coupon:poser(idPiece, pose)
+				end
+				rouleaux[idTissu] = coupon
 			end
-			self.coupons[idTissu] = coupon
 		end
+		self.coupons = rouleaux
 	end
 	return self, change
 end

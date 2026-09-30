@@ -147,3 +147,55 @@ libre.livraisons = EtatAtelier.LIBRES_APRES
 assert(libre:nouvelleRobeLibre("M").ok and libre:validerCroquis(CROQUIS, tousEn("coton_blanc")).ok and libre:commencerDecoupe().ok)
 toutCouper(libre, places(11))
 U.verifier(libre.commande.matieres == EtatAtelier.prix("coton_blanc", 11) and libre.commande.matieres ~= EtatAtelier.prix("coton_blanc", 22), "robe libre coupée sous une bande de 11 dm : ses matières, les 11 dm qu'elle ajoute")
+
+---------------------------------------------------------------------------
+-- (relecture) Au-delà de 5 m entamés, la bande est jetée d'elle-même : sous elle, un rouleau de 10 m au plus garde
+-- toujours de quoi couper une robe ; le tissu neuf ne compte que le rouleau déroulé
+---------------------------------------------------------------------------
+local Catalogue = U.module("Catalogue")
+local Patron = U.module("Patron")
+local Metrage = U.module("Metrage")
+local Recette = U.module("Recette")
+local longue = EtatAtelier.nouveau(1000)
+longue.stock.coton_blanc = 80
+longue.entames.coton_blanc = { bas = 45, trous = { { piece = "jupe_droite_devant", x = 2.5, y = 42, angle = 0 } } }
+aLaTable(longue)
+r = toutCouper(longue, places(45))
+U.verifier(EtatAtelier.ENTAME_MAX == 50 and r.jetees ~= nil and r.jetees[1].dm == 56 and longue.entames.coton_blanc == nil and longue.stock.coton_blanc == 80 - 56, "une bande de 5,6 m (plus de 5 m) : jetée d'elle-même, et annoncée")
+local grand = EtatAtelier.nouveau()
+grand.stock.coton_blanc = 150
+grand.entames.coton_blanc = { bas = 40, trous = { { piece = "jupe_droite_devant", x = 2.5, y = 37, angle = 0 } } }
+U.verifier(grand:stockNeuf("coton_blanc") == Recette.LONGUEUR_MAX - 40, "150 dm en stock, une bande de 40 dm : le neuf du rouleau déroulé (10 m au plus), 60 dm")
+local pire, lequel = 0, ""
+local listes = {}
+for _, famille in ipairs(Catalogue.FAMILLES) do
+	listes[famille] = Catalogue.variantesDe(famille)
+end
+for _, co in ipairs(listes.corsage) do
+	for _, ma in ipairs(listes.manches) do
+		for _, cl in ipairs(listes.col) do
+			for _, ju in ipairs(listes.jupe) do
+				local conseil = Metrage.conseil(Patron.piecesDuCroquis({ corsage = co.id, manches = ma.id, col = cl.id, jupe = ju.id }))
+				if conseil > pire then
+					pire, lequel = conseil, co.id .. ", " .. ma.id .. ", " .. cl.id .. ", " .. ju.id
+				end
+			end
+		end
+	end
+end
+U.verifier(pire <= Recette.LONGUEUR_MAX - EtatAtelier.ENTAME_MAX, ("toute robe d'un seul tissu tient sous une bande de 5 m : au plus %d dm (%s)"):format(pire, lequel))
+
+---------------------------------------------------------------------------
+-- (relecture) La copie du client ne reconstruit que les rouleaux qui ont changé
+---------------------------------------------------------------------------
+local deux = EtatAtelier.nouveau(1000)
+graine += 1
+U.commander(deux, Random.new(graine))
+local deuxTissus = tousEn("coton_blanc")
+deuxTissus.corsage_droit_devant, deuxTissus.corsage_droit_dos = "soie_rouge", "soie_rouge"
+assert(deux:validerCroquis(CROQUIS, deuxTissus).ok and deux:acheter("coton_blanc", 20).ok and deux:acheter("soie_rouge", 10).ok and deux:commencerDecoupe().ok)
+local copieDeux = EtatAtelier.nouveau():charger(deux:exporter())
+local soieAvant = copieDeux.coupons.soie_rouge
+assert(deux:couper("jupe_droite_devant", places(0).jupe_droite_devant).ok)
+copieDeux:charger(deux:exporter())
+U.verifier(copieDeux.coupons.soie_rouge == soieAvant and copieDeux.coupons.coton_blanc.poses.jupe_droite_devant ~= nil, "une pièce coupée dans le coton : le rouleau de soie, inchangé, n'est pas reconstruit")

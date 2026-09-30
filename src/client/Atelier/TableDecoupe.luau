@@ -85,7 +85,17 @@ function TableDecoupe:proposer()
 	local l, h, dx, dy = Metrage.encombrement(id, angle)
 	local coupon = self:coupon()
 	local limiteX = def.pliee and Catalogue.PLI - Metrage.MARGE / 2 or Catalogue.LARGEUR_ROULEAU
-	local xs, ys = { 0 }, { 0 }
+	local xs, ys, boites = {}, {}, {}
+	local vus = {}
+	local function candidat(liste, v) -- (sans doublons)
+		local cle = (if liste == xs then "x" else "y") .. math.round(v * 1e6)
+		if not vus[cle] then
+			vus[cle] = true
+			table.insert(liste, v)
+		end
+	end
+	candidat(xs, 0)
+	candidat(ys, 0)
 	local bas = 0
 	local prises = {}
 	for idCoupee, pose in pairs(coupon.poses) do
@@ -97,8 +107,9 @@ function TableDecoupe:proposer()
 	for _, p in ipairs(prises) do
 		for _, contour in ipairs(Coupon.contoursPoses(p[1], p[2])) do
 			local b = Polygone.boite(contour)
-			table.insert(xs, b.maxX + Metrage.MARGE)
-			table.insert(ys, b.maxY + Metrage.MARGE)
+			table.insert(boites, b)
+			candidat(xs, b.maxX + Metrage.MARGE)
+			candidat(ys, b.maxY + Metrage.MARGE)
 			bas = math.max(bas, b.maxY + Metrage.MARGE)
 		end
 	end
@@ -107,9 +118,25 @@ function TableDecoupe:proposer()
 	if def.pliee then
 		table.insert(xs, 1, limiteX - l) -- une pièce pliée se pose d'abord contre le pli
 	end
+	-- Une place dont la boîte (ou celle de son symétrique, pour une pièce pliée) touche celle d'une pièce ou d'un trou
+	-- est écartée d'emblée ; les autres sont vérifiées pour de bon (avec 24 trous, des centaines de vérifications en moins)
+	local function libre(x, y)
+		local largeurs = { { x, x + l } }
+		if def.pliee then
+			table.insert(largeurs, { 2 * Catalogue.PLI - (x + l), 2 * Catalogue.PLI - x })
+		end
+		for _, c in ipairs(largeurs) do
+			for _, b in ipairs(boites) do
+				if c[1] < b.maxX - 1e-9 and b.minX < c[2] - 1e-9 and y < b.maxY - 1e-9 and b.minY < y + h - 1e-9 then
+					return false
+				end
+			end
+		end
+		return true
+	end
 	for _, y in ipairs(ys) do
 		for _, x in ipairs(xs) do
-			if x + l <= limiteX + 1e-9 then
+			if x + l <= limiteX + 1e-9 and libre(x, y) then
 				local placement = { x = x + dx, y = y + dy, angle = angle }
 				if coupon:verifier(id, placement) then
 					self.placement = placement
