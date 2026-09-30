@@ -923,9 +923,10 @@ local contenuD = fenetre.Contenu
 local decorations = scene.Decorations
 local ACCENT = Color3.fromRGB(214, 76, 128)
 -- La cliente veut une croix d'argent : sans elle, la robe sera refusée (posé sur le serveur, qui juge
--- la robe, et sur la copie du client, qui affiche la commande)
+-- la robe, et sur la copie du client, qui affiche la commande). (Relecture du plan 22 : et une robe pour la journée, 30
+-- au moins ; la robe en soie rose fleurie en a 32)
 local function exigencesTest()
-	return { { type = "accessoire", id = "croix_argent" }, { type = "min", style = "romantique", valeur = 1 } }
+	return { { type = "accessoire", id = "croix_argent" }, { type = "min", style = "romantique", valeur = 1 }, { type = "occasion", occasion = "journee", valeur = 30 } }
 end
 serveur:atelier(joueur).etat.commande.exigences = exigencesTest()
 etatJeu.commande.exigences = exigencesTest()
@@ -1047,6 +1048,7 @@ cliquer("Presenter")
 verifier(titre() == "7. Photo et livraison" and argent() == avantDeco and serveur:atelier(joueur).etat.mercerie.noeud_satin == 1 and serveur:atelier(joueur).etat.mercerie.ruban_rose == 150 - cmRuban, "présenter : décorations prises à la mercerie (un nœud, le ruban), pas d'argent")
 verifier(camera.CFrame == origineBoutique * ScenePoste.CAMERA, "la cliente voit la robe de face")
 verifier(texte("Au moins 1 en Romantique (actuel :") ~= nil, "le score actuel est affiché à côté d'une exigence de style")
+verifier(texte("Pour la journée : au moins 30 (actuel : 32)") ~= nil, "une exigence d'occasion, avec le score actuel de la robe")
 verifier(#decorations:GetChildren() == 2, "la robe est présentée avec ses décorations")
 verifierTailles("présentation")
 -- La cliente en personne regarde la robe
@@ -1191,6 +1193,7 @@ serveur:atelier(joueur).etat.ventes = 24 -- (vingt-neuf robes en tout : celle-ci
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Aiguille & Dentelle" and argent() > avantLivraison, "robe acceptée : payée")
+verifier(requireModule(scriptClient.Session).courante.derniere.reponse.bilan.occasions.journee >= 30, "la cliente a jugé l'occasion (robe pour la journée)")
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_reussite", "robe acceptée : une petite fanfare")
 verifier(texte("Colette est ravie") ~= nil, "l'accueil annonce la paie")
 verifier(texte("Nouveau rang : Première main !") ~= nil, "la trentième robe livrée : « Nouveau rang : Première main ! »")

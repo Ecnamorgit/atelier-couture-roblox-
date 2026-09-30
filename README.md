@@ -13,7 +13,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 7 en cours, plans 19 à 22 : des robes à couches, volant et basque ; seize étiquettes)
+## État actuel (sous-projet 7 en cours, plans 19 à 23 : des robes plus riches, à couches ; seize étiquettes)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -39,11 +39,14 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
 2. **Carnet de croquis** : une page de carnet (papier, notes de tailleur, crayon). Au centre, la robe dessinée
    au trait, de face, sur un mannequin esquissé : elle change avec chaque modèle et se colorie du motif de chaque
    tissu choisi ; toucher une partie du dessin ouvre le choix de son tissu. Dessous, une ligne par famille
-   (corsage, col, manches, jupe) : ◀ le nom du modèle ▶ et un point par modèle (21 variantes : six corsages dont
-   le cache-cœur, le bustier et le corsage à basque, cinq manches, quatre cols dont le col marin, six jupes dont la
-   jupe crayon et la jupe à volant). **Des couches** : la basque s'évase sous la taille, par-dessus la jupe ; le
-   volant, froncé, part à 5 dm sous la taille et dépasse l'ourlet ; chacun a ses pièces (poids 0,5 dans la paie),
-   son tissu et sa partie du dessin (la toucher choisit le tissu de ses pièces). La liste des pièces défile.
+   (corsage, col, manches, jupe) : ◀ le nom du modèle ▶ et un point par modèle (25 variantes : sept corsages dont
+   le cache-cœur, le bustier, le corsage à basque et le corsage ceinturé, cinq manches, quatre cols dont le col
+   marin, neuf jupes dont la jupe crayon et les jupes à volant, à étages, à jupon et à traîne). **Des couches** : la
+   basque s'évase sous la taille, par-dessus la jupe ; le volant, froncé, part à 5 dm sous la taille et dépasse
+   l'ourlet ; l'étage, une large bande froncée, couvre le bas de la jupe droite ; le jupon dépasse sous la jupe de
+   dessus ; la ceinture se pose à la taille, par-dessus le corsage ; la traîne continue la jupe longue à plat sur
+   le sol, vers l'arrière. Chacun a ses pièces (volant, basque et ceinture : poids 0,5 dans la paie), son tissu et
+   sa partie du dessin (la toucher choisit le tissu de ses pièces). La liste des pièces défile.
    À côté du dessin, un tissu par pièce (41 tissus en onze matières, filtre par style ou par occasion, dont la
    toile de jute, gratuite ; chaque carte montre les quatre étiquettes les plus fortes du tissu) ; les échantillons
    des tissus choisis sont épinglés en haut de la page ; « Environ X m de tissu » ; « Tracer le patron ». La fiche
@@ -57,7 +60,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    compte que le tissu neuf (« Neuf : 9 dm (11 entamés) »).
 4. **Table de découpe** : les pièces du patron se glissent (souris ou doigt) et se tournent (boutons, R, molette
    sur la pièce) sur le rouleau, qu'on déroule en le faisant défiler (ou avec A et D). Droit-fil aimanté,
-   pièces pliées coupées en double au pli, chevauchements refusés, place proposée ; une ligne marque le tissu
+   pièces pliées coupées en double au pli, chevauchements refusés, place proposée (tant qu'on suit les propositions,
+   celle que prévoit le métrage conseillé : la robe y tient, même avec de larges étages) ; une ligne marque le tissu
    entamé. **Le tissu entamé** : les pièces coupées laissent leurs trous dans une bande en haut du rouleau, qui reste
    dans le stock ; à la robe suivante dans ce tissu, les trous sont grisés et interdits, on coupe dans leurs vides
    ou dessous (« Proposer une place » les évite). Sous « Couper », le compteur du rouleau : « 1,10 m entamés /

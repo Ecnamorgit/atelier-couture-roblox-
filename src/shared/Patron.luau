@@ -17,6 +17,9 @@ local INCLINAISON_BRAS = math.rad(12)
 Patron.ELLIPSE = { x = EX, z = EZ }
 -- Sous-projet 7 : écart de rayon par couche (0,06 dm d'air, plus les fronces du dessous, 0,14 dm au plus)
 Patron.ECART_COUCHE = 0.2
+-- Plan 23 : une traîne se couche à 8,7 dm sous la taille : le mannequin a sa taille à 9 dm du sol du monde, et le
+-- plancher des boutiques dépasse de 0,05 stud (8,83 dm sous la taille) ; en vitrine, le socle est à 9 dm (relecture)
+Patron.SOL = 8.7
 
 local function lisse(t)
 	t = math.clamp(t, 0, 1)
@@ -97,6 +100,12 @@ end
 -- (ampleur, dm de rayon par dm de hauteur) : un volant, une basque
 local function jupe(e, u, v, hauteur, m)
 	local yd = (e.depart or 0) + v * hauteur
+	-- (plan 23) une traîne : passé le sol, la pièce se couche à plat vers l'arrière, d'autant plus loin qu'on est au
+	-- milieu du dos (ses côtés restent à l'ourlet, cousus au devant, couché au même endroit)
+	local aPlat = 0
+	if e.traine and yd > Patron.SOL then
+		aPlat, yd = yd - Patron.SOL, Patron.SOL
+	end
 	local rT = m.taille / (2 * math.pi) + 0.12
 	local rH = m.hanches / (2 * math.pi) + 0.15
 	local phi = angleCote(e.cote, u)
@@ -104,6 +113,12 @@ local function jupe(e, u, v, hauteur, m)
 		+ (e.ampleur or 0) * v * hauteur + (e.couche or 0) * Patron.ECART_COUCHE
 	r += e.fronces * v * 0.5 * (0.5 + 0.5 * math.sin(phi * 16))
 	local dehors = Vector3.new(math.cos(phi), 0, math.sin(phi))
+	if aPlat > 0 then
+		local etendue = math.max(0, math.sin(phi))
+		r += aPlat * etendue
+		-- (relecture) couchée, la traîne regarde le ciel ; le devant, qui ne s'étend pas, garde son ourlet tourné dehors
+		return Vector3.new(r * EX * math.cos(phi), -yd, r * EZ * math.sin(phi)), if etendue > 0 then Vector3.new(0, 1, 0) else dehors
+	end
 	return Vector3.new(r * EX * math.cos(phi), -yd, r * EZ * math.sin(phi)), dehors
 end
 
@@ -118,6 +133,7 @@ local function corsage(e, u, v, hauteur, m)
 	else
 		r = rP + (rE - rP) * lisse((h - LIGNE_POITRINE) / math.max(0.1, hauteur - LIGNE_POITRINE))
 	end
+	r += (e.couche or 0) * Patron.ECART_COUCHE -- (plan 23) une ceinture, par-dessus le corsage
 	local phi = angleCote(e.cote, u)
 	local dehors = Vector3.new(math.cos(phi), 0, math.sin(phi))
 	return Vector3.new(r * EX * math.cos(phi), h, r * EZ * math.sin(phi)), dehors

@@ -83,6 +83,34 @@ local FORMES = {
 			{ { x = 60, y = 77 }, { x = 63, y = 85 } },
 		},
 	},
+	-- Plan 23 : l'étage froncé sur le bas de la jupe droite ; le jupon qui dépasse sous la jupe de dessus (dessiné
+	-- dessous) ; la ceinture à la taille, par-dessus le corsage
+	jupe_etages = {
+		parties = {
+			P({ 39, 42, 61, 42, 64, 82, 36, 82 }),
+			avecPieces({ "etage_devant", "etage_dos" }, P({ 37, 62, 63, 62, 70, 86, 30, 86 })),
+		},
+		details = { -- les fronces de l'étage
+			{ { x = 42, y = 64 }, { x = 37, y = 85 } },
+			{ { x = 50, y = 64 }, { x = 50, y = 85 } },
+			{ { x = 58, y = 64 }, { x = 63, y = 85 } },
+		},
+	},
+	jupe_jupon = {
+		parties = {
+			avecPieces({ "jupon_devant", "jupon_dos" }, P({ 30, 76, 70, 76, 73, 87, 27, 87 })),
+			P({ 39, 42, 61, 42, 71, 82, 29, 82 }),
+		},
+	},
+	-- La jupe longue, qui s'élargit au sol : la traîne dépasse derrière l'ourlet. C'est le dos de la jupe : une seule
+	-- partie, qui prend le tissu de ses deux pièces (relecture)
+	jupe_traine = { parties = { P({ 39, 42, 61, 42, 66, 60, 81, 118, 88, 128, 12, 128, 19, 118, 34, 60 }) } },
+	corsage_ceinture = {
+		parties = {
+			P({ 34, 17, 41, 17, 42, 22, 58, 22, 59, 17, 66, 17, 67, 24, 65, 32, 61, 42, 39, 42, 35, 32, 33, 24 }),
+			avecPieces({ "ceinture_devant", "ceinture_dos" }, P({ 38, 38, 62, 38, 61, 42, 39, 42 })),
+		},
+	},
 }
 Croquis.FORMES = FORMES
 

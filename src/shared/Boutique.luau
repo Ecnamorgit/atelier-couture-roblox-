@@ -10,6 +10,7 @@ Boutique.NOMBRE = 8 -- emplacements dans la rue (spec §2 ; le serveur est limit
 Boutique.LARGEUR = 24 -- studs : x de −12 à 12
 Boutique.AVANT, Boutique.FOND = 30, 58 -- z de la façade et du mur du fond
 Boutique.HAUTEUR = 12
+Boutique.PLANCHER = 0.05 -- studs : le plancher dépasse à peine le sol du monde (deux surfaces au même niveau scintilleraient)
 Boutique.PORTE = { -9, -3 } -- x de l'ouverture de la porte, dans la façade
 Boutique.FENETRE = { 4, 11 } -- x de la fenêtre de la vitrine, dans la façade
 Boutique.DEMI_RUE = 10 -- studs entre le milieu de la rue et chaque rangée de façades

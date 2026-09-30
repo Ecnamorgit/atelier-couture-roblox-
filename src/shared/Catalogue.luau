@@ -101,6 +101,12 @@ local BASQUE = { { x = 0.8, y = 0 }, { x = 5.6, y = 0 }, { x = 6.4, y = 1.2 }, {
 -- (en vitrine, 24 colonnes : avec 16, chaque sommet tomberait sur un creux des fronces, et le volant serait lisse)
 local GRILLE_VOLANT = { robe = { colonnes = 32, lignes = 3 }, vitrine = { colonnes = 24, lignes = 2 } }
 local GRILLE_BASQUE = { robe = { colonnes = 12, lignes = 4 }, vitrine = { colonnes = 6, lignes = 2 } }
+-- Plan 23 : la traîne, la jupe longue évasée côté dos qui continue 2 dm au-delà du sol (coupée droit-fil : en biais,
+-- elle ne tiendrait pas dans la largeur du rouleau)
+local TRAINE = { { x = 3, y = 0 }, { x = 7, y = 0 }, { x = 10, y = 11 }, { x = 0, y = 11 } }
+-- Plan 23 : un étage froncé, posé sur le bas de la jupe droite (serré comme le volant : ses fronces se voient ; 31 × 7
+-- sommets, sous le plafond d'une pièce)
+local GRILLE_ETAGE = { robe = { colonnes = 30, lignes = 6 }, vitrine = { colonnes = 24, lignes = 3 } }
 
 Catalogue.Pieces = {
 	corsage_droit_devant = { nom = "Corsage devant", contour = rectangle(4.8, 4.2), coutures = { 2, 3, 4 },
@@ -167,6 +173,33 @@ Catalogue.Pieces = {
 		enroulement = { type = "jupe", cote = "devant", depart = 0, couche = 1, evasement = 0, ampleur = 0.35, fronces = 0 } },
 	basque_dos = { nom = "Basque dos", contour = BASQUE, coutures = { 1 }, poids = 0.5, grille = GRILLE_BASQUE,
 		enroulement = { type = "jupe", cote = "dos", depart = 0, couche = 1, evasement = 0, ampleur = 0.35, fronces = 0 } },
+	-- Plan 23. L'étage : une large bande froncée, cousue par le haut à 3 dm sous la taille, sur la jupe droite, qu'elle
+	-- dépasse de 0,6 dm
+	etage_devant = { nom = "Étage devant", contour = rectangle(9, 3.6), coutures = { 1 }, grille = GRILLE_ETAGE,
+		enroulement = { type = "jupe", cote = "devant", depart = 3, couche = 1, evasement = 0.03, ampleur = 0.2, fronces = 0.3 } },
+	etage_dos = { nom = "Étage dos", contour = rectangle(9, 3.6), coutures = { 1 }, grille = GRILLE_ETAGE,
+		enroulement = { type = "jupe", cote = "dos", depart = 3, couche = 1, evasement = 0.03, ampleur = 0.2, fronces = 0.3 } },
+	-- Le jupon, légèrement froncé, dépasse de 0,6 dm sous la jupe de dessus ; celle-ci est une demi-couche (0,1 dm plus
+	-- loin) : une basque passe encore par-dessus
+	jupon_devant = { nom = "Jupon devant", contour = rectangle(8, 6.6), coutures = { 1, 2, 4 },
+		enroulement = { type = "jupe", cote = "devant", evasement = 0.3, fronces = 0.1 } },
+	jupon_dos = { nom = "Jupon dos", contour = rectangle(8, 6.6), coutures = { 1, 2, 4 },
+		enroulement = { type = "jupe", cote = "dos", evasement = 0.3, fronces = 0.1 } },
+	jupe_dessus_devant = { nom = "Jupe de dessus devant", contour = rectangle(8, 6), coutures = { 1, 2, 4 },
+		enroulement = { type = "jupe", cote = "devant", couche = 0.5, evasement = 0.3, fronces = 0 } },
+	jupe_dessus_dos = { nom = "Jupe de dessus dos", contour = rectangle(8, 6), coutures = { 1, 2, 4 },
+		enroulement = { type = "jupe", cote = "dos", couche = 0.5, evasement = 0.3, fronces = 0 } },
+	-- La ceinture : une bande de corsage à la taille (0,6 dm de haut), par-dessus le corsage, cousue par le bas
+	ceinture_devant = { nom = "Ceinture devant", contour = rectangle(4.8, 0.6), coutures = { 3 }, poids = 0.5,
+		enroulement = { type = "corsage", cote = "devant", couche = 1 } },
+	ceinture_dos = { nom = "Ceinture dos", contour = rectangle(4.8, 0.6), coutures = { 3 }, poids = 0.5,
+		enroulement = { type = "corsage", cote = "dos", couche = 1 } },
+	-- (le devant de la jupe à traîne est celui de la jupe longue, couché lui aussi passé le sol : ses côtés restent
+	-- cousus à ceux de la traîne jusqu'en bas)
+	traine_devant = { nom = "Jupe à traîne devant", contour = EVASEE, coutures = { 1, 2, 4 }, biais = true,
+		enroulement = { type = "jupe", cote = "devant", evasement = 0.45, fronces = 0, traine = true } },
+	traine_dos = { nom = "Traîne", contour = TRAINE, coutures = { 1, 2, 4 },
+		enroulement = { type = "jupe", cote = "dos", evasement = 0.45, fronces = 0, traine = true } },
 }
 
 ---------------------------------------------------------------------------
@@ -227,6 +260,20 @@ Catalogue.Variantes = {
 	{ id = "jupe_volant", famille = "jupe", nom = "À volant",
 		pieces = { "jupe_droite_devant", "jupe_droite_dos", "volant_devant", "volant_dos" }, style = { romantique = 8, mignon = 6 },
 		occasion = { journee = 6, soiree = 4 } },
+	-- Plan 23 : la jupe à étages, la jupe à jupon (la jupe de dessus d'abord : le dessin la colorie de son tissu), le
+	-- corsage ceinturé
+	{ id = "jupe_etages", famille = "jupe", nom = "À étages",
+		pieces = { "jupe_droite_devant", "jupe_droite_dos", "etage_devant", "etage_dos" }, style = { romantique = 6, mignon = 6, decontracte = 2 },
+		occasion = { journee = 8, soiree = 2 } },
+	{ id = "jupe_jupon", famille = "jupe", nom = "À jupon",
+		pieces = { "jupe_dessus_devant", "jupe_dessus_dos", "jupon_devant", "jupon_dos" }, style = { mignon = 8, romantique = 6 },
+		occasion = { soiree = 6, journee = 4 } },
+	{ id = "corsage_ceinture", famille = "corsage", nom = "Ceinturé",
+		pieces = { "corsage_droit_devant", "corsage_droit_dos", "ceinture_devant", "ceinture_dos" }, style = { chic = 8, elegant = 4 },
+		occasion = { travail = 8, journee = 2 } },
+	{ id = "jupe_traine", famille = "jupe", nom = "À traîne",
+		pieces = { "traine_devant", "traine_dos" }, style = { elegant = 12, romantique = 6, decontracte = -6 },
+		occasion = { soiree = 14 } },
 }
 
 ---------------------------------------------------------------------------

@@ -67,7 +67,7 @@ local function construire(indice, joueur, parent)
 	local profondeur, milieu = F - A, (A + F) / 2
 	-- Sol et murs (la façade, en z = AVANT, a une porte et une fenêtre)
 	-- Le sol dépasse à peine celui du monde : deux surfaces au même niveau scintilleraient
-	bloc(modele, origine, "Sol", Vector3.new(0, 0.025, milieu), Vector3.new(L, 0.05, profondeur), SOL, { matiere = Enum.Material.WoodPlanks })
+	bloc(modele, origine, "Sol", Vector3.new(0, Boutique.PLANCHER / 2, milieu), Vector3.new(L, Boutique.PLANCHER, profondeur), SOL, { matiere = Enum.Material.WoodPlanks })
 	bloc(modele, origine, "MurFond", Vector3.new(0, H / 2, F + 0.5), Vector3.new(L + 2, H, 1), MUR)
 	bloc(modele, origine, "MurGauche", Vector3.new(-L / 2 - 0.5, H / 2, milieu), Vector3.new(1, H, profondeur), MUR)
 	bloc(modele, origine, "MurDroit", Vector3.new(L / 2 + 0.5, H / 2, milieu), Vector3.new(1, H, profondeur), MUR)
