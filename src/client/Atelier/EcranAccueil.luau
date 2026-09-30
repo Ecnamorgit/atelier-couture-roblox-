@@ -14,6 +14,7 @@ local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Histoire = require(Couture:WaitForChild("Histoire"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
+local Mercerie = require(script.Parent:WaitForChild("Mercerie"))
 
 -- « Amitié de Colette : +3 (niveau 2 !) » ; nil sans cliente
 local function ligneAmitie(amitie)
@@ -164,6 +165,10 @@ return function(ctx)
 		Parent = ctx.contenu,
 	})
 	local fond = UiKit.arrondir(UiKit.creer("Frame", { Name = "JaugePrestige", BackgroundColor3 = C.secondaire, Position = UDim2.fromOffset(0, y + 26), Size = UDim2.fromOffset(360, 12), Parent = ctx.contenu }), 6)
+	-- (sous-projet 6) la mercerie, par-dessus l'accueil : on y fait ses réserves de décorations
+	UiKit.boutonDoux({ Name = "OuvrirMercerie", Text = "Mercerie", Position = UDim2.fromOffset(620, y), Size = UDim2.fromOffset(200, 40), Parent = ctx.contenu }, function()
+		Mercerie.ouvrir(ctx)
+	end)
 	local part = if suivant then (etat.prestige - seuil) / (suivant - seuil) else 1
 	UiKit.creer("Frame", { Name = "Rempli", BackgroundColor3 = C.accent, BorderSizePixel = 0, Size = UDim2.fromScale(math.clamp(part, 0, 1), 1), Parent = fond })
 	-- L'histoire : l'événement en cours ; sa prochaine robe commence par une conversation avec la cliente
@@ -349,9 +354,9 @@ return function(ctx)
 		end)
 	end
 	-- E, fenêtre ouverte (pas pendant la saisie dans le chat, ni quand un panneau est ouvert par-dessus l'accueil :
-	-- conversation, épilogue, suite de l'histoire, carnet d'adresses, affiche des nouveautés) : sonner la clochette
+	-- conversation, épilogue, suite de l'histoire, carnet d'adresses, affiche des nouveautés, mercerie) : sonner la clochette
 	local function panneauOuvert()
-		for _, nom in ipairs({ "Conversation", "Epilogue", "Suite", "CarnetAdresses", "Affiche" }) do
+		for _, nom in ipairs({ "Conversation", "Epilogue", "Suite", "CarnetAdresses", "Affiche", "Mercerie" }) do
 			local p = ctx.contenu:FindFirstChild(nom)
 			if p and p.Visible then
 				return true

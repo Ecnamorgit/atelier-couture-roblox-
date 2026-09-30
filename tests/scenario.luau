@@ -297,6 +297,8 @@ for _, cle in ipairs(MESURES) do
 	local droite = math.abs(corps.Position.X.Offset + corps.Size.X.Offset - (calque.Position.X.Offset + calque.Size.X.Offset))
 	verifier(gauche <= 2 and droite <= 2, cle .. " : réglé juste, le mannequin épouse la silhouette")
 end
+-- (sous-projet 6) Colette veut aussi une perle : au carnet, l'exigence dira ce qu'on en a dans la mercerie
+table.insert(serveur:atelier(joueur).etat.commande.exigences, { type = "accessoire", id = "perle" })
 cliquer("ValiderMesures")
 verifier(serveur:atelier(joueur).etat.commande.ajustement == 1 and serveur:atelier(joueur).etat.clientes.colette.mesures ~= nil, "mesures justes : ajustement 100 %, gardées pour la prochaine fois")
 
@@ -304,6 +306,10 @@ verifier(serveur:atelier(joueur).etat.commande.ajustement == 1 and serveur:ateli
 -- Carnet de croquis
 ---------------------------------------------------------------------------
 verifier(titre() == "1. Carnet de croquis", "mesures prises : le carnet")
+do -- Sous-projet 6 : une exigence d'accessoire dit ce qu'on en a dans la mercerie (le kit : dix perles)
+	local ligne = texte("Avec : Perle")
+	verifier(ligne ~= nil and string.find(ligne.Text, "Avec : Perle\n      (en stock : 10)", 1, true) ~= nil and ligne.Size.Y.Offset == 40, "au carnet, l'exigence d'une perle dit « (en stock : 10) », sur une seconde ligne")
+end
 -- Sous-projet 5 : le carnet est une page de croquis. Chaque famille se choisit par ◀ ▶ ; le modèle choisi est
 -- dessiné, colorié de ses tissus
 local function choisirModele(id)
@@ -913,13 +919,40 @@ local function centre(groupe)
 	end
 	return somme / n
 end
-verifier(contenuD.Cout.Text == "Coût : 0 po", "rien posé : rien à payer")
+verifier(contenuD.Usage.Text == "Mercerie : choisis une décoration.", "rien de choisi : la ligne de la mercerie l'explique")
+verifier(boutonNomme("Deco_perle").Text == "Perle · ×10" and boutonNomme("Deco_ruban_rose").Text == "Ruban rose · 1,50 m", "la palette dit ce qu'il reste dans la mercerie : le kit (dix perles, 1,50 m de ruban)")
 toucherRobe("Piece_corsage_v_devant_unique", "corsage_v_devant", "unique", 0.5, 0.4)
 verifier(#decorations:GetChildren() == 0 and fenetre.Message.Visible, "toucher la robe sans décoration choisie : un message")
+do -- Sous-projet 6 : pas de nœud de satin dans le kit : grisé, on ne peut pas le choisir
+	local noeudVide = boutonNomme("Deco_noeud_satin")
+	verifier(noeudVide:GetAttribute("Epuise") == true and noeudVide:GetAttribute("Ferme") == false and noeudVide.Text == "Nœud de satin · ×0", "nœud de satin épuisé : grisé, « ×0 »")
+end
 cliquer("Deco_noeud_satin")
-verifier(boutonNomme("Deco_noeud_satin").BackgroundColor3 == ACCENT, "nœud de satin choisi dans la palette")
+verifier(fenetre.Message.Text == "Plus assez de Nœud de satin dans ta mercerie : achètes-en à la Mercerie." and boutonNomme("Deco_noeud_satin").BackgroundColor3 ~= ACCENT, "toucher un article épuisé : un message, rien n'est choisi")
+do -- La mercerie, par-dessus le panneau, sans quitter la robe : deux nœuds de satin
+	local argentAvant = argent()
+	cliquer("OuvrirMercerie")
+	local merc = contenuD:FindFirstChild("Mercerie")
+	verifier(merc ~= nil and merc:IsA("TextButton") and merc.Text == "" and merc.ZIndex > 20, "« Mercerie » : la boutique par-dessus le panneau (un bouton sans texte, qui arrête les appuis)")
+	verifier(merc.Casiers:FindFirstChild("Case_lanterne_papier") == nil and boutonNomme("Case_perle").Text == "Perle · ×10", "un casier par article ouvert, avec ce qu'on en a")
+	cliquer("AcheterMercerie")
+	verifier(fenetre.Message.Text == "Choisis d'abord un article." and argent() == argentAvant, "« Acheter » sans article : rien")
+	cliquer("Case_noeud_satin")
+	verifier(merc.Fiche.Article.Text == "Nœud de satin — 3 po l'unité" and merc.Fiche.Styles.Text == "Mignon +4, Romantique +2" and merc.Fiche.Quantite.Text == "×1" and boutonNomme("AcheterMercerie").Text == "Acheter (3 po)", "la fiche du nœud : son prix, ses styles, la quantité")
+	cliquer("QuantitePlus")
+	verifier(merc.Fiche.Quantite.Text == "×2" and boutonNomme("AcheterMercerie").Text == "Acheter (6 po)", "+ : deux nœuds, 6 po")
+	cliquer("AcheterMercerie")
+	verifier(argent() == argentAvant - 6 and serveur:atelier(joueur).etat.mercerie.noeud_satin == 2 and boutonNomme("Case_noeud_satin").Text == "Nœud de satin · ×2" and fenetre.Message.Text == "Acheté : Nœud de satin, ×2 (6 po).", "acheté : 6 po, deux nœuds dans la mercerie")
+	verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_achat", "l'achat fait sonner la caisse")
+	verifier(boutonNomme("Deco_noeud_satin").Text == "Nœud de satin · ×2" and boutonNomme("Deco_noeud_satin"):GetAttribute("Epuise") == false, "la palette suit l'achat")
+	verifierTailles("mercerie")
+	cliquer("FermerMercerie")
+	verifier(contenuD:FindFirstChild("Mercerie") == nil and titre() == "6. Décorations", "la mercerie se referme : on est toujours aux décorations")
+end
+cliquer("Deco_noeud_satin")
+verifier(boutonNomme("Deco_noeud_satin").BackgroundColor3 == ACCENT and contenuD.Usage.Text == "Nœud de satin : 0 / 2", "nœud de satin choisi : aucun posé, deux dans la mercerie")
 toucherRobe("Piece_corsage_v_devant_unique", "corsage_v_devant", "unique", 0.5, 0.4)
-verifier(#decorations:GetChildren() == 1 and contenuD.Cout.Text == "Coût : 3 po", "nœud posé sur le corsage : 3 po")
+verifier(#decorations:GetChildren() == 1 and contenuD.Usage.Text == "Nœud de satin : 1 / 2" and boutonNomme("Deco_noeud_satin").Text == "Nœud de satin · ×1", "nœud posé sur le corsage : un sur deux, il en reste un")
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_decoration", "une décoration posée fait son petit bruit")
 local noeud = decorations:GetChildren()[1]
 verifier((centre(noeud) - point3D("corsage_v_devant", "unique", 0.5, 0.4)).Magnitude < 0.3, "le nœud est là où l'on a touché")
@@ -927,23 +960,23 @@ local tailleAvant = noeud:GetChildren()[1].Size
 cliquer("Agrandir")
 verifier(decorations:GetChildren()[1]:GetChildren()[1].Size.X > tailleAvant.X, "le nœud sélectionné grandit")
 cliquer("Tourner15")
-verifier(contenuD.Cout.Text == "Coût : 3 po", "tourner ou agrandir ne coûte rien")
+verifier(contenuD.Usage.Text == "Nœud de satin : 1 / 2", "tourner ou agrandir ne prend rien de plus")
 -- Garniture point par point
 cliquer("Deco_ruban_rose")
 toucherRobe("Piece_jupe_trapeze_devant_unique", "jupe_trapeze_devant", "unique", 0.1, 0.9)
 toucherRobe("Piece_jupe_trapeze_devant_unique", "jupe_trapeze_devant", "unique", 0.9, 0.9)
 verifier(boutonNomme("FinirGarniture").Visible, "garniture en cours : bouton pour la finir")
 cliquer("FinirGarniture")
-local coutRuban = tonumber(contenuD.Cout.Text:match("(%d+) po"))
-verifier(#decorations:GetChildren() == 2 and coutRuban and coutRuban > 3, "ruban posé le long de la jupe : " .. contenuD.Cout.Text)
+local cmRuban = tonumber(((contenuD.Usage.Text:match("^Ruban rose : (%d,%d%d) / 1,50 m$") or ""):gsub(",", ""))) -- (cm)
+verifier(#decorations:GetChildren() == 2 and cmRuban and cmRuban > 0 and boutonNomme("Deco_ruban_rose").Text == ("Ruban rose · %s m"):format(requireModule(scriptClient.Mercerie).metres(150 - (cmRuban or 0))), "ruban posé le long de la jupe, pris sur le mètre et demi du kit : " .. contenuD.Usage.Text)
 -- Toucher une décoration la sélectionne ; supprimer, puis annuler
 local partNoeud = decorations:GetChildren()[1]:GetChildren()[1]
 toucherScene({ Instance = partNoeud, Position = partNoeud.CFrame.Position, Normal = Vector3.new(0, 0, -1) })
 verifier(decorations:GetChildren()[1]:FindFirstChild("Selection") ~= nil and decorations:GetChildren()[2]:FindFirstChild("Selection") == nil, "le nœud touché est surligné : on voit ce que « Supprimer » va retirer")
 cliquer("Supprimer")
-verifier(#decorations:GetChildren() == 1 and contenuD.Cout.Text == ("Coût : %d po"):format(coutRuban - 3), "nœud touché puis supprimé")
+verifier(#decorations:GetChildren() == 1 and boutonNomme("Deco_noeud_satin").Text == "Nœud de satin · ×2", "nœud touché puis supprimé : il est de nouveau à poser")
 cliquer("Annuler")
-verifier(#decorations:GetChildren() == 2 and contenuD.Cout.Text == ("Coût : %d po"):format(coutRuban), "annuler : le nœud revient")
+verifier(#decorations:GetChildren() == 2 and boutonNomme("Deco_noeud_satin").Text == "Nœud de satin · ×1", "annuler : le nœud revient")
 -- Glisser sur la scène fait tourner la vue autour du mannequin (sans rien poser)
 local glisse = { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(100, 300, 0) }
 UIS.InputBegan:Fire(glisse, false)
@@ -955,10 +988,8 @@ verifier(camera.CFrame ~= origineBoutique * ScenePoste.CAMERA and #decorations:G
 -- Présentation, refus, retouche, livraison
 ---------------------------------------------------------------------------
 local avantDeco = argent()
-serveur:atelier(joueur).etat.mercerie.noeud_satin = 1 -- (sous-projet 6 : le nœud, à la mercerie ; le ruban vient du kit)
-local rubanAvant = serveur:atelier(joueur).etat.mercerie.ruban_rose
 cliquer("Presenter")
-verifier(titre() == "7. Photo et livraison" and argent() == avantDeco and serveur:atelier(joueur).etat.mercerie.noeud_satin == nil and serveur:atelier(joueur).etat.mercerie.ruban_rose < rubanAvant, "présenter : décorations prises à la mercerie, pas d'argent")
+verifier(titre() == "7. Photo et livraison" and argent() == avantDeco and serveur:atelier(joueur).etat.mercerie.noeud_satin == 1 and serveur:atelier(joueur).etat.mercerie.ruban_rose == 150 - cmRuban, "présenter : décorations prises à la mercerie (un nœud, le ruban), pas d'argent")
 verifier(camera.CFrame == origineBoutique * ScenePoste.CAMERA, "la cliente voit la robe de face")
 verifier(texte("Au moins 1 en Romantique (actuel :") ~= nil, "le score actuel est affiché à côté d'une exigence de style")
 verifier(#decorations:GetChildren() == 2, "la robe est présentée avec ses décorations")
@@ -1054,7 +1085,7 @@ cliquer("OuvrirAtelier")
 verifier(scene.Fond.Color == ScenePoste.DECORS.bleu and Lighting.ClockTime == ScenePoste.LUMIERES.soir.ClockTime and scene.Mannequin.Buste.Color == ScenePoste.MANNEQUINS.noir, "fenêtre rouverte : les réglages de la photo reviennent")
 cliquer("RetourDecorations")
 verifier(scene:FindFirstChild("Fond") == nil and Lighting.ClockTime == heureDuJeu and scene.Mannequin.Buste.Color ~= ScenePoste.MANNEQUINS.noir, "en quittant la présentation : décor, lumière et mannequin rétablis")
-verifier(titre() == "6. Décorations" and #decorations:GetChildren() == 2 and contenuD.Cout.Text == "Coût : 0 po", "retour aux décorations : déjà payées")
+verifier(titre() == "6. Décorations" and #decorations:GetChildren() == 2 and boutonNomme("Deco_noeud_satin").Text == "Nœud de satin · ×1" and contenuD.Usage.Text == "Mercerie : choisis une décoration.", "retour aux décorations : les décorations posées restent, la mercerie aussi")
 cliquer("Presenter")
 -- « Livrer la robe » est loin de « Prendre la photo », et demande une confirmation
 local prendre, livrer = boutonNomme("PrendrePhoto"), boutonNomme("Livrer")
@@ -1080,7 +1111,12 @@ verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_echec", "robe refusée : un son d
 verifierTailles("refus")
 cliquer("Retoucher")
 verifier(titre() == "6. Décorations", "retouche : retour aux décorations")
-serveur:atelier(joueur).etat.mercerie.croix_argent = 1 -- (sous-projet 6 : la croix, à la mercerie)
+-- La croix d'argent manque : on l'achète à la mercerie, sans quitter la robe
+cliquer("OuvrirMercerie")
+cliquer("Case_croix_argent")
+cliquer("AcheterMercerie")
+verifier(serveur:atelier(joueur).etat.mercerie.croix_argent == 1 and #decorations:GetChildren() == 2, "une croix d'argent achetée depuis les décorations, la robe telle quelle")
+cliquer("FermerMercerie")
 cliquer("Deco_croix_argent")
 toucherRobe("Piece_corsage_v_devant_unique", "corsage_v_devant", "unique", 0.5, 0.7)
 cliquer("Presenter")
@@ -1163,6 +1199,21 @@ do -- Son avis en étoiles, dans l'encadré : celles de la qualité de la robe
 end
 M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
 verifier(laCliente.Parent == nil and not gui.Atelier.Dialogue.Visible, "puis elle s'en va, et l'encadré se vide")
+do -- Sous-projet 6 : la mercerie, depuis l'accueil (à droite de la réputation) ; E ne sonne pas tant qu'elle est ouverte
+	local bouton, prestige = boutonNomme("OuvrirMercerie"), fenetre.Contenu.Prestige
+	verifier(bouton.Position.X.Offset >= prestige.Position.X.Offset + prestige.Size.X.Offset and bouton.Position.Y.Offset == prestige.Position.Y.Offset, "« Mercerie » à droite de la réputation")
+	cliquer("OuvrirMercerie")
+	verifier(fenetre.Contenu:FindFirstChild("Mercerie") ~= nil, "la mercerie s'ouvre par-dessus l'accueil")
+	M.services.UserInputService.InputBegan:Fire({ KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }, false)
+	verifier(titre() == "Aiguille & Dentelle", "E ne sonne pas la clochette tant que la mercerie est ouverte")
+	cliquer("Case_ruban_rose")
+	verifier(fenetre.Contenu.Mercerie.Fiche.Quantite.Text == "1 × 50 cm" and fenetre.Contenu.Mercerie.Fiche.Styles.Text == "Mignon +3 (pour 50 cm)" and boutonNomme("AcheterMercerie").Text == "Acheter (5 po)", "le ruban se vend par 50 cm : 5 po, ses styles pour 50 cm")
+	local avant, ruban = argent(), serveur:atelier(joueur).etat.mercerie.ruban_rose
+	cliquer("AcheterMercerie")
+	verifier(argent() == avant - 5 and serveur:atelier(joueur).etat.mercerie.ruban_rose == ruban + 50 and boutonNomme("Case_ruban_rose").Text == ("Ruban rose · %s m"):format(requireModule(scriptClient.Mercerie).metres(ruban + 50)), "50 cm de ruban achetés à l'accueil")
+	cliquer("FermerMercerie")
+	verifier(fenetre.Contenu:FindFirstChild("Mercerie") == nil, "la mercerie se referme")
+end
 
 ---------------------------------------------------------------------------
 -- Robes libres (après deux commandes livrées) : une taille, pas de cliente ; à la photo, vendre ou offrir
