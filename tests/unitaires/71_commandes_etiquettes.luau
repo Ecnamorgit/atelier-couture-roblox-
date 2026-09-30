@@ -185,3 +185,45 @@ local ok, temoin = Commandes.realisable({ { type = "trait", trait = "travaillee"
 U.verifier(ok and temoin.ajout and temoin.ajout.nombre == 7 and Notation.poids(Patron.piecesDuCroquis(temoin.croquis)) == 7, "Travaillée 60 : la première robe assez riche (poids 7 : corsage droit, manches ballon, col Claudine, jupe à volant) et sept objets")
 U.verifier(not Commandes.realisable({ { type = "trait", trait = "travaillee", valeur = 60 } }, Deblocages.ouverts({ prestige = 0, clientes = {} })), "au départ, sans volant ni basque, aucune robe n'est assez travaillée")
 U.verifier(not Commandes.realisable({ { type = "trait", trait = "chaude", valeur = 10 }, { type = "trait", trait = "legere", valeur = 10 } }), "Légère et Chaude à la fois : impossible")
+
+---------------------------------------------------------------------------
+-- (relecture) Deux exigences possibles chacune seule, impossibles ensemble : la recherche écarte un tissu dès que ses
+-- exigences hors style (occasion, chaleur, poids) échouent, sans recopier la robe pour chaque objet ; on compte les
+-- jugements de trait (la simulation ne mesure pas le temps)
+---------------------------------------------------------------------------
+local robes = #CROQUIS * #Catalogue.Tissus
+local traitsIndice = Etiquettes.traitsIndice
+local appels = 0
+Etiquettes.traitsIndice = function(...)
+	appels += 1
+	return traitsIndice(...)
+end
+local contradictions = {}
+for _, exigences in ipairs({
+	{ { type = "trait", trait = "travaillee", valeur = 60 }, { type = "trait", trait = "sobre", valeur = 10 } },
+	{ { type = "min", style = "gothique", valeur = 50 }, { type = "trait", trait = "travaillee", valeur = 70 }, { type = "occasion", occasion = "journee", valeur = 50 } },
+}) do
+	appels = 0
+	local possibleEnsemble = Commandes.realisable(exigences)
+	table.insert(contradictions, ("%s : %d jugements"):format(tostring(possibleEnsemble), appels))
+	if possibleEnsemble or appels > 4 * robes then
+		contradictions.lentes = true
+	end
+end
+Etiquettes.traitsIndice = traitsIndice
+U.verifier(not contradictions.lentes, ("impossibles ensemble : au plus quatre jugements de trait par robe essayée (%d robes ; %s)"):format(robes, table.concat(contradictions, " ; ")))
+-- Deux traits opposés (Légère et Chaude, Sobre et Travaillée) : impossibles d'emblée, sans essayer aucune robe
+Etiquettes.traitsIndice = function(...)
+	appels += 1
+	return traitsIndice(...)
+end
+local opposes = {}
+for _, paire in ipairs({ { "legere", "chaude" }, { "travaillee", "sobre" } }) do
+	appels = 0
+	local ensemble = Commandes.realisable({ { type = "trait", trait = paire[1], valeur = 10 }, { type = "trait", trait = paire[2], valeur = 10 } })
+	if ensemble or appels > 0 then
+		table.insert(opposes, ("%s et %s : %d jugements"):format(paire[1], paire[2], appels))
+	end
+end
+Etiquettes.traitsIndice = traitsIndice
+U.verifier(#opposes == 0, "deux traits opposés : impossibles d'emblée (en défaut : " .. table.concat(opposes, " ; ") .. ")")

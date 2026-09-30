@@ -125,6 +125,15 @@ function Commandes.realisable(exigences, ouverts)
 			end
 		end
 	end
+	-- Deux traits opposés (Légère et Chaude, Sobre et Travaillée) : leur indice ne peut pas être à la fois positif et
+	-- négatif ; impossibles d'emblée, sans essayer chaque robe (relecture)
+	for _, a in ipairs(jugements) do
+		for _, b in ipairs(jugements) do
+			if (a.cle == "chaleur" or a.cle == "poids") and a.cle == b.cle and a.croissant and not b.croissant and a.valeur > 1e-9 and b.valeur > 1e-9 then
+				return false
+			end
+		end
+	end
 	local tissus = {}
 	for _, t in ipairs(Catalogue.Tissus) do
 		local permis = not ouverts or ouverts.tissus[t.id]
@@ -222,13 +231,24 @@ function Commandes.realisable(exigences, ouverts)
 		end
 		return true
 	end
-	-- Une robe complète : son tissu, puis juste assez de décorations
+	-- Une robe complète : son tissu, puis juste assez de décorations. Les objets ne changent que les styles : un tissu
+	-- dont une exigence hors style (occasion, chaleur, poids) échoue est écarté avant d'en essayer aucun (relecture)
+	local horsStyles = {}
+	for _, j in ipairs(jugements) do
+		if not table.find(Catalogue.STYLES, j.cle) then
+			table.insert(horsStyles, j)
+		end
+	end
+	local resteDecorations = { bas = basD, haut = hautD }
 	local croquis = {}
 	local function essayerTissus(partiel)
 		for _, t in ipairs(tissus) do
 			local somme = {}
 			for _, c in ipairs(CLES) do
 				somme[c] = partiel[c] + APPORTS_TISSUS[t.id][c] + impose[c]
+			end
+			if not possible(somme, resteDecorations) then
+				continue -- même avec les meilleures décorations, ce tissu ne peut pas tout tenir
 			end
 			local n = 0
 			local function assez()
@@ -244,6 +264,13 @@ function Commandes.realisable(exigences, ouverts)
 			end
 			if not assez() then
 				continue -- même couverte de décorations, cette robe ne serait pas assez travaillée
+			end
+			local horsStylesTenues = true
+			for _, j in ipairs(horsStyles) do
+				horsStylesTenues = horsStylesTenues and tient(j, j.note(somme[j.cle], base + n))
+			end
+			if not horsStylesTenues then
+				continue
 			elseif n == 0 then
 				if tientTout(somme, base) then
 					return { croquis = table.clone(croquis), tissu = t.id, accessoire = accessoireImpose }
