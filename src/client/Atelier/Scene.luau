@@ -225,7 +225,8 @@ function Scene:suivreCliente(etat, derniere)
 end
 
 -- Ce que dit la cliente (modele) : sa bulle, pour la rue (cachée tant que la fenêtre de l'atelier est ouverte), et
--- l'encadré de dialogue de l'interface, surParole(prénom, texte, étoiles ou nil), prévenu quand elle dit autre chose
+-- l'encadré de dialogue de l'interface, surParole(prénom, texte, étoiles ou nil, identifiant de la cliente ou nil : son
+-- portrait), prévenu quand elle dit autre chose
 -- (la scène se synchronise à chaque réponse du serveur : un encadré refermé ne se rouvre pas pour la même parole de
 -- la même commande ; la commande, pas l'avatar, qui peut manquer)
 function Scene:parler(modele, texte, etoiles)
@@ -235,7 +236,7 @@ function Scene:parler(modele, texte, etoiles)
 		self.paroleDite, self.parleuse = texte, self.clienteCommande
 		local fiche = self.clienteId and Clientes.get(self.clienteId)
 		if self.surParole then
-			self.surParole(if fiche then fiche.nom:match("^(%S+)") else "La cliente", texte, etoiles)
+			self.surParole(if fiche then fiche.nom:match("^(%S+)") else "La cliente", texte, etoiles, fiche and fiche.id)
 		end
 	end
 end

@@ -83,8 +83,8 @@ local fenetre = UiKit.arrondir(UiKit.creer("Frame", {
 }), 14)
 -- Ce que dit la cliente, fenêtre ouverte : l'encadré de dialogue, en haut à gauche (sa bulle est pour la rue)
 local dialogue = Dialogue.nouveau(gui, UiKit)
-scene.surParole = function(nom, texte, etoiles)
-	dialogue:dire(nom, texte, etoiles)
+scene.surParole = function(nom, texte, etoiles, idCliente)
+	dialogue:dire(nom, texte, etoiles, idCliente)
 end
 
 -- Mise à l'échelle sur les petits écrans (suit la caméra et la taille de la fenêtre du jeu)
