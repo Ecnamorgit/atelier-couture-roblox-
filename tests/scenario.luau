@@ -220,52 +220,82 @@ end
 serveur:atelier(joueur).etat.argent += 1 -- (la réponse au refus emporte un état changé : la scène se resynchronise)
 cliquer("ValiderMesures")
 serveur:atelier(joueur).etat.argent -= 1
-verifier(titre() == "Les mesures" and fenetre.Message.Visible and fenetre.Message.Text == "Mesure invalide : règle chaque ruban au bord de la silhouette.", "rubans pas réglés : mesures refusées, message")
+verifier(titre() == "Les mesures" and fenetre.Message.Visible and fenetre.Message.Text == "Mesure invalide : tourne chaque molette jusqu'à ce que le mannequin épouse sa silhouette.", "molettes pas réglées : mesures refusées, message")
 verifier(not gui.Atelier.Dialogue.Visible, "la même parole, après une réponse du serveur : l'encadré reste refermé")
--- Au doigt : on glisse la poignée du ruban de la poitrine jusqu'au bord de la silhouette ; un second doigt ne
--- tire pas le ruban, et le doigt levé ne le tire plus
-local silhouetteM = fenetre.Contenu.Silhouette
-local justePoitrine = ("Poitrine : %d cm"):format(math.round(Clientes.get("colette").mesures.poitrine * 10))
-local doigtRuban = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(0, 0, 0) }
-silhouetteM.Poignee_poitrine.InputBegan:Fire(doigtRuban)
-local valeurAvant = texte("Valeur_poitrine").Text
-M.services.UserInputService.InputChanged:Fire({ UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(900, 0, 0) })
-verifier(texte("Valeur_poitrine").Text == valeurAvant, "un second doigt ne tire pas le ruban")
-doigtRuban.Position = Vector3.new(silhouetteM.Ruban_poitrine.AbsolutePosition.X + silhouetteM.Corps_poitrine.Size.X.Offset, 0, 0)
-M.services.UserInputService.InputChanged:Fire(doigtRuban)
-M.services.UserInputService.InputEnded:Fire(doigtRuban)
-verifier(texte("Valeur_poitrine").Text == justePoitrine, "glisser la poignée au doigt jusqu'au bord de la silhouette : la mesure juste")
-doigtRuban.Position = Vector3.new(0, 0, 0)
-M.services.UserInputService.InputChanged:Fire(doigtRuban)
-verifier(texte("Valeur_poitrine").Text == justePoitrine, "doigt levé : le ruban ne bouge plus")
--- La poignée est assez grosse pour le doigt ; tirée trop loin, le ruban s'arrête au bord du cadre
-verifier(silhouetteM.Poignee_poitrine.AbsoluteSize.X >= 40 and silhouetteM.Poignee_poitrine.AbsoluteSize.Y >= 40, "poignée d'au moins 40 px (le doigt)")
-silhouetteM.Poignee_poitrine.InputBegan:Fire(doigtRuban)
-doigtRuban.Position = Vector3.new(2000, 0, 0)
-M.services.UserInputService.InputChanged:Fire(doigtRuban)
-M.services.UserInputService.InputEnded:Fire(doigtRuban)
-local rubanP = silhouetteM.Ruban_poitrine
-verifier(rubanP.Position.X.Offset + rubanP.Size.X.Offset <= silhouetteM.Size.X.Offset, "tiré trop loin : le ruban s'arrête au bord du cadre")
+-- Sous-projet 6 : le mannequin à molettes. La silhouette de la cliente est en pointillé par-dessus le mannequin
+local mannequinM = fenetre.Contenu:FindFirstChild("Mannequin")
+local function lue(cle)
+	return tonumber(texte("Valeur_" .. cle).Text:match("(%d+) cm")) / 10
+end
+do
+	local calque = mannequinM and mannequinM:FindFirstChild("Calque_poitrine")
+	local points = 0
+	for _, p in ipairs(calque and calque:GetChildren() or {}) do
+		points += if p.Name == "Point" then 1 else 0
+	end
+	verifier(calque ~= nil and calque.BackgroundTransparency == 1 and points >= 12, "la silhouette de la cliente, en pointillé par-dessus le mannequin (" .. points .. " points)")
+end
+-- Au doigt : glisser vers le haut sur la molette de la poitrine la tourne, un cran tous les 12 px ; un second doigt
+-- ne la tourne pas, et le doigt levé ne la tourne plus
+local echelleM = mannequinM.AbsoluteSize.X / mannequinM.Size.X.Offset
+local doigtMolette = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(0, 300, 0) }
+fenetre.Contenu.Molette_poitrine.InputBegan:Fire(doigtMolette)
+local avantPoitrine = lue("poitrine")
+M.services.UserInputService.InputChanged:Fire({ UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(0, 0, 0) })
+verifier(lue("poitrine") == avantPoitrine, "un second doigt ne tourne pas la molette")
+doigtMolette.Position = Vector3.new(0, 300 - 12 * 5 * echelleM, 0)
+M.services.UserInputService.InputChanged:Fire(doigtMolette)
+M.services.UserInputService.InputEnded:Fire(doigtMolette)
+verifier(math.abs(lue("poitrine") - (avantPoitrine + 0.5)) < 1e-6, "glisser de 60 px vers le haut : cinq crans, +5 cm (" .. lue("poitrine") .. ")")
+doigtMolette.Position = Vector3.new(0, 0, 0)
+M.services.UserInputService.InputChanged:Fire(doigtMolette)
+verifier(math.abs(lue("poitrine") - (avantPoitrine + 0.5)) < 1e-6, "doigt levé : la molette ne tourne plus")
+verifier(fenetre.Contenu.Molette_poitrine.Fente.Rotation ~= 0, "la fente de la molette a tourné")
+-- La molette est assez grosse pour le doigt ; tournée trop loin, le mannequin s'arrête au bord de son cadre
+verifier(fenetre.Contenu.Molette_poitrine.AbsoluteSize.X >= 56 and fenetre.Contenu.Molette_poitrine.AbsoluteSize.Y >= 56, "molette d'au moins 56 px (le doigt)")
+doigtMolette.Position = Vector3.new(0, 300, 0)
+fenetre.Contenu.Molette_poitrine.InputBegan:Fire(doigtMolette)
+doigtMolette.Position = Vector3.new(0, -5000, 0)
+M.services.UserInputService.InputChanged:Fire(doigtMolette)
+M.services.UserInputService.InputEnded:Fire(doigtMolette)
+local corpsP = mannequinM.Corps_poitrine
+verifier(corpsP.Position.X.Offset >= 0 and corpsP.Position.X.Offset + corpsP.Size.X.Offset <= mannequinM.Size.X.Offset, "tournée trop loin : le mannequin s'arrête au bord de son cadre")
+-- À la souris : la molette de la souris tourne la molette sous le pointeur, et seulement elle
+do
+	local avantTaille = lue("taille")
+	local mt = fenetre.Contenu.Molette_taille
+	local dessus = Vector3.new(mt.AbsolutePosition.X + mt.AbsoluteSize.X / 2, mt.AbsolutePosition.Y + mt.AbsoluteSize.Y / 2, 1)
+	M.services.UserInputService.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseWheel, Position = dessus })
+	verifier(math.abs(lue("taille") - (avantTaille + 0.1)) < 1e-6, "la molette de la souris sur la molette de la taille : un cran")
+	M.services.UserInputService.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseWheel, Position = Vector3.new(5, 5, 1) })
+	verifier(math.abs(lue("taille") - (avantTaille + 0.1)) < 1e-6, "pointeur ailleurs : la molette de la souris ne la tourne pas")
+	-- Un second doigt posé sur une autre molette ne prend pas la main au premier
+	local premier = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(0, 300, 0) }
+	local second = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(0, 300, 0) }
+	local avantHanches = lue("hanches")
+	fenetre.Contenu.Molette_taille.InputBegan:Fire(premier)
+	fenetre.Contenu.Molette_hanches.InputBegan:Fire(second)
+	premier.Position = Vector3.new(0, 300 - 12 * echelleM, 0)
+	M.services.UserInputService.InputChanged:Fire(premier)
+	M.services.UserInputService.InputEnded:Fire(premier)
+	verifier(math.abs(lue("taille") - (avantTaille + 0.2)) < 1e-6 and lue("hanches") == avantHanches, "un second doigt sur une autre molette ne prend pas la main au premier")
+end
 local function mesurerCliente()
 	local vraies = Clientes.get(serveur:atelier(joueur).etat.commande.cliente).mesures
 	for _, cle in ipairs(MESURES) do
-		local function lue()
-			return tonumber(texte("Valeur_" .. cle).Text:match("(%d+) cm")) / 10
-		end
 		local garde = 0
-		while math.abs(lue() - vraies[cle]) > 0.05 and garde < 80 do
+		while math.abs(lue(cle) - vraies[cle]) > 0.05 and garde < 120 do
 			garde += 1
-			cliquer(if lue() < vraies[cle] then "Plus_" .. cle else "Moins_" .. cle)
+			cliquer(if lue(cle) < vraies[cle] then "Plus_" .. cle else "Moins_" .. cle)
 		end
 	end
 end
 mesurerCliente()
-local silhouette = fenetre.Contenu.Silhouette
 for _, cle in ipairs(MESURES) do
-	local ruban, corps = silhouette["Ruban_" .. cle], silhouette["Corps_" .. cle]
-	local finRuban = ruban.Position.X.Offset + ruban.Size.X.Offset
-	local bordCorps = corps.Position.X.Offset + corps.Size.X.Offset
-	verifier(math.abs(finRuban - bordCorps) <= 2 and ruban.Position.X.Offset == corps.Position.X.Offset, cle .. " : réglé juste, le ruban s'arrête au bord de la silhouette")
+	local corps, calque = mannequinM["Corps_" .. cle], mannequinM["Calque_" .. cle]
+	local gauche = math.abs(corps.Position.X.Offset - calque.Position.X.Offset)
+	local droite = math.abs(corps.Position.X.Offset + corps.Size.X.Offset - (calque.Position.X.Offset + calque.Size.X.Offset))
+	verifier(gauche <= 2 and droite <= 2, cle .. " : réglé juste, le mannequin épouse la silhouette")
 end
 cliquer("ValiderMesures")
 verifier(serveur:atelier(joueur).etat.commande.ajustement == 1 and serveur:atelier(joueur).etat.clientes.colette.mesures ~= nil, "mesures justes : ajustement 100 %, gardées pour la prochaine fois")
@@ -1283,6 +1313,11 @@ verifier(titre() == "Les mesures" and serveur:atelier(joueur).etat.commande.parL
 verifier(fenetre.Message.Visible and string.find(fenetre.Message.Text, "Colette verse un acompte", 1, true) == 1, "elle verse l'acompte")
 M.avancer(0.5)
 verifier(scene:FindFirstChild("Lettre") == nil, "plus de lettre dans la boîte")
+do -- Une cliente déjà mesurée : la fiche donne ses mesures du carnet
+	local m = serveur:atelier(joueur).etat.clientes.colette.mesures
+	local attendu = ("Au carnet : %d / %d / %d cm"):format(math.round(m.poitrine * 10), math.round(m.taille * 10), math.round(m.hanches * 10))
+	verifier(fenetre.Contenu:FindFirstChild("FicheCarnet") ~= nil and string.find(fenetre.Contenu.FicheCarnet.Text, attendu, 1, true) == 1, "déjà mesurée : ses mesures du carnet (" .. attendu .. ")")
+end
 cliquer("ReprendreMesures")
 verifier(titre() == "1. Carnet de croquis", "ses mesures reprises : le carnet")
 -- La robe menée jusqu'à la photo sur le serveur, sans repasser par tous les postes

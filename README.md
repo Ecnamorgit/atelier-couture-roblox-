@@ -10,9 +10,10 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 `docs/superpowers/specs/2026-09-30-histoire-evenements-design.md` pour l'histoire,
 `docs/superpowers/specs/2026-09-30-ampleur-contenu-design.md` pour l'ampleur du catalogue et du quartier,
 `docs/superpowers/specs/2026-09-30-fidelite-dressmaker-design.md` pour la fidélité à la présentation de
-*Dressmaker* ; plans : `docs/superpowers/plans/`).
+*Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
+`docs/superpowers/plans/`).
 
-## État actuel (sous-projet 5 terminé côté code, plans 11 à 14 : la fidélité à la présentation de *Dressmaker*)
+## État actuel (sous-projet 6 en cours, plan 15 : les mesures à molettes)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -29,10 +30,11 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    encadré à son prénom, en haut à gauche de l'écran (un appui le referme jusqu'à sa prochaine parole) ;
    fenêtre fermée, dans une bulle au-dessus de sa tête. En passant commande,
    elle verse un **acompte** (un quart de la base d'une robe simple), déduit de la paie ; gardé si on abandonne.
-   **Mesures** : à sa première visite, on la mesure. Sa silhouette est dessinée à ses vraies mesures ; on règle
-   trois rubans (poitrine, taille, hanches) jusqu'au bord de la silhouette, en glissant ou avec − et + (0,1 dm
-   près). Le serveur refuse un ruban à plus de 1,5 dm de la vraie mesure. Quand elle revient, « Reprendre ses
-   mesures » les reprend du carnet. Le mannequin et le patron suivent les mesures prises ; l'ajustement
+   **Mesures** : à sa première visite, on la mesure sur un mannequin de couture à trois molettes (poitrine,
+   taille, hanches), sa silhouette en pointillé par-dessus : on tourne chaque molette (en glissant de haut en bas,
+   à la molette de la souris, ou avec − et +, 0,1 dm par cran) jusqu'à ce que le mannequin l'épouse. Le serveur
+   refuse une mesure à plus de 1,5 dm de la vraie. Quand elle revient, la fiche donne ses mesures du carnet, et
+   « Reprendre ses mesures » les reprend. Le mannequin et le patron suivent les mesures prises ; l'ajustement
    (100 % jusqu'à 0,2 dm d'écart par tour, puis moins, 50 % au pire) multiplie la qualité de la robe.
 2. **Carnet de croquis** : une page de carnet (papier, notes de tailleur, crayon). Au centre, la robe dessinée
    au trait, de face, sur un mannequin esquissé : elle change avec chaque modèle et se colorie du motif de chaque
@@ -197,7 +199,8 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   pluie de la robe terminée ; `Chat`, les caresses au chat de l'atelier ; `Scene` tient, dans la boutique du
   joueur, la cliente, le mannequin,
   la robe épinglée, l'aperçu des décorations, les réglages de la photo et la caméra du poste ; `Sons` joue
-  les bruits et la musique ; un module `Ecran…` par étape (`EcranMesures` : la silhouette et les rubans).
+  les bruits et la musique ; un module `Ecran…` par étape (`EcranMesures` : le mannequin à molettes, `Molette` : le réglage d'une
+  molette).
 
 **Tester la sauvegarde** : un lieu non publié (fichier local, `game.PlaceId == 0`) ne sauvegarde pas.
 Publier un lieu de test privé et activer « Autoriser l'accès de Studio aux services d'API » (paramètres du

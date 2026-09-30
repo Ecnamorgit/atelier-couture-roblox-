@@ -45,7 +45,7 @@ r = appeler(joueur, "nouvelleCommande", { NextInteger = "tricherie" })
 U.verifier(r.ok and r.etat.etape == "mesures" and r.etat.commande ~= nil and r.etat.commande.cliente == "colette", "nouvelle commande tirée par le serveur (l'argument du client est ignoré) : Colette, à mesurer")
 for _, prises in ipairs({ "tout", { poitrine = 99, taille = 7.1, hanches = 9.5 }, { poitrine = 8.9, taille = 7.1, hanches = 0 / 0 } }) do
 	r = appeler(joueur, "mesurer", prises)
-	U.verifier(not r.ok and r.erreur == "Mesure invalide : règle chaque ruban au bord de la silhouette." and etatDe(joueur).etape == "mesures", "mesures farfelues refusées par le serveur")
+	U.verifier(not r.ok and r.erreur == "Mesure invalide : tourne chaque molette jusqu'à ce que le mannequin épouse sa silhouette." and etatDe(joueur).etape == "mesures", "mesures farfelues refusées par le serveur")
 end
 U.verifier(appeler(joueur, "mesurer", Clientes.get("colette").mesures).ok and etatDe(joueur).etape == "carnet", "mesures prises : au carnet")
 local CROQUIS = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
