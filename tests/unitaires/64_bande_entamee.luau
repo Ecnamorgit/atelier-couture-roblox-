@@ -199,3 +199,10 @@ local soieAvant = copieDeux.coupons.soie_rouge
 assert(deux:couper("jupe_droite_devant", places(0).jupe_droite_devant).ok)
 copieDeux:charger(deux:exporter())
 U.verifier(copieDeux.coupons.soie_rouge == soieAvant and copieDeux.coupons.coton_blanc.poses.jupe_droite_devant ~= nil, "une pièce coupée dans le coton : le rouleau de soie, inchangé, n'est pas reconstruit")
+
+-- (plan 18) Une pièce de ce tissu coupée, même absente du rouleau (après une relecture abîmée) : on ne jette plus
+local rel = EtatAtelier.nouveau(1000)
+aLaTable(rel, 20)
+rel.entames.coton_blanc = { bas = 6, trous = { { piece = "jupe_droite_devant", x = 2.5, y = 3, angle = 0 } } }
+rel.coupees.jupe_droite_dos = { x = 7.5, y = 9, angle = 0 }
+U.verifier(rel:jeterEntame("coton_blanc").erreur == "Des pièces de ce tissu sont déjà coupées pour cette robe." and rel:coupeDans("coton_blanc") and not rel:coupeDans("soie_rouge"), "une pièce de ce tissu coupée, même absente du rouleau : on ne jette plus")

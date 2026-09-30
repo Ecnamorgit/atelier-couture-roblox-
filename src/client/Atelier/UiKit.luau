@@ -139,6 +139,7 @@ end
 -- Bouton d'une action qu'on ne peut pas annuler (recommencer, livrer la robe) : le premier appui demande
 -- confirmation, un second appui (au moins 0,4 s après, dans les 3 s) agit ; sinon il revient à la normale.
 -- principal (facultatif) : l'allure d'un bouton principal (fond de couleur) au lieu d'un bouton doux.
+-- Renvoie le bouton, et une fonction qui le désarme (une confirmation demandée est oubliée).
 UiKit.DELAI_CONFIRMATION = 3
 UiKit.TEXTE_CONFIRMATION = "Vraiment ? Touche encore"
 function UiKit.boutonConfirme(props, auClic, principal)
@@ -167,7 +168,7 @@ function UiKit.boutonConfirme(props, auClic, principal)
 			end
 		end)
 	end, 0.4)
-	return b
+	return b, normal
 end
 
 -- Échelle d'une fenêtre de taille de référence pour tenir dans l'écran (téléphones)

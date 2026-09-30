@@ -169,9 +169,9 @@ function Coupon:poser(idPiece, placement)
 	return true
 end
 
--- Longueur de tissu entamée, trous des robes d'avant compris (dm entiers, arrondie au-dessus)
+-- Longueur de tissu entamée, trous des robes d'avant compris (dm entiers, arrondie au-dessus ; jamais « -0 »)
 function Coupon:longueurUtilisee()
-	return math.ceil(self.basMax - EPSILON)
+	return math.max(0, math.ceil(self.basMax - EPSILON))
 end
 
 -- Ce que les pièces de cette robe ajoutent à la bande entamée (dm entiers) : rien si elles tiennent dans ses vides

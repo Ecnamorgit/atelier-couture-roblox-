@@ -8,8 +8,11 @@ local ContextActionService = game:GetService("ContextActionService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Polygone = require(Couture:WaitForChild("Polygone"))
+local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
+local Deblocages = require(Couture:WaitForChild("Deblocages"))
 local TableDecoupe = require(script.Parent:WaitForChild("TableDecoupe"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
+local Mercerie = require(script.Parent:WaitForChild("Mercerie"))
 
 local PX = 36 -- pixels par dm : le rouleau de 14 dm fait 504 px de large
 local ACHAT_RAPIDE = 5 -- dm ajoutés par le bouton « Plus de tissu »
@@ -58,8 +61,9 @@ return function(ctx)
 	-- Onglets des tissus : une barre qui défile quand il y a plus de deux tissus
 	local onglets = UiKit.creer("ScrollingFrame", { Name = "Onglets", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollingDirection = Enum.ScrollingDirection.X, ScrollBarThickness = 10, ScrollBarImageColor3 = C.accent, Size = UDim2.new(1, 0, 0, 44), Parent = panneau })
 	local liste = UiKit.creer("Frame", { Name = "ListePieces", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 156), Parent = panneau })
-	local droitFil = UiKit.texte({ Name = "DroitFil", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, 204), Size = UDim2.new(0.5, 0, 0, 22), Parent = panneau })
-	local infoRouleau = UiKit.texte({ Name = "InfoRouleau", TextSize = 14, TextColor3 = C.texteDoux, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(0.5, 0, 0, 204), Size = UDim2.new(0.5, 0, 0, 22), Parent = panneau })
+	local droitFil = UiKit.texte({ Name = "DroitFil", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, 204), Size = UDim2.new(1, 0, 0, 22), Parent = panneau })
+	-- (sous-projet 6) le compteur du rouleau, sous « Couper » : ce qui est entamé, et ce que cette robe y ajoute
+	local infoRouleau = UiKit.texte({ Name = "InfoRouleau", TextSize = 14, TextColor3 = C.texteDoux, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(0, 396), Size = UDim2.new(1, 0, 0, 34), Parent = panneau })
 	local statut = UiKit.texte({ Name = "Statut", TextSize = 14, Position = UDim2.fromOffset(0, 226), Size = UDim2.new(1, 0, 0, 36), Parent = panneau })
 
 	local rafraichir, placerPiece
@@ -105,7 +109,22 @@ return function(ctx)
 			ctx.refus(r)
 		end
 	end)
+	-- (sous-projet 6) Jeter la bande entamée de ce rouleau (deuxième appui pour confirmer), tant qu'aucune pièce de ce
+	-- tissu n'est coupée pour cette robe : elle quitte le stock, le rouleau repart neuf
+	local jeter, desarmerJeter = UiKit.boutonConfirme({ Name = "JeterEntame", Text = "Jeter la bande", TextSize = 14, TextWrapped = true, AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(124, 34), Visible = false, Parent = panneau }, function()
+		local idTissu = table_.tissu
+		local r = session:jeterEntame(idTissu)
+		if not r.ok then
+			ctx.refus(r)
+			return
+		end
+		ctx.message(("Bande entamée jetée : %s m %s."):format(Mercerie.metres(r.dm * 10), Deblocages.de(Catalogue.tissu(idTissu).nom)), C.ok)
+		table_:proposer()
+		rafraichir()
+		montrerPiece()
+	end)
 
+	local tissuAffiche -- (le tissu de l'onglet au dernier dessin)
 	placerPiece = function()
 		local p = table_.placement
 		piece.Visible = p ~= nil
@@ -149,9 +168,15 @@ return function(ctx)
 		end
 		vue.CanvasSize = UDim2.fromOffset(0, coupon.longueur * PX)
 		local entame = coupon:longueurUtilisee()
-		infoRouleau.Text = ("Entamé : %d / %d dm"):format(entame, coupon.longueur)
+		infoRouleau.Text = ("%s m entamés / %s m\nCette robe : +%s m (%d po)"):format(Mercerie.metres(entame * 10), Mercerie.metres(coupon.longueur * 10), Mercerie.metres(coupon:ajout() * 10), EtatAtelier.prix(table_.tissu, coupon:ajout()))
 		ligneEntame.Visible = entame > 0
 		ligneEntame.Position = UDim2.fromOffset(0, entame * PX)
+		-- Un autre onglet : une confirmation de « Jeter la bande » demandée pour l'onglet d'avant est oubliée
+		if tissuAffiche ~= table_.tissu then
+			tissuAffiche = table_.tissu
+			desarmerJeter()
+		end
+		jeter.Visible = etat.entames[table_.tissu] ~= nil and not etat:coupeDans(table_.tissu)
 		local plie = false
 		for _, id in ipairs(table_:piecesRestantes()) do
 			plie = plie or Catalogue.piece(id).pliee == true
