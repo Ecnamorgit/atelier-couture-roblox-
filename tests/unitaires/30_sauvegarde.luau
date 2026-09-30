@@ -159,6 +159,26 @@ end, "exigence inconnue")
 abandonnee(etat, function(c)
 	c.commande.exigences = { { type = "min", style = "punk", valeur = 20 } }
 end, "style inconnu")
+-- (sous-projet 7) Occasions, traits et matières : les nouveaux types se relisent, les inconnus sont refusés
+abandonnee(etat, function(c)
+	c.commande.exigences = { { type = "occasion", occasion = "bal", valeur = 20 } }
+end, "occasion inconnue")
+abandonnee(etat, function(c)
+	c.commande.exigences = { { type = "trait", trait = "brillante", valeur = 20 } }
+end, "trait inconnu")
+abandonnee(etat, function(c)
+	c.commande.exigences = { { type = "trait", trait = "legere", valeur = "beaucoup" } }
+end, "valeur de trait illisible")
+abandonnee(etat, function(c)
+	c.commande.exigences = { { type = "matiere", matiere = "cuir" } }
+end, "matière inconnue")
+do
+	local q = Sauvegarde.depuisEtat(etat)
+	q.enCours.commande.exigences = { { type = "occasion", occasion = "soiree", valeur = 30 }, { type = "trait", trait = "a_motifs", valeur = 50 }, { type = "matiere", matiere = "crepe" } }
+	M.avertissements = {}
+	local relue = Sauvegarde.versEtat(q)
+	U.verifier(relue.etape == etat.etape and relue.commande ~= nil and #relue.commande.exigences == 3 and relue.commande.exigences[3].matiere == "crepe" and #M.avertissements == 0, "occasion, trait et matière : la commande se relit")
+end
 abandonnee(etat, function(c)
 	c.commande.mesures.poitrine = 500
 end, "mesures hors bornes")

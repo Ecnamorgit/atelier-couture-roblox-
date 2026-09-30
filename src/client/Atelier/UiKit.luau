@@ -184,11 +184,15 @@ end
 
 -- Texte lisible d'une exigence de commande ; styles (facultatif) : scores actuels de la robe,
 -- ajoutés aux exigences de style pour savoir ce qu'il reste à faire
-function UiKit.exigence(e, Catalogue, styles)
+-- Sous-projet 7 : scores = les seize étiquettes d'une robe (bilan.scores : styles, occasions et traits)
+local POUR = { journee = "la journée", soiree = "la soirée", travail = "le travail" }
+local ROBE = { legere = "légère", chaude = "chaude", sobre = "sobre", travaillee = "travaillée", unie = "unie", fleurie = "fleurie", a_motifs = "à motifs" }
+function UiKit.exigence(e, Catalogue, scores)
 	-- Arrondi du côté de la comparaison : le chiffre affiché ne contredit jamais le jugement de la cliente
 	local actuel = ""
-	if styles and e.style then
-		local arrondi = e.type == "max" and math.ceil(styles[e.style] - 1e-9) or math.floor(styles[e.style] + 1e-9)
+	local cle = e.style or e.occasion or e.trait
+	if scores and cle and scores[cle] then
+		local arrondi = e.type == "max" and math.ceil(scores[cle] - 1e-9) or math.floor(scores[cle] + 1e-9)
 		actuel = (" (actuel : %d)"):format(arrondi)
 	end
 	if e.type == "min" then
@@ -201,6 +205,12 @@ function UiKit.exigence(e, Catalogue, styles)
 		return "Couleur dominante : " .. e.teinte
 	elseif e.type == "accessoire" then
 		return "Avec : " .. Catalogue.accessoire(e.id).nom
+	elseif e.type == "occasion" then
+		return ("Pour %s : au moins %d"):format(POUR[e.occasion], e.valeur) .. actuel
+	elseif e.type == "trait" then
+		return ("Robe %s : au moins %d"):format(ROBE[e.trait], e.valeur) .. actuel
+	elseif e.type == "matiere" then
+		return "Matière dominante : " .. Catalogue.MATIERES[e.matiere].nom
 	end
 	return "?"
 end

@@ -10,12 +10,12 @@ return function(ctx)
 	local etat = session.etat
 	local derniere = session.derniere
 	local ratees = derniere and derniere.action == "livrer" and derniere.reponse.ratees or {}
-	local styles = etat:bilan().styles
+	local scores = etat:bilan().scores
 
 	UiKit.texte({ Text = "Ce n'est pas ce qu'elle voulait :", TextSize = 16, Size = UDim2.new(1, 0, 0, 24), Parent = contenu })
 	for k, i in ipairs(ratees) do
 		UiKit.texte({
-			Text = "× " .. UiKit.exigence(etat.commande.exigences[i], Catalogue, styles),
+			Text = "× " .. UiKit.exigence(etat.commande.exigences[i], Catalogue, scores),
 			Font = Enum.Font.GothamBold,
 			TextSize = 16,
 			TextColor3 = C.erreur,
