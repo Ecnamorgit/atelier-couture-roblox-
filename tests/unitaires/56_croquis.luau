@@ -82,6 +82,28 @@ for di = -2, 2 do
 end
 U.verifier(trait, "un trait de crayon foncé au bord de la jupe")
 
+-- Les traits de détail ne passent que sur leur propre partie : le croisé du cache-cœur s'arrête sous le col
+do
+	local croquisCroise = { corsage = "corsage_cache_coeur", manches = "manches_sans", col = "col_claudine", jupe = "jupe_droite" }
+	local image = Pixels.croquis(croquisCroise, {}, L, H)
+	local fin, surLeCol = 0, 0
+	for j = 0, H - 1 do
+		for i = 0, L - 1 do
+			local v = buffer.readu32(image, (j * L + i) * 4)
+			if v % 256 == 120 and math.floor(v / 256) % 256 == 100 and math.floor(v / 65536) % 256 == 106 and math.floor(v / 16777216) == 255 then
+				fin += 1
+				if Croquis.partieA(croquisCroise, (i + 0.5) * Croquis.LARGEUR / L, (j + 0.5) * Croquis.HAUTEUR / H) == "col" then
+					surLeCol += 1
+				end
+			end
+		end
+	end
+	U.verifier(fin > 0 and surLeCol == 0, "le croisé du cache-cœur ne passe pas sur le col Claudine (" .. surLeCol .. " points sur " .. fin .. ")")
+	for _, s in ipairs(Croquis.details(croquisCroise)) do
+		U.verifier(s.famille == "corsage", "chaque trait de détail sait à quelle partie il appartient")
+	end
+end
+
 -- Rapide sur téléphone : le croquis ne calcule du motif que les points de la robe, pas des motifs entiers
 -- (256 × 256 points par tissu), et il en montre exactement les couleurs (un point du dessin, deux du motif)
 do

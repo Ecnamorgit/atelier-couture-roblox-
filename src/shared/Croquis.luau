@@ -99,15 +99,17 @@ function Croquis.parties(croquis)
 	return out
 end
 
--- Traits de détail (plis, croisé) du croquis : { { a, b } }
+-- Traits de détail (plis, croisé) du croquis : { { a, b, famille } }
 function Croquis.details(croquis)
 	local out = {}
 	for _, famille in ipairs(Croquis.ORDRE) do
 		local forme = FORMES[croquis[famille]]
 		for _, s in ipairs(forme.details or {}) do
-			table.insert(out, s)
+			-- chaque trait sait à quelle partie il appartient : il ne se trace que sur elle
+			table.insert(out, { s[1], s[2], famille = famille })
 			if forme.symetrique then
-				table.insert(out, miroirSegment(s))
+				local m = miroirSegment(s)
+				table.insert(out, { m[1], m[2], famille = famille })
 			end
 		end
 	end

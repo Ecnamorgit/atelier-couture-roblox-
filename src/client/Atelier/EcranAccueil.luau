@@ -48,7 +48,7 @@ return function(ctx)
 			fiche and fiche.nom:match("^(%S+)") or "La cliente",
 			UiKit.etoiles(Progression.etoiles(true, r.bilan.qualite)),
 			r.verse or r.paie,
-			math.floor(r.bilan.qualite * 100 + 0.5)
+			UiKit.pourcent(r.bilan.qualite)
 		)
 		if r.acompte and r.acompte > 0 then
 			table.insert(suite, ("Acompte de %d déjà reçu"):format(r.acompte))
@@ -56,7 +56,7 @@ return function(ctx)
 		table.insert(suite, ligneAmitie(r.amitie))
 		table.insert(suite, nouveauRang(ctx.session.etat))
 	elseif action == "vendre" then
-		annonce = ("Robe vendue ! +%d pièces d'or (qualité %d %%). Elle part en vitrine."):format(r.prix, math.floor(r.bilan.qualite * 100 + 0.5))
+		annonce = ("Robe vendue ! +%d pièces d'or (qualité %d %%). Elle part en vitrine."):format(r.prix, UiKit.pourcent(r.bilan.qualite))
 		table.insert(suite, nouveauRang(ctx.session.etat))
 	elseif action == "offrir" then
 		local fiche = Clientes.get(r.cliente)

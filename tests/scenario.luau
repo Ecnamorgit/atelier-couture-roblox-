@@ -318,13 +318,13 @@ do
 	cliquer("Suivant_jupe")
 	verifier(page.Modele_jupe.Text == "Droite" and dessin.ImageContent == dessinAvant, "un dessin arrivé en retard ne remplace pas le dernier demandé")
 	VignettesCarnet.croquis = peindre
-	-- Mémoire des images pleine : un mot à la place du dessin (pas l'ancien), le carnet marche quand même
-	VignettesCarnet.croquis = function()
-		return nil
-	end
+	-- Mémoire des images pleine (Roblox refuse une image de plus) : un mot à la place du dessin (pas l'ancien), le
+	-- carnet marche quand même
+	local budgetImages = M.budget.images
+	M.budget.images = 0
 	cliquer("Suivant_col")
 	verifier(dessin.SansDessin.Visible and dessin.ImageTransparency == 1 and page.Modele_col.Text ~= colAvant, "mémoire des images pleine : un mot à la place du dessin, les modèles se choisissent quand même")
-	VignettesCarnet.croquis = peindre
+	M.budget.images = budgetImages
 	cliquer("Precedent_col")
 	verifier(not dessin.SansDessin.Visible and dessin.ImageTransparency == 0 and page.Modele_col.Text == colAvant, "le dessin revient")
 	-- Déblocages : au départ, ce qui est fermé est grisé, avec ce qu'il faut pour l'ouvrir ; son patron ne se trace pas
@@ -1123,7 +1123,7 @@ do -- Son avis en étoiles, dans l'encadré : celles de la qualité de la robe
 	for k = 1, 5 do
 		dorees += if dialogue.Etoiles["Etoile" .. k].TextColor3 == OR then 1 else 0
 	end
-	verifier(dialogue.Visible and dialogue.Texte.Text == Clientes.get("colette").repliques.merci and dialogue.Etoiles.Visible and dorees == n and n >= 2, ("Colette remercie dans l'encadré, avec son avis : %d étoiles (qualité %d %%)"):format(dorees, math.floor(qualite * 100 + 0.5)))
+	verifier(dialogue.Visible and dialogue.Texte.Text == Clientes.get("colette").repliques.merci and dialogue.Etoiles.Visible and dorees == n and n >= 2, ("Colette remercie dans l'encadré, avec son avis : %d étoiles (qualité %d %%)"):format(dorees, requireModule(scriptClient.UiKit).pourcent(qualite)))
 end
 M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
 verifier(laCliente.Parent == nil and not gui.Atelier.Dialogue.Visible, "puis elle s'en va, et l'encadré se vide")

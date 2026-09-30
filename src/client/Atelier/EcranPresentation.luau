@@ -27,8 +27,8 @@ return function(ctx)
 	UiKit.texte({
 		Name = "Qualite",
 		Text = if libre
-			then ("Qualité de la robe : %d %%"):format(math.floor(bilan.qualite * 100 + 0.5))
-			else ("Qualité de la robe : %d %% (ajustement %d %%)"):format(math.floor(bilan.qualite * 100 + 0.5), math.floor(bilan.ajustement * 100 + 0.5)),
+			then ("Qualité de la robe : %d %%"):format(UiKit.pourcent(bilan.qualite))
+			else ("Qualité de la robe : %d %% (ajustement %d %%)"):format(UiKit.pourcent(bilan.qualite), math.floor(bilan.ajustement * 100 + 0.5)),
 		Font = Enum.Font.GothamBold,
 		TextSize = 18,
 		Position = UDim2.fromOffset(0, 28),

@@ -69,6 +69,12 @@ function UiKit.mesureAnnonce(texte, largeur)
 	return 14, 19 * UiKit.lignes(texte, largeur, 14) + 2
 end
 
+-- Une qualité (0 à 1) en pourcentage affiché, arrondi vers le bas (à l'arrondi près, comme les étoiles) : 79,9 % s'affiche « 79 % »,
+-- comme la cliente le juge (et comme ses étoiles)
+function UiKit.pourcent(qualite)
+	return math.floor(qualite * 100 + 1e-7) -- (1e-9 sur la qualité, comme les étoiles et le jugement)
+end
+
 -- L'avis d'une cliente en étoiles (1 à 5) : « ★★★★☆ »
 function UiKit.etoiles(n)
 	return string.rep("★", n) .. string.rep("☆", 5 - n)
