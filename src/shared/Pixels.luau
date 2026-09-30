@@ -329,6 +329,20 @@ Pixels.PORTRAIT_LARGEUR, Pixels.PORTRAIT_HAUTEUR = 128, 160
 Pixels.EXPRESSIONS = { "contente", "neutre", "decue" }
 Pixels.COIFFURES = { "carre", "chignon", "longs", "courts", "tresse", "boucles", "queue" }
 local JOUE = { 240, 150, 150 }
+local TRAIT_CLAIR = { 250, 238, 228 } -- (relecture) les traits du visage sur une peau foncée
+
+-- Luminance relative d'une couleur (0 à 1) et contraste de deux couleurs (1 à 21), comme pour un texte à l'écran
+local function luminance(c)
+	local function lineaire(v)
+		v /= 255
+		return if v <= 0.03928 then v / 12.92 else ((v + 0.055) / 1.055) ^ 2.4
+	end
+	return 0.2126 * lineaire(c[1]) + 0.7152 * lineaire(c[2]) + 0.0722 * lineaire(c[3])
+end
+local function contraste(a, b)
+	local la, lb = luminance(a), luminance(b)
+	return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05)
+end
 
 local function rvb(c)
 	return { math.floor(c.R * 255 + 0.5), math.floor(c.G * 255 + 0.5), math.floor(c.B * 255 + 0.5) }
@@ -457,7 +471,9 @@ function Pixels.portrait(cliente, expression)
 			buffer.writeu32(buf, (j * L + i) * 4, valeur)
 		end
 	end
-	-- Le visage : un petit nez, les yeux, les sourcils et la bouche selon l'expression
+	-- Le visage : un petit nez, les yeux, les sourcils et la bouche selon l'expression, au crayon, ou en clair sur une peau
+	-- où le crayon ne se lirait pas (relecture : un contraste d'au moins 3 contre 1)
+	crayon = if contraste(CRAYON, peau) >= 3 then crayon else empaqueter(TRAIT_CLAIR[1], TRAIT_CLAIR[2], TRAIT_CLAIR[3])
 	trait(buf, L, H, { 64, 73 }, { 62, 80 }, crayon, 0)
 	trait(buf, L, H, { 62, 80 }, { 66, 81 }, crayon, 0)
 	for _, cx in ipairs({ 53, 75 }) do

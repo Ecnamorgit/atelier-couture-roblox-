@@ -43,10 +43,15 @@ function Portrait.creer(UiKit, props)
 	return cadre
 end
 
--- Montre cette cliente, avec cette expression (idCliente nil ou inconnue : le médaillon se cache)
+-- Montre cette cliente, avec cette expression (idCliente nil ou inconnue : le médaillon se cache). (Relecture) Ne bloque
+-- jamais : l'initiale tout de suite, le dessin dès qu'il est prêt (le premier dessin attend le moteur) ; le dessin d'une
+-- demande dépassée entre-temps est laissé
+local demandes = setmetatable({}, { __mode = "k" })
 function Portrait.maj(cadre, idCliente, expression)
 	local fiche = idCliente and Clientes.get(idCliente)
 	expression = expression or "neutre"
+	local numero = (demandes[cadre] or 0) + 1
+	demandes[cadre] = numero
 	cadre.Visible = fiche ~= nil
 	cadre.Image.Visible, cadre.Initiale.Visible = false, false
 	cadre:SetAttribute("Cliente", fiche and fiche.id)
@@ -59,14 +64,15 @@ function Portrait.maj(cadre, idCliente, expression)
 		cadre.Image.Visible = true
 		return
 	end
-	local contenu = Vignettes.portrait(fiche.id, expression)
-	if contenu then
-		cadre.Image.ImageContent = contenu
-		cadre.Image.Visible = true
-	else
-		cadre.Initiale.Text = string.sub(fiche.nom, 1, 1)
-		cadre.Initiale.Visible = true
-	end
+	cadre.Initiale.Text = string.sub(fiche.nom, 1, 1)
+	cadre.Initiale.Visible = true
+	task.spawn(function()
+		local contenu = Vignettes.portrait(fiche.id, expression)
+		if contenu and demandes[cadre] == numero and cadre.Parent then
+			cadre.Image.ImageContent = contenu
+			cadre.Image.Visible, cadre.Initiale.Visible = true, false
+		end
+	end)
 end
 
 return Portrait

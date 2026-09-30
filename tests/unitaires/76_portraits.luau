@@ -101,3 +101,24 @@ end
 U.verifier(crayon(expressions.contente, 64, 90) and not crayon(expressions.contente, 64, 85), "contente : un sourire")
 U.verifier(crayon(expressions.neutre, 64, 87) and not crayon(expressions.neutre, 64, 90), "neutre : un trait")
 U.verifier(crayon(expressions.decue, 64, 85) and not crayon(expressions.decue, 64, 90), "déçue : une moue")
+
+-- (relecture) Les traits du visage se lisent sur chaque peau : un contraste d'au moins 3 contre 1 (clairs sur une peau
+-- foncée)
+local function luminance(c)
+	local function lin(v)
+		v /= 255
+		return if v <= 0.03928 then v / 12.92 else ((v + 0.055) / 1.055) ^ 2.4
+	end
+	return 0.2126 * lin(c[1]) + 0.7152 * lin(c[2]) + 0.0722 * lin(c[3])
+end
+local peuPlisibles = {}
+for _, c in ipairs(Clientes.LISTE) do
+	local buf = Pixels.portrait(c, "neutre")
+	local bouche, peau = pixel(buf, 64, 87), rvb(c.tenue.peau)
+	local a, b = luminance(bouche), luminance(peau)
+	local contraste = (math.max(a, b) + 0.05) / (math.min(a, b) + 0.05)
+	if contraste < 3 then
+		table.insert(peuPlisibles, ("%s (%.1f)"):format(c.id, contraste))
+	end
+end
+U.verifier(#peuPlisibles == 0, "les traits du visage se lisent sur chaque peau (en défaut : " .. table.concat(peuPlisibles, ", ") .. ")")

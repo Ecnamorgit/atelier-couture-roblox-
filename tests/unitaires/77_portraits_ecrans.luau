@@ -38,3 +38,20 @@ colette.image = "rbxassetid://123456"
 d:dire("Colette", "Et avec mon illustration ?", nil, "colette")
 colette.image = nil
 U.verifier(portrait.Image.Visible and portrait.Image.Image == "rbxassetid://123456", "une illustration dans sa fiche remplace le dessin")
+
+-- (relecture) Le dessin ne bloque jamais l'écran : il se fait dans une tâche à part (retenue ici) ; l'initiale tout de
+-- suite, le dessin quand la tâche finit ; le dessin d'une demande dépassée n'écrase pas la suivante
+local lancer = task.spawn
+local retenues = {}
+task.spawn = function(f, ...)
+	table.insert(retenues, { f = f, args = { ... } })
+end
+local m = Portrait.creer(UiKit, { Name = "Essai", Size = UDim2.fromOffset(64, 80), ZIndex = 1, Parent = gui })
+Portrait.maj(m, "colette", "neutre")
+local debut = m.Initiale.Visible and m.Initiale.Text == "C" and not m.Image.Visible
+Portrait.maj(m, "margot", "contente")
+task.spawn = lancer
+U.verifier(debut and #retenues == 2 and m.Initiale.Text == "M", "le dessin ne bloque pas : l'initiale tout de suite, le dessin dans une tâche à part")
+retenues[2].f(table.unpack(retenues[2].args)) -- le dessin de Margot finit d'abord…
+retenues[1].f(table.unpack(retenues[1].args)) -- … celui de Colette, en retard
+U.verifier(m.Image.Visible and not m.Initiale.Visible and m:GetAttribute("Cliente") == "margot" and m.Image.ImageContent == Vignettes.portrait("margot", "contente"), "puis le dessin ; celui de Colette, arrivé en retard, n'écrase pas celui de Margot")
