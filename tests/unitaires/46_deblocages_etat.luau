@@ -109,5 +109,6 @@ local croix = { { id = "croix_argent", piece = 1, copie = "unique", u = 0.5, v =
 r = d:decorer(croix)
 U.verifier(not r.ok and r.erreur == "Pas encore ouvert : Croix d'argent (Amitié d'Inès : 4)." and d.etape == "decorations", "croix d'argent fermée sans l'amitié d'Inès")
 d.clientes.ines.amitie = 18
+d.mercerie.croix_argent = 1 -- (sous-projet 6 : une croix à la mercerie)
 U.verifier(d:decorer(croix).ok, "amitié d'Inès au niveau 4 : la croix se pose")
 U.verifier(Catalogue.accessoire("croix_argent") ~= nil, "(la croix existe)")

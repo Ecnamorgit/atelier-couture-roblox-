@@ -33,6 +33,21 @@ local MESURE_INVALIDE = "Mesure invalide : tourne chaque molette jusqu'à ce que
 -- Étapes du plan 3b (le plan 3c ajoute la photo et la livraison après les décorations)
 EtatAtelier.ROBES_GARDEES = 10 -- robes livrées gardées, la plus récente en vitrine (spec §6)
 EtatAtelier.ETAPES = { "accueil", "mesures", "carnet", "achat", "decoupe", "epinglage", "couture", "decorations", "photo", "refus" }
+-- Sous-projet 6 : la mercerie, achetée d'avance ([idAccessoire] = unités pour un objet, cm pour une garniture). Toute
+-- partie commence avec un kit d'environ 60 po, de décorations ouvertes au départ
+EtatAtelier.KIT_MERCERIE = {
+	bouton_nacre = 10,
+	bouton_dore = 5,
+	perle = 10,
+	fleur_rose = 3,
+	fleur_blanche = 2,
+	ruban_rose = 150,
+}
+EtatAtelier.MERCERIE_MAX_UNITES = 999
+EtatAtelier.MERCERIE_MAX_CM = 9999
+EtatAtelier.LOT_GARNITURE = 50 -- cm par lot de garniture acheté
+EtatAtelier.ACHAT_MERCERIE_MAX = 99 -- unités ou lots par achat
+EtatAtelier.SOUVENIRS_OFFERTS = 5 -- exemplaires du souvenir d'un événement qui a lieu
 
 local function refus(message)
 	return { ok = false, erreur = message }
@@ -83,7 +98,7 @@ local function pareil(a, b)
 end
 
 -- Champs de l'état échangés avec le serveur (les rouleaux à part : ce sont des objets Coupon)
-local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites", "ventes", "lettres", "histoire" }
+local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites", "ventes", "lettres", "histoire", "mercerie" }
 
 function EtatAtelier.nouveau(argent)
 	return setmetatable({
@@ -108,6 +123,7 @@ function EtatAtelier.nouveau(argent)
 		ventes = 0,
 		lettres = {}, -- le courrier : { { cliente, commande } }, trois au plus
 		histoire = { faites = {} }, -- sous-projet 3 : les commandes d'histoire livrées ([idCommande] = true)
+		mercerie = table.clone(EtatAtelier.KIT_MERCERIE), -- sous-projet 6
 	}, EtatAtelier)
 end
 
@@ -539,6 +555,45 @@ function EtatAtelier.prixDecorations(pieces, accessoires)
 	return total
 end
 
+-- Ce que des décorations prennent à la mercerie : [id] = unités (un objet) ou cm (une garniture, arrondis au-dessus)
+function EtatAtelier.besoinsMercerie(pieces, accessoires)
+	local out = {}
+	for _, a in ipairs(accessoires) do
+		local def = Catalogue.accessoire(a.id)
+		local q = if def.genre == "garniture" then math.ceil(Notation.longueurGarniture(pieces[a.piece].id, a.trajet) * 10 - 1e-9) else 1
+		out[a.id] = (out[a.id] or 0) + q
+	end
+	return out
+end
+
+-- Acheter de la mercerie : ce qui est ouvert, de 1 à 99 unités (un objet) ou lots de 50 cm (une garniture), au prix
+-- du catalogue ; 999 unités ou 9 999 cm au plus en stock
+function EtatAtelier:acheterMercerie(id, quantite)
+	local def = type(id) == "string" and Catalogue.accessoire(id)
+	if not def then
+		return refus("Article inconnu.")
+	end
+	if type(quantite) ~= "number" or quantite ~= math.floor(quantite) or quantite < 1 or quantite > EtatAtelier.ACHAT_MERCERIE_MAX then
+		return refus("Quantité invalide.")
+	end
+	local ferme = fermes(self, "accessoires", { id })
+	if ferme then
+		return ferme
+	end
+	local garniture = def.genre == "garniture"
+	local ajout = if garniture then quantite * EtatAtelier.LOT_GARNITURE else quantite
+	local prix = if garniture then def.prix * ajout / 10 else def.prix * quantite
+	if (self.mercerie[id] or 0) + ajout > (if garniture then EtatAtelier.MERCERIE_MAX_CM else EtatAtelier.MERCERIE_MAX_UNITES) then
+		return refus("Ta mercerie n'a plus de place pour cet article.")
+	end
+	if prix > self.argent then
+		return refus("Pas assez d'argent.")
+	end
+	self.argent -= prix
+	self.mercerie[id] = (self.mercerie[id] or 0) + ajout
+	return { ok = true, prix = prix, quantite = ajout }
+end
+
 -- Recette de la robe en cours (position des pièces sur le rouleau, notes de couture, décorations),
 -- ou nil tant que toutes les pièces ne sont pas coupées
 function EtatAtelier:recette()
@@ -567,7 +622,8 @@ end
 
 -- Décorations : la liste complète, envoyée quand on quitte le poste (spec §6). Vérifiée comme une
 -- recette (identifiants, 300 objets et 64 points au plus, u et v dans [0 ; 1], échelle et angle
--- bornés) ; on facture la différence avec la liste précédente (ce qu'on retire est remboursé).
+-- bornés). Sous-projet 6 : la différence avec la liste précédente est prise à la mercerie (ce qu'on retire y
+-- revient) ; ce qui manque est refusé.
 function EtatAtelier:decorer(liste)
 	if self.etape ~= "decorations" then
 		return refus("Ce n'est pas le moment de décorer.")
@@ -593,14 +649,28 @@ function EtatAtelier:decorer(liste)
 	for i, a in ipairs(liste) do
 		propres[i] = copieAccessoire(a)
 	end
-	local difference = EtatAtelier.prixDecorations(recette.pieces, propres) - EtatAtelier.prixDecorations(recette.pieces, self.accessoires)
-	if difference > self.argent then
-		return refus("Pas assez d'argent pour ces décorations.")
+	local avant = EtatAtelier.besoinsMercerie(recette.pieces, self.accessoires)
+	local apres = EtatAtelier.besoinsMercerie(recette.pieces, propres)
+	local manque, variations = {}, {}
+	for _, def in ipairs(Catalogue.Accessoires) do -- (dans l'ordre du catalogue : un message stable)
+		local variation = (apres[def.id] or 0) - (avant[def.id] or 0)
+		local stock = self.mercerie[def.id] or 0
+		if variation > stock then
+			table.insert(manque, if def.genre == "garniture" then ("%s, %d cm"):format(def.nom, variation - stock) else ("%s ×%d"):format(def.nom, variation - stock))
+		elseif variation ~= 0 then
+			variations[def.id] = variation
+		end
 	end
-	self.argent -= difference
+	if #manque > 0 then
+		return refus("Mercerie insuffisante : il te manque " .. table.concat(manque, " ; ") .. ".")
+	end
+	for id, variation in pairs(variations) do
+		local reste = (self.mercerie[id] or 0) - variation
+		self.mercerie[id] = if reste > 0 then reste else nil
+	end
 	self.accessoires = propres
 	self.etape = "photo"
-	return { ok = true, prix = difference }
+	return { ok = true, prix = 0 }
 end
 
 -- De la photo, on peut revenir ajuster les décorations
@@ -674,6 +744,8 @@ function EtatAtelier:livrer(rng)
 		local _, ev = Histoire.commande(self.commande.histoire)
 		if ev and Histoire.aEuLieu(self, ev.id) then
 			evenement = { id = ev.id, nom = ev.nom, epilogue = ev.epilogue, souvenir = ev.souvenir }
+			-- (sous-projet 6) des exemplaires du souvenir, dans la mercerie
+			self.mercerie[ev.souvenir] = math.min((self.mercerie[ev.souvenir] or 0) + EtatAtelier.SOUVENIRS_OFFERTS, EtatAtelier.MERCERIE_MAX_UNITES)
 		end
 	end
 	local paie = Notation.paie(#recette.pieces, #self.commande.exigences, bilan.qualite)

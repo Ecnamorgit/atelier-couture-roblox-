@@ -140,6 +140,9 @@ for n = 1, ROBES do
 		end
 		e.etape = "decorations"
 		local deco = choix.impose and { { id = choix.impose, piece = 1, copie = "unique", u = 0.5, v = 0.5, echelle = 1, angle = 0 } } or {}
+		if choix.impose and (e.mercerie[choix.impose] or 0) < 1 then
+			assert(e:acheterMercerie(choix.impose, 1).ok) -- (sous-projet 6 : l'accessoire exigé s'achète à la mercerie)
+		end
 		assert(e:decorer(deco).ok)
 		reussie = e:livrer(rng).reussie
 	end

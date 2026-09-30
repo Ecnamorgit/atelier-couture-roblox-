@@ -81,6 +81,7 @@ local function robeDeJuteVendue(fleurs)
 	for k = 1, fleurs do
 		deco[k] = { id = "fleur_rose", piece = 1, copie = "unique", u = 0.5, v = k / (fleurs + 1), echelle = 1, angle = 0 }
 	end
+	j.mercerie.fleur_rose = fleurs -- (sous-projet 6 : les fleurs, à la mercerie)
 	assert(j:retourDecorations().ok and j:decorer(deco).ok)
 	return j:vendre()
 end

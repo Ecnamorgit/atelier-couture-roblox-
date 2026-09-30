@@ -955,8 +955,10 @@ verifier(camera.CFrame ~= origineBoutique * ScenePoste.CAMERA and #decorations:G
 -- Présentation, refus, retouche, livraison
 ---------------------------------------------------------------------------
 local avantDeco = argent()
+serveur:atelier(joueur).etat.mercerie.noeud_satin = 1 -- (sous-projet 6 : le nœud, à la mercerie ; le ruban vient du kit)
+local rubanAvant = serveur:atelier(joueur).etat.mercerie.ruban_rose
 cliquer("Presenter")
-verifier(titre() == "7. Photo et livraison" and argent() == avantDeco - coutRuban, "présenter : décorations payées")
+verifier(titre() == "7. Photo et livraison" and argent() == avantDeco and serveur:atelier(joueur).etat.mercerie.noeud_satin == nil and serveur:atelier(joueur).etat.mercerie.ruban_rose < rubanAvant, "présenter : décorations prises à la mercerie, pas d'argent")
 verifier(camera.CFrame == origineBoutique * ScenePoste.CAMERA, "la cliente voit la robe de face")
 verifier(texte("Au moins 1 en Romantique (actuel :") ~= nil, "le score actuel est affiché à côté d'une exigence de style")
 verifier(#decorations:GetChildren() == 2, "la robe est présentée avec ses décorations")
@@ -1078,6 +1080,7 @@ verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_echec", "robe refusée : un son d
 verifierTailles("refus")
 cliquer("Retoucher")
 verifier(titre() == "6. Décorations", "retouche : retour aux décorations")
+serveur:atelier(joueur).etat.mercerie.croix_argent = 1 -- (sous-projet 6 : la croix, à la mercerie)
 cliquer("Deco_croix_argent")
 toucherRobe("Piece_corsage_v_devant_unique", "corsage_v_devant", "unique", 0.5, 0.7)
 cliquer("Presenter")
