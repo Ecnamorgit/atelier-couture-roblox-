@@ -170,6 +170,9 @@ end
 function Session:acheterMercerie(idAccessoire, quantite)
 	return agir(self, "acheterMercerie", idAccessoire, quantite)
 end
+function Session:jeterEntame(idTissu)
+	return agir(self, "jeterEntame", idTissu)
+end
 function Session:commencerDecoupe()
 	return agir(self, "commencerDecoupe")
 end

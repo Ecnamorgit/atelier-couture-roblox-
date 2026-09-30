@@ -925,6 +925,16 @@ function EtatAtelier:recommencer()
 	return { ok = true, jetees = jetees }
 end
 
+-- Une pièce de ce tissu est-elle déjà coupée pour la robe en cours ?
+function EtatAtelier:coupeDans(idTissu)
+	for idPiece in pairs(self.coupees) do
+		if self.tissus[idPiece] == idTissu then
+			return true
+		end
+	end
+	return false
+end
+
 -- Jette la bande entamée d'un rouleau (elle quitte le stock) : à l'achat, ou à la table tant qu'aucune pièce de ce
 -- tissu n'est coupée pour la robe en cours (le rouleau repart neuf)
 function EtatAtelier:jeterEntame(idTissu)
@@ -938,10 +948,10 @@ function EtatAtelier:jeterEntame(idTissu)
 	if not entame then
 		return refus("Ce rouleau n'est pas entamé.")
 	end
-	local coupon = self.coupons[idTissu]
-	if coupon and next(coupon.poses) then
+	if self:coupeDans(idTissu) then
 		return refus("Des pièces de ce tissu sont déjà coupées pour cette robe.")
 	end
+	local coupon = self.coupons[idTissu]
 	self.stock[idTissu] = math.max(0, (self.stock[idTissu] or 0) - entame.bas)
 	self.entames[idTissu] = nil
 	if coupon then

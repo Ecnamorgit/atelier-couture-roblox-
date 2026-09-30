@@ -9,6 +9,7 @@ local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Polygone = require(Couture:WaitForChild("Polygone"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
+local Deblocages = require(Couture:WaitForChild("Deblocages"))
 local TableDecoupe = require(script.Parent:WaitForChild("TableDecoupe"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 local Mercerie = require(script.Parent:WaitForChild("Mercerie"))
@@ -108,6 +109,20 @@ return function(ctx)
 			ctx.refus(r)
 		end
 	end)
+	-- (sous-projet 6) Jeter la bande entamée de ce rouleau (deuxième appui pour confirmer), tant qu'aucune pièce de ce
+	-- tissu n'est coupée pour cette robe : elle quitte le stock, le rouleau repart neuf
+	local jeter = UiKit.boutonConfirme({ Name = "JeterEntame", Text = "Jeter la bande", TextSize = 14, TextWrapped = true, AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(124, 34), Visible = false, Parent = panneau }, function()
+		local idTissu = table_.tissu
+		local r = session:jeterEntame(idTissu)
+		if not r.ok then
+			ctx.refus(r)
+			return
+		end
+		ctx.message(("Bande entamée jetée : %s m %s."):format(Mercerie.metres(r.dm * 10), Deblocages.de(Catalogue.tissu(idTissu).nom)), C.ok)
+		table_:proposer()
+		rafraichir()
+		montrerPiece()
+	end)
 
 	placerPiece = function()
 		local p = table_.placement
@@ -155,6 +170,7 @@ return function(ctx)
 		infoRouleau.Text = ("%s m entamés / %s m\nCette robe : +%s m (%d po)"):format(Mercerie.metres(entame * 10), Mercerie.metres(coupon.longueur * 10), Mercerie.metres(coupon:ajout() * 10), EtatAtelier.prix(table_.tissu, coupon:ajout()))
 		ligneEntame.Visible = entame > 0
 		ligneEntame.Position = UDim2.fromOffset(0, entame * PX)
+		jeter.Visible = etat.entames[table_.tissu] ~= nil and not etat:coupeDans(table_.tissu)
 		local plie = false
 		for _, id in ipairs(table_:piecesRestantes()) do
 			plie = plie or Catalogue.piece(id).pliee == true

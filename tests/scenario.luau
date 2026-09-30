@@ -665,6 +665,7 @@ cliquer("OuvrirAtelier")
 verifier(M.actions.AtelierDerouler ~= nil, "fenêtre rouverte : A et D déroulent de nouveau")
 -- Tissu entamé : rien de coupé, le rouleau est intact
 verifier(string.find(panneau.InfoRouleau.Text, "0,00 m entamés / ", 1, true) == 1 and string.find(panneau.InfoRouleau.Text, "\nCette robe : +0,00 m (0 po)", 1, true) ~= nil and not rouleau.Tissu.Entame.Visible, "rien de coupé : rouleau intact (" .. panneau.InfoRouleau.Text .. ")")
+verifier(not fenetre.Contenu.Panneau.JeterEntame.Visible, "rouleau neuf : pas de « Jeter la bande »")
 cliquer("Proposer")
 -- « Plus de tissu » cliqué deux fois très vite : un seul achat
 local avantPlus = argent()
@@ -1616,6 +1617,21 @@ do -- (sous-projet 6) Le rouleau de coton blanc entamé : ses trous sont dessin�
 	-- Une bande jetée d'elle-même (plus de 24 trous) est annoncée
 	SessionModule.courante.annonce("couper", { ok = true, jetees = { { tissu = "coton_blanc", dm = 13 } } })
 	verifier(fenetre.Message.Visible and fenetre.Message.Text == "Trop de trous : la bande entamée est jetée (Coton blanc, 1,30 m).", "une bande jetée d'elle-même est annoncée")
+end
+do -- (sous-projet 6) « Jeter la bande » : au deuxième appui, la bande de coton quitte le stock, le rouleau repart neuf
+	local s = serveur:atelier(joueur).etat
+	local avant = s.stock.coton_blanc
+	verifier(boutonNomme("JeterEntame").Visible and boutonNomme("JeterEntame").Position.X.Scale == 1, "coton blanc entamé, rien de coupé : « Jeter la bande », en bas à droite")
+	cliquer("JeterEntame")
+	verifier(s.entames.coton_blanc ~= nil and boutonNomme("JeterEntame").Text == "Vraiment ? Touche encore", "premier appui : on demande de confirmer")
+	cliquer("JeterEntame")
+	local trous = 0
+	for _, d in ipairs(fenetre.Contenu.Rouleau.Tissu.Coupees:GetChildren()) do
+		trous += if d.Name:match("^Trou_") then 1 else 0
+	end
+	verifier(s.entames.coton_blanc == nil and s.stock.coton_blanc == avant - 6 and not fenetre.Contenu.Panneau.JeterEntame.Visible and fenetre.Message.Text == "Bande entamée jetée : 0,60 m de Coton blanc.", "second appui : la bande (0,60 m) quitte le stock, le bouton s'en va (" .. fenetre.Message.Text .. ")")
+	verifier(trous == 0 and string.find(fenetre.Contenu.Panneau.InfoRouleau.Text, "0,00 m entamés", 1, true) == 1 and fenetre.Contenu.Panneau.Statut.Text == "Place libre : tu peux couper.", "le rouleau repart neuf : plus de trous, une place libre proposée")
+	verifier(fenetre.Contenu.Rouleau.Tissu.PieceCourante.Position.Y.Offset < 6 * 36, "la pièce remonte en haut du rouleau neuf (" .. fenetre.Contenu.Rouleau.Tissu.PieceCourante.Position.Y.Offset .. " px)")
 end
 verifierTailles("découpe à six tissus")
 
