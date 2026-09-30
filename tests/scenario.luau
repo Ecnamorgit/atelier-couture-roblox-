@@ -1554,8 +1554,28 @@ for _, c in ipairs(SIX) do
 	cliquer("Filtre_tous")
 	cliquer("Tissu_" .. c[2])
 end
+do -- (sous-projet 6) Le coton blanc est entamé par une robe d'avant : ses 6 dm en stock, tous entamés (deux trous). Au
+	-- carnet, le tissu à acheter ne compte que le tissu neuf
+	local s = serveur:atelier(joueur).etat
+	local function aAcheter()
+		M.avancer(0.5)
+		SessionModule.courante:actualiser()
+		return tonumber(fenetre.Contenu.Droite.Metrage.Text:match("^Tissu à acheter : (%d+) dm"))
+	end
+	s.stock.coton_blanc, s.entames.coton_blanc = 6, nil
+	local neuf = aAcheter()
+	s.entames.coton_blanc = { bas = 6, trous = { { piece = "jupe_droite_devant", x = 2.5, y = 3, angle = 0 }, { piece = "corsage_droit_devant", x = 9.6, y = 2.1, angle = 0 } } }
+	local entame = aAcheter()
+	local conseilCoton = requireModule(dossier.Metrage).conseil({ "corsage_v_devant" })
+	verifier(neuf ~= nil and entame == neuf + math.min(6, conseilCoton), ("au carnet, 6 dm de coton tout entamés ne comptent pas : %s dm à acheter au lieu de %s"):format(tostring(entame), tostring(neuf)))
+end
 cliquer("Valider")
 verifier(titre() == "2. Achat du tissu", "robe en six tissus : à l'achat")
+do -- L'achat du coton blanc : le conseil ne compte que le tissu neuf
+	local l = fenetre.Contenu.Lignes.Ligne_coton_blanc
+	local conseilCoton = tonumber(l.Infos.Text:match("^Conseillé : (%d+) dm"))
+	verifier(conseilCoton ~= nil and l.Infos.Text == ("Conseillé : %d dm · Neuf : 0 dm (6 entamés)"):format(conseilCoton) and l.Quantite.Text == conseilCoton .. " dm", "coton blanc tout entamé : la quantité proposée est le conseil entier (" .. l.Infos.Text .. ")")
+end
 local lignesAchat = fenetre.Contenu:FindFirstChild("Lignes")
 verifier(lignesAchat ~= nil and lignesAchat:IsA("ScrollingFrame"), "les lignes d'achat sont dans une liste qui défile")
 local nbLignes, finLignes = 0, 0
@@ -1583,6 +1603,19 @@ for _, o in ipairs(ongletsDecoupe:GetChildren()) do
 	end
 end
 verifier(nbOnglets == 6 and ongletsDecoupe.CanvasSize.X.Offset >= finOnglets, "six onglets, tous atteignables")
+do -- (sous-projet 6) Le rouleau de coton blanc entamé : ses trous sont dessinés, « Proposer » les évite
+	cliquer("Onglet_coton_blanc")
+	local trousVus = 0
+	for _, d in ipairs(fenetre.Contenu.Rouleau.Tissu.Coupees:GetChildren()) do
+		trousVus += if d.Name:match("^Trou_") then 1 else 0
+	end
+	local c = SessionModule.courante.etat.coupons.coton_blanc
+	cliquer("Proposer")
+	verifier(trousVus == 2 and fenetre.Contenu.Panneau.Statut.Text == "Place libre : tu peux couper." and fenetre.Contenu.Panneau.InfoRouleau.Text == ("Entamé : 6 / %d dm"):format(c.longueur), "coton blanc entamé : deux trous dessinés, « Proposer » trouve une place libre, 6 dm entamés (" .. fenetre.Contenu.Panneau.Statut.Text .. ")")
+	-- Une bande jetée d'elle-même (plus de 24 trous) est annoncée
+	SessionModule.courante.annonce("couper", { ok = true, jetees = { { tissu = "coton_blanc", dm = 13 } } })
+	verifier(fenetre.Message.Visible and fenetre.Message.Text == "Trop de trous : la bande entamée est jetée (Coton blanc, 1,30 m).", "une bande jetée d'elle-même est annoncée")
+end
 verifierTailles("découpe à six tissus")
 
 ---------------------------------------------------------------------------

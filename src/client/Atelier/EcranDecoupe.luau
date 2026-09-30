@@ -1,5 +1,5 @@
--- Écran de la table de découpe : le rouleau vu de dessus (motif du tissu, pli, pièces déjà coupées,
--- tissu entamé), la pièce sélectionnée à glisser à la souris ou au doigt, la rotation (boutons, R, molette
+-- Écran de la table de découpe : le rouleau vu de dessus (motif du tissu, pli, pièces déjà coupées, trous
+-- laissés par les robes d'avant, tissu entamé), la pièce sélectionnée à glisser à la souris ou au doigt, la rotation (boutons, R, molette
 -- sur la pièce), le déroulé (défilement, A et D), le droit-fil et la coupe.
 -- La logique (position, aimantation, validité) est dans TableDecoupe.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -49,7 +49,7 @@ return function(ctx)
 	})
 	local pli = UiKit.creer("Frame", { Name = "Pli", BackgroundColor3 = C.texte, BackgroundTransparency = 0.4, BorderSizePixel = 0, Position = UDim2.fromOffset(7 * PX - 1, 0), Size = UDim2.new(0, 2, 1, 0), ZIndex = 2, Parent = tissuImage })
 	local calque = UiKit.creer("Frame", { Name = "Coupees", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = tissuImage })
-	-- Tissu entamé : couper consomme le rouleau jusqu'au bas de la pièce la plus basse
+	-- Tissu entamé : jusqu'au bas de la pièce (ou du trou) le plus bas
 	local ligneEntame = UiKit.creer("Frame", { Name = "Entame", BackgroundColor3 = C.alerte, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5), Size = UDim2.new(1, 0, 0, 3), ZIndex = 4, Visible = false, Parent = tissuImage })
 	local piece = UiKit.creer("ImageButton", { Name = "PieceCourante", BackgroundTransparency = 1, BackgroundColor3 = PAPIER, AnchorPoint = Vector2.new(0.5, 0.5), AutoButtonColor = false, ZIndex = 5, Parent = tissuImage })
 
@@ -157,37 +157,43 @@ return function(ctx)
 			plie = plie or Catalogue.piece(id).pliee == true
 		end
 		pli.Visible = plie
-		-- Pièces déjà coupées dans ce tissu (et leur symétrique si elles sont pliées ; le symétrique
-		-- est approché par la même silhouette tournée en sens inverse)
+		-- Pièces déjà coupées dans ce tissu, en gris, et les trous laissés par les robes d'avant, plus sombres (avec le
+		-- symétrique d'une pièce pliée, approché par la même silhouette tournée en sens inverse)
 		calque:ClearAllChildren()
-		for id, p in pairs(etat.coupees) do
-			if etat.tissus[id] == table_.tissu then
-				local copies = { { x = p.x, angle = p.angle } }
-				if Catalogue.piece(id).pliee then
-					table.insert(copies, { x = 2 * Catalogue.PLI - p.x, angle = -p.angle })
-				end
-				for _, c in ipairs(copies) do
-					local img = UiKit.creer("ImageLabel", {
-						Name = "Coupee_" .. id,
-						BackgroundTransparency = 1,
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						Position = UDim2.fromOffset(c.x * PX, p.y * PX),
-						Size = taillePiece(id),
-						Rotation = c.angle,
-						ImageColor3 = Color3.fromRGB(120, 120, 120),
-						ImageTransparency = 0.3,
-						ZIndex = 4,
-						Parent = calque,
-					})
-					local silhouette = Vignettes.silhouette(id)
-					if silhouette then
-						img.ImageContent = silhouette
-					else
-						img.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
-						img.BackgroundTransparency = 0.5
-					end
+		local function griser(nom, id, p, gris)
+			local copies = { { x = p.x, angle = p.angle } }
+			if Catalogue.piece(id).pliee then
+				table.insert(copies, { x = 2 * Catalogue.PLI - p.x, angle = -p.angle })
+			end
+			for _, c in ipairs(copies) do
+				local img = UiKit.creer("ImageLabel", {
+					Name = nom,
+					BackgroundTransparency = 1,
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromOffset(c.x * PX, p.y * PX),
+					Size = taillePiece(id),
+					Rotation = c.angle,
+					ImageColor3 = gris,
+					ImageTransparency = 0.3,
+					ZIndex = 4,
+					Parent = calque,
+				})
+				local silhouette = Vignettes.silhouette(id)
+				if silhouette then
+					img.ImageContent = silhouette
+				else
+					img.BackgroundColor3 = gris
+					img.BackgroundTransparency = 0.5
 				end
 			end
+		end
+		for id, p in pairs(etat.coupees) do
+			if etat.tissus[id] == table_.tissu then
+				griser("Coupee_" .. id, id, p, Color3.fromRGB(120, 120, 120))
+			end
+		end
+		for k, trou in ipairs(coupon.trous) do
+			griser("Trou_" .. k, trou.piece, trou, Color3.fromRGB(70, 66, 66))
 		end
 		-- Onglets des tissus
 		onglets:ClearAllChildren()

@@ -73,7 +73,8 @@ function TableDecoupe:selectionner(idPiece)
 end
 
 -- Place proposée : la première place libre, du haut du rouleau vers le bas puis de gauche à droite,
--- contre les bords des pièces déjà coupées, au droit-fil parfait. À défaut : sous tout le reste.
+-- contre les bords des pièces déjà coupées et des trous du tissu entamé, au droit-fil parfait. À défaut : sous tout
+-- le reste.
 function TableDecoupe:proposer()
 	local id = self.selection
 	if not id then
@@ -86,8 +87,15 @@ function TableDecoupe:proposer()
 	local limiteX = def.pliee and Catalogue.PLI - Metrage.MARGE / 2 or Catalogue.LARGEUR_ROULEAU
 	local xs, ys = { 0 }, { 0 }
 	local bas = 0
+	local prises = {}
 	for idCoupee, pose in pairs(coupon.poses) do
-		for _, contour in ipairs(Coupon.contoursPoses(idCoupee, pose)) do
+		table.insert(prises, { idCoupee, pose })
+	end
+	for _, trou in ipairs(coupon.trous) do
+		table.insert(prises, { trou.piece, trou })
+	end
+	for _, p in ipairs(prises) do
+		for _, contour in ipairs(Coupon.contoursPoses(p[1], p[2])) do
 			local b = Polygone.boite(contour)
 			table.insert(xs, b.maxX + Metrage.MARGE)
 			table.insert(ys, b.maxY + Metrage.MARGE)
