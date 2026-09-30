@@ -8,10 +8,11 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 (specs : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md` pour le cœur de l'atelier,
 `docs/superpowers/specs/2026-09-29-clientes-progression-design.md` pour les clientes et la progression,
 `docs/superpowers/specs/2026-09-30-histoire-evenements-design.md` pour l'histoire,
-`docs/superpowers/specs/2026-09-30-ampleur-contenu-design.md` pour l'ampleur du catalogue et du quartier ; plans :
-`docs/superpowers/plans/`).
+`docs/superpowers/specs/2026-09-30-ampleur-contenu-design.md` pour l'ampleur du catalogue et du quartier,
+`docs/superpowers/specs/2026-09-30-fidelite-dressmaker-design.md` pour la fidélité à la présentation de
+*Dressmaker* ; plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 4 terminé côté code, plans 8a à 9 : l'ampleur du catalogue et du quartier)
+## État actuel (sous-projet 5 en cours, plan 11 : le carnet de croquis dessiné)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -31,12 +32,17 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    près). Le serveur refuse un ruban à plus de 1,5 dm de la vraie mesure. Quand elle revient, « Reprendre ses
    mesures » les reprend du carnet. Le mannequin et le patron suivent les mesures prises ; l'ajustement
    (100 % jusqu'à 0,2 dm d'écart par tour, puis moins, 50 % au pire) multiplie la qualité de la robe.
-2. **Carnet de croquis** : corsage, manches, col et jupe au choix (19 variantes : cinq corsages dont le
-   cache-cœur et le bustier, cinq manches, quatre cols dont le col marin, cinq jupes dont la jupe crayon) ; un
-   tissu par pièce (41 tissus en onze matières, filtre par style, dont la toile de jute, gratuite).
-   Les jauges de style, l'état des exigences, le métrage et le coût du tissu à acheter se mettent à jour en
-   direct (la plage d'une jauge ne compte que les tissus ouverts). Ce qui n'est pas encore ouvert est grisé, avec ce qu'il faut pour l'ouvrir (« Prestige 3 »,
-   « Amitié d'Hélène : 2 ») ; le serveur le refuse aussi.
+2. **Carnet de croquis** : une page de carnet (papier, notes de tailleur, crayon). Au centre, la robe dessinée
+   au trait, de face, sur un mannequin esquissé : elle change avec chaque modèle et se colorie du motif de chaque
+   tissu choisi ; toucher une partie du dessin ouvre le choix de son tissu. Dessous, une ligne par famille
+   (corsage, col, manches, jupe) : ◀ le nom du modèle ▶ et un point par modèle (19 variantes : cinq corsages dont
+   le cache-cœur et le bustier, cinq manches, quatre cols dont le col marin, cinq jupes dont la jupe crayon).
+   À côté du dessin, un tissu par pièce (41 tissus en onze matières, filtre par style, dont la toile de jute,
+   gratuite) ; les échantillons des tissus choisis sont épinglés en haut de la page ; « Environ X m de tissu » ;
+   « Tracer le patron ». La fiche de la commande, à droite : jauges de style, état des exigences, coût du tissu
+   à acheter, à jour en direct (la plage d'une jauge ne compte que les tissus ouverts). Un modèle pas encore
+   ouvert est grisé, avec ce qu'il faut pour l'ouvrir (« Prestige 3 », « Amitié d'Hélène : 2 ») ; son patron
+   ne se trace pas, et le serveur le refuse aussi.
 3. **Achat** : métrage conseillé par tissu, quantité réglable, coût au mètre ; toucher l'échantillon d'un tissu
    montre le rouleau conseillé, avec les pièces rangées dessus.
 4. **Table de découpe** : les pièces du patron se glissent (souris ou doigt) et se tournent (boutons, R, molette
@@ -95,7 +101,9 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    avec une tenue imposée. Toutes les robes livrées, l'événement a lieu : son épilogue, un souvenir (une des douze
    décorations nouvelles) et 15 de prestige ; le carnet d'adresses garde les souvenirs. Les commandes ordinaires
    continuent à côté.
-10. La suite : sous-projet 5 (porter la robe sur son avatar, défilés entre joueurs), à décider.
+10. La suite : la fin du sous-projet 5 (paroles des clientes dans un encadré, avis en étoiles, réputation,
+   confettis, gazette du quartier, affiche des nouveautés, chat de l'atelier) ; porter la robe sur son avatar et
+   les défilés entre joueurs restent à décider.
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
@@ -144,7 +152,7 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Clientes`, `Progression` | Les dix clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux |
   | `Deblocages` | Ce qui est fermé au départ et ce qui l'ouvre (prestige, amitié, événement) ; ce qu'une livraison vient d'ouvrir ; ce que l'amitié d'une cliente ouvrira ensuite |
   | `Histoire` | Les douze événements du quartier : leurs robes, tenues, répliques, épilogues et souvenirs ; l'événement en cours et sa prochaine robe |
-  | `Pixels` | Motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron |
+  | `Croquis`, `Pixels` | Dessin de face de chaque modèle (formes des parties, plis, mannequin) ; motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron, croquis colorié du carnet |
   | `Recette` | Recette d'une robe en JSON et validation complète (filtre du serveur au plan 4) |
   | `Maillage`, `Mannequin`, `Editables`, `ConstructeurRobe`, `Vitrines` | Robe 3D, mannequin, vitrines |
   | `Boutique` | Plan d'une boutique (repère local) et les 8 emplacements de la rue |

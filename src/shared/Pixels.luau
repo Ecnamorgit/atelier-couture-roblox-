@@ -4,6 +4,7 @@
 local dossier = script.Parent
 local Catalogue = require(dossier:WaitForChild("Catalogue"))
 local Polygone = require(dossier:WaitForChild("Polygone"))
+local Croquis = require(dossier:WaitForChild("Croquis"))
 
 local Pixels = {}
 
@@ -215,6 +216,100 @@ function Pixels.silhouette(idPiece, plafond)
 			end
 			buffer.writeu32(buf, (j * largeur + i) * 4, valeur)
 		end
+	end
+	return buf, largeur, hauteur
+end
+
+---------------------------------------------------------------------------
+-- Croquis du carnet (sous-projet 5) : la robe de face, chaque partie remplie du motif de son tissu (blanche sans
+-- tissu), un trait de crayon autour, les plis en traits fins, le mannequin esquissé derrière. Fond transparent :
+-- le papier du carnet est dessous. tissus = { [famille] = idTissu ou nil }. Retourne buffer, largeur, hauteur.
+---------------------------------------------------------------------------
+local BLANC_CROQUIS = { 252, 250, 245 }
+local CRAYON = { 64, 50, 56 }
+local CRAYON_FIN = { 120, 100, 106 }
+local ESQUISSE = { 175, 165, 165, 150 }
+local MOTIF_PAR_PX = 2 -- un pixel du dessin couvre deux pixels du motif : on voit les dessins du tissu
+
+function Pixels.croquis(croquis, tissus, largeur, hauteur)
+	local parties = Croquis.parties(croquis)
+	local ex, ey = largeur / Croquis.LARGEUR, hauteur / Croquis.HAUTEUR
+	-- Numéro de la partie visible à chaque pixel (0 : rien), rempli ligne par ligne (la dernière partie gagne)
+	local etiquettes = buffer.create(largeur * hauteur)
+	for k, partie in ipairs(parties) do
+		local poly = partie.polygone
+		local n = #poly
+		for j = 0, hauteur - 1 do
+			local y = (j + 0.5) / ey
+			local xs = {}
+			for i = 1, n do
+				local a, b = poly[i], poly[i % n + 1]
+				if (a.y <= y and b.y > y) or (b.y <= y and a.y > y) then
+					table.insert(xs, a.x + (y - a.y) * (b.x - a.x) / (b.y - a.y))
+				end
+			end
+			table.sort(xs)
+			for m = 1, #xs - 1, 2 do
+				for i = math.max(0, math.ceil(xs[m] * ex - 0.5)), math.min(largeur - 1, math.floor(xs[m + 1] * ex - 0.5)) do
+					buffer.writeu8(etiquettes, j * largeur + i, k)
+				end
+			end
+		end
+	end
+	local function etiquette(i, j)
+		if i < 0 or j < 0 or i >= largeur or j >= hauteur then
+			return 0
+		end
+		return buffer.readu8(etiquettes, j * largeur + i)
+	end
+	-- Le motif n'est calculé qu'aux points de la robe (un motif entier, 256 × 256 points par tissu, prendrait
+	-- l'essentiel du temps, à chaque modèle ou tissu choisi, sur téléphone)
+	local tissuDe = {}
+	for famille, id in pairs(tissus) do
+		tissuDe[famille] = Catalogue.tissu(id)
+	end
+	local blanc = empaqueter(BLANC_CROQUIS[1], BLANC_CROQUIS[2], BLANC_CROQUIS[3])
+	local crayon = empaqueter(CRAYON[1], CRAYON[2], CRAYON[3])
+	local buf = buffer.create(largeur * hauteur * 4)
+	for j = 0, hauteur - 1 do
+		for i = 0, largeur - 1 do
+			local k = buffer.readu8(etiquettes, j * largeur + i)
+			local valeur = 0
+			if k > 0 then
+				if etiquette(i - 1, j) ~= k or etiquette(i + 1, j) ~= k or etiquette(i, j - 1) ~= k or etiquette(i, j + 1) ~= k then
+					valeur = crayon
+				else
+					local t = tissuDe[parties[k].famille]
+					if t then
+						local c = MOTIFS[t.motif.type](t.motif, (i * MOTIF_PAR_PX) % N, (j * MOTIF_PAR_PX) % N)
+						valeur = empaqueter(c[1], c[2], c[3])
+					else
+						valeur = blanc
+					end
+				end
+			end
+			buffer.writeu32(buf, (j * largeur + i) * 4, valeur)
+		end
+	end
+	-- Traits : plis et croisé sur la robe (crayon fin), mannequin esquissé là où la robe ne passe pas
+	local function tracer(segment, couleur, surLaRobe)
+		local a, b = segment[1], segment[2]
+		local pas = math.max(1, math.ceil(math.sqrt(((b.x - a.x) * ex) ^ 2 + ((b.y - a.y) * ey) ^ 2) * 2))
+		for t = 0, pas do
+			local i = math.floor((a.x + (b.x - a.x) * t / pas) * ex)
+			local j = math.floor((a.y + (b.y - a.y) * t / pas) * ey)
+			if i >= 0 and j >= 0 and i < largeur and j < hauteur and (etiquette(i, j) > 0) == surLaRobe then
+				buffer.writeu32(buf, (j * largeur + i) * 4, couleur)
+			end
+		end
+	end
+	local fin = empaqueter(CRAYON_FIN[1], CRAYON_FIN[2], CRAYON_FIN[3])
+	for _, s in ipairs(Croquis.details(croquis)) do
+		tracer(s, fin, true)
+	end
+	local esquisse = empaqueterAlpha(ESQUISSE[1], ESQUISSE[2], ESQUISSE[3], ESQUISSE[4])
+	for _, s in ipairs(Croquis.MANNEQUIN) do
+		tracer(s, esquisse, false)
 	end
 	return buf, largeur, hauteur
 end
