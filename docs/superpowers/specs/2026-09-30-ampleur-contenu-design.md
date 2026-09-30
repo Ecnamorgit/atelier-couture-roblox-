@@ -41,7 +41,7 @@ fleurs, dégradé ; teintes existantes) :
 | crêpe | 6 | élégant, chic | 18 à 20 | mat, souple |
 | organza | 6 | romantique, mignon | 18 à 22 | brillant léger |
 | brocart | 7 | élégant, gothique | 22 à 26 | brillant |
-| tulle | 8 | romantique, élégant | 20 à 24 | léger, un peu transparent |
+| tulle | 8 | romantique, élégant | 20 à 24 | léger (opaque : une robe transparente laisserait voir le mannequin) |
 
 ## 3. Accessoires
 
@@ -60,6 +60,9 @@ Six de plus, dans les enroulements existants (corsage, manche, col, jupe) :
 | manches | trois-quarts | une manche mi-longue pliée | amitié de la 8e cliente, niveau 2 |
 | col | marin | un col large plié | amitié de la 10e cliente, niveau 2 |
 | jupe | crayon | devant et dos ajustés | prestige 7 |
+
+Les quatre variantes promises à l'amitié des nouvelles clientes s'ouvrent au prestige 8 tant que ces clientes
+n'existent pas (plan 8b) ; le plan 8c les rend à leur amitié.
 
 ## 5. Les nouvelles clientes et leurs événements
 
@@ -93,7 +96,8 @@ revues au plan si le nouveau contenu les déplace, en disant pourquoi.
 
 ## 9. Découpage en plans
 
-1. **8a — Tissus, décorations et rapidité** : quatre matières, douze accessoires, conditions de prestige 5 à 8,
+1. **8a — Tissus, décorations et rapidité** : quatre matières, les huit accessoires du prestige (les quatre de l'amitié
+   viennent avec leurs clientes, plan 8c), conditions de prestige 5 à 8,
    `realisable` rapide ; équilibrage revu.
 2. **8b — Six variantes** : pièces de patron, découpe, couture, rendu 3D, styles.
 3. **8c — Quatre clientes et quatre événements** : données, répliques, souvenirs, amitiés ; équilibrage revu.
