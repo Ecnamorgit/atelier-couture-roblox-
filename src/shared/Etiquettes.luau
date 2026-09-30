@@ -84,6 +84,11 @@ function Etiquettes.tissu(id)
 	return TISSUS[id]
 end
 
+-- Le nom d'une étiquette : un style, une occasion ou un trait
+function Etiquettes.nom(cle)
+	return Catalogue.NOMS_STYLES[cle] or Catalogue.NOMS_OCCASIONS[cle] or Catalogue.NOMS_TRAITS[cle]
+end
+
 -- Les deux traits d'un indice dans [-1, 1] : celui du côté positif (Chaude, Travaillée), puis l'autre (Légère, Sobre)
 function Etiquettes.traitsIndice(indice)
 	return math.clamp(100 * indice, 0, 100), math.clamp(-100 * indice, 0, 100)
@@ -93,6 +98,38 @@ end
 function Etiquettes.richesse(poids, decorations)
 	local pieces = math.clamp((poids - Etiquettes.POIDS_SIMPLE) / (Etiquettes.POIDS_RICHE - Etiquettes.POIDS_SIMPLE), 0, 1)
 	return pieces + math.clamp(decorations / Etiquettes.DECORATIONS_PLEINES, 0, 1) - 1
+end
+
+-- Ce qu'un tissu apporte à une robe faite toute de lui, du plus fort au plus faible : ses styles et ses occasions (leurs
+-- points), Légère ou Chaude (la part de sa matière dans l'indice de chaleur, × 100) ; son motif se voit sur
+-- l'échantillon. Retourne { { cle, valeur } } (valeurs non nulles ; à égalité, les styles, puis les occasions)
+function Etiquettes.apportsTissu(idTissu)
+	local t, a = Catalogue.tissu(idTissu), TISSUS[idTissu]
+	local liste = {}
+	for _, s in ipairs(Catalogue.STYLES) do
+		local v = Catalogue.K.tissu * (t.style[s] or 0)
+		if v > 0 then
+			table.insert(liste, { cle = s, valeur = v })
+		end
+	end
+	for _, o in ipairs(Catalogue.OCCASIONS) do
+		if a.occasions[o] > 0 then
+			table.insert(liste, { cle = o, valeur = a.occasions[o] })
+		end
+	end
+	local chaude, legere = Etiquettes.traitsIndice(a.chaleur)
+	if chaude > 0 then
+		table.insert(liste, { cle = "chaude", valeur = chaude })
+	elseif legere > 0 then
+		table.insert(liste, { cle = "legere", valeur = legere })
+	end
+	for i, x in ipairs(liste) do
+		x.rang = i
+	end
+	table.sort(liste, function(x, y)
+		return x.valeur > y.valeur or (x.valeur == y.valeur and x.rang < y.rang)
+	end)
+	return liste
 end
 
 -- Nombre de décorations : accessoires = { { id, longueur? } } (un objet 1 ; une garniture 1 pour 5 dm, sans longueur 0)

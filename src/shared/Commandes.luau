@@ -1,6 +1,7 @@
 -- Commandes : génère des commandes, toujours réalisables avec le catalogue. Celle d'une cliente (sous-projet 2)
--- vient de ses goûts : un de ses styles, sa teinte, jamais un « au plus » dans ses styles ; elle est réalisable
--- avec ce que le joueur a ouvert (déblocages), et ses exigences de style montent avec son prestige.
+-- vient de ses goûts : un de ses styles, sa teinte, (sous-projet 7) son occasion, jamais un « au plus » dans ses
+-- styles ; elle est réalisable avec ce que le joueur a ouvert (déblocages), et ses exigences montent avec son
+-- prestige : les occasions à partir du prestige 2, la matière au 3, les traits au 4.
 local dossier = script.Parent
 local Catalogue = require(dossier:WaitForChild("Catalogue"))
 local Notation = require(dossier:WaitForChild("Notation"))
@@ -115,6 +116,10 @@ function Commandes.realisable(exigences, ouverts)
 		if e.type == "accessoire" and e.id ~= accessoireImpose then
 			return false
 		elseif e.type == "min" or e.type == "max" or e.type == "occasion" then
+			-- (relecture du plan 21) une étiquette inconnue, d'une fiche mal écrite : irréalisable, jamais d'erreur au tirage
+			if not (if e.type == "occasion" then table.find(Catalogue.OCCASIONS, e.occasion) else table.find(Catalogue.STYLES, e.style)) then
+				return false
+			end
 			table.insert(jugements, { cle = e.style or e.occasion, note = borne, croissant = true, auPlus = e.type == "max", valeur = e.valeur })
 		elseif e.type == "trait" and NOTES_TRAITS[e.trait] then
 			local t = NOTES_TRAITS[e.trait]
@@ -318,33 +323,106 @@ local function tirer(liste, rng)
 	return liste[rng:NextInteger(1, #liste)]
 end
 
--- plafond : dizaines de points au plus pour le style demandé (monte avec le prestige) ; ouverts : accessoires
--- qu'on peut demander (nil : tous)
-local function tirerExigences(rng, cliente, plafond, ouverts)
+-- Sous-projet 7 : le prestige à partir duquel une commande peut demander chaque occasion et chaque trait (à ce
+-- prestige, avec ce qu'ouvrent le prestige et une amitié de niveau 2 avec les clientes déjà venues, chacun atteint 60 :
+-- vérifié par les tests ; la Soirée attend la jupe longue évasée), et la matière dominante
+Commandes.PRESTIGE_ETIQUETTES = {
+	journee = 2, travail = 2, soiree = 4,
+	legere = 4, chaude = 4, sobre = 4, travaillee = 4, unie = 4, fleurie = 4, a_motifs = 4,
+}
+Commandes.PRESTIGE_MATIERE = 3
+local GROUPES_TRAITS = { legere = 1, chaude = 1, sobre = 2, travaillee = 2, unie = 3, fleurie = 3, a_motifs = 3 }
+
+-- Deux exigences qu'une commande ne demande jamais ensemble : deux traits d'un même groupe (Légère et Chaude, Sobre et
+-- Travaillée, Unie, Fleurie et À motifs), une matière trop chaude pour une robe légère (ou trop légère pour une robe
+-- chaude), une robe travaillée et un « au plus » de style (les décorations qu'il lui faut portent des styles)
+function Commandes.compatibles(a, b)
+	local function sens(x, y)
+		if x.type ~= "trait" then
+			return true
+		elseif y.type == "trait" then
+			return GROUPES_TRAITS[x.trait] ~= GROUPES_TRAITS[y.trait]
+		elseif y.type == "matiere" then
+			local chaleur = Catalogue.MATIERES[y.matiere].chaleur
+			return not ((x.trait == "legere" and chaleur >= 0.6) or (x.trait == "chaude" and chaleur <= -0.7))
+		elseif y.type == "max" then
+			return x.trait ~= "travaillee"
+		end
+		return true
+	end
+	return sens(a, b) and sens(b, a)
+end
+
+-- plafond : dizaines de points au plus pour le style ou l'occasion demandés (monte avec le prestige) ; ouverts :
+-- accessoires et matières qu'on peut demander (nil : tous) ; niveau : niveau de prestige (nil : tout se demande)
+local function tirerExigences(rng, cliente, plafond, ouverts, niveau)
 	local exigences = {}
 	local styleMin = tirer(cliente and cliente.styles or Catalogue.STYLES, rng)
 	table.insert(exigences, { type = "min", style = styleMin, valeur = rng:NextInteger(3, plafond) * 10 })
 	local autres = { "max", "qualite", "teinte", "accessoire" }
+	local occasions, traits, matieres = {}, {}, {}
+	for _, o in ipairs(Catalogue.OCCASIONS) do
+		if not niveau or niveau >= Commandes.PRESTIGE_ETIQUETTES[o] then
+			table.insert(occasions, o)
+		end
+	end
+	for _, t in ipairs(Catalogue.TRAITS) do
+		if not niveau or niveau >= Commandes.PRESTIGE_ETIQUETTES[t] then
+			table.insert(traits, t)
+		end
+	end
+	for _, t in ipairs(Catalogue.Tissus) do
+		if (not ouverts or ouverts.tissus[t.id]) and not table.find(matieres, t.matiere) then
+			table.insert(matieres, t.matiere)
+		end
+	end
+	if #occasions > 0 then
+		table.insert(autres, "occasion")
+	end
+	if not niveau or niveau >= Commandes.PRESTIGE_MATIERE then
+		table.insert(autres, "matiere")
+	end
+	if #traits > 0 then
+		table.insert(autres, "trait")
+	end
 	for _ = 2, rng:NextInteger(1, 3) do
 		local genre = table.remove(autres, rng:NextInteger(1, #autres))
+		local e
 		if genre == "max" then
 			local style
 			repeat
 				style = tirer(Catalogue.STYLES, rng)
 			until style ~= styleMin and not (cliente and table.find(cliente.styles, style))
-			table.insert(exigences, { type = "max", style = style, valeur = rng:NextInteger(1, 4) * 10 })
+			e = { type = "max", style = style, valeur = rng:NextInteger(1, 4) * 10 }
 		elseif genre == "qualite" then
-			table.insert(exigences, { type = "qualite", valeur = rng:NextInteger(6, 9) / 10 })
+			e = { type = "qualite", valeur = rng:NextInteger(6, 9) / 10 }
 		elseif genre == "teinte" then
-			table.insert(exigences, { type = "teinte", teinte = cliente and cliente.teinte or tirer(Catalogue.Tissus, rng).teinte })
-		else
+			e = { type = "teinte", teinte = cliente and cliente.teinte or tirer(Catalogue.Tissus, rng).teinte }
+		elseif genre == "accessoire" then
 			local objets = {}
 			for _, a in ipairs(Catalogue.Accessoires) do
 				if a.genre == "objet" and (not ouverts or ouverts.accessoires[a.id]) then
 					table.insert(objets, a.id)
 				end
 			end
-			table.insert(exigences, { type = "accessoire", id = tirer(objets, rng) })
+			e = { type = "accessoire", id = tirer(objets, rng) }
+		elseif genre == "occasion" then
+			-- celle de la cliente, deux fois sur trois (si elle se demande déjà)
+			local prefere = cliente and cliente.occasion and table.find(occasions, cliente.occasion) and rng:NextInteger(1, 3) <= 2
+			e = { type = "occasion", occasion = if prefere then cliente.occasion else tirer(occasions, rng), valeur = rng:NextInteger(2, plafond) * 10 }
+		elseif genre == "matiere" then
+			e = { type = "matiere", matiere = tirer(matieres, rng) }
+		else
+			local trait = tirer(traits, rng)
+			local dizaines = if table.find(Etiquettes.MOTIFS, trait) then rng:NextInteger(5, 10) else rng:NextInteger(2, 6)
+			e = { type = "trait", trait = trait, valeur = dizaines * 10 }
+		end
+		local permise = true
+		for _, x in ipairs(exigences) do
+			permise = permise and Commandes.compatibles(x, e)
+		end
+		if permise then
+			table.insert(exigences, e)
 		end
 	end
 	return exigences
@@ -360,10 +438,11 @@ end
 -- { cliente, taille, exigences } : ses mesures seront prises à l'atelier.
 function Commandes.generer(rng, cliente, progres)
 	local ouverts = progres and Deblocages.ouverts(progres)
-	local plafond = progres and Commandes.plafond(Progression.niveauPrestige(progres.prestige)) or 7
+	local niveau = progres and Progression.niveauPrestige(progres.prestige)
+	local plafond = niveau and Commandes.plafond(niveau) or 7
 	local exigences
 	for _ = 1, Commandes.ESSAIS do
-		local candidat = tirerExigences(rng, cliente, plafond, ouverts)
+		local candidat = tirerExigences(rng, cliente, plafond, ouverts, niveau)
 		if Commandes.realisable(candidat, ouverts) then
 			exigences = candidat
 			break

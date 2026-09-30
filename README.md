@@ -13,7 +13,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 7 en cours, plans 19 à 21 : des robes à couches, volant et basque ; seize étiquettes)
+## État actuel (sous-projet 7 en cours, plans 19 à 22 : des robes à couches, volant et basque ; seize étiquettes)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -22,7 +22,7 @@ qu'une copie de l'état. Dans un jeu publié, la partie est sauvegardée (argent
 robes et commande en cours : une déconnexion ne perd pas le travail) :
 
 1. **Commande** : la clochette (ou E) fait entrer une cliente en personne (un avatar construit en code, son nom
-   au-dessus de la tête), avec 1 à 3 exigences tirées de ses styles préférés et de sa teinte. Dix clientes, qui
+   au-dessus de la tête), avec 1 à 3 exigences tirées de ses styles préférés, de sa teinte et de son occasion. Dix clientes, qui
    reviennent : Colette, Margot et Salomé aux trois premières commandes ; Hélène, Inès et Victoire quand le
    prestige de l'atelier atteint 2, 3 puis 4 ; Apolline, Joséphine, Capucine et Maëlle aux prestiges 5 à 8 ;
    ensuite, celle qu'on n'a pas vue depuis le plus longtemps. Chacune
@@ -44,9 +44,11 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    jupe crayon et la jupe à volant). **Des couches** : la basque s'évase sous la taille, par-dessus la jupe ; le
    volant, froncé, part à 5 dm sous la taille et dépasse l'ourlet ; chacun a ses pièces (poids 0,5 dans la paie),
    son tissu et sa partie du dessin (la toucher choisit le tissu de ses pièces). La liste des pièces défile.
-   À côté du dessin, un tissu par pièce (41 tissus en onze matières, filtre par style, dont la toile de jute,
-   gratuite) ; les échantillons des tissus choisis sont épinglés en haut de la page ; « Environ X m de tissu » ;
-   « Tracer le patron ». La fiche de la commande, à droite : jauges de style, état des exigences, coût du tissu
+   À côté du dessin, un tissu par pièce (41 tissus en onze matières, filtre par style ou par occasion, dont la
+   toile de jute, gratuite ; chaque carte montre les quatre étiquettes les plus fortes du tissu) ; les échantillons
+   des tissus choisis sont épinglés en haut de la page ; « Environ X m de tissu » ; « Tracer le patron ». La fiche
+   de la commande, à droite : les jauges des étiquettes demandées et des styles de la cliente (les six styles pour
+   une robe libre), état des exigences, coût du tissu
    à acheter, à jour en direct (la plage d'une jauge ne compte que les tissus ouverts). Un modèle pas encore
    ouvert est grisé, avec ce qu'il faut pour l'ouvrir (« Prestige 3 », « Amitié d'Hélène : 2 ») ; son patron
    ne se trace pas, et le serveur le refuse aussi.
@@ -85,11 +87,14 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    la robe (styles, qualité, couleur dominante, accessoires). Acceptée : paie = base × (0,5 + qualité), et la
    robe part en vitrine ; la cliente remercie et s'en va. Refusée : les exigences ratées s'affichent (avec le
    score actuel pour les styles) ; on retouche les décorations ou on abandonne.
-   **Seize étiquettes** (sous-projet 7, plan 21 : le calcul ; les commandes les demanderont au plan 22) : aux six
-   styles s'ajoutent trois occasions (Journée, Soirée, Travail : points des variantes et des matières) et sept
-   traits calculés d'après la robe : Légère / Chaude (matière, manches, longueur de la jupe), Sobre / Travaillée
-   (poids des pièces, décorations), Unie / Fleurie / À motifs (surface de chaque motif) ; et la matière dominante.
-   La cliente sait juger ces exigences, le carnet les prévoit, la sauvegarde les garde.
+   **Seize étiquettes** (sous-projet 7) : aux six styles s'ajoutent trois occasions (Journée, Soirée, Travail :
+   points des variantes et des matières) et sept traits calculés d'après la robe : Légère / Chaude (matière,
+   manches, longueur de la jupe), Sobre / Travaillée (poids des pièces, décorations), Unie / Fleurie / À motifs
+   (surface de chaque motif) ; et la matière dominante. Les commandes les demandent au fil du prestige : Journée et
+   Travail au 2, la matière (« Matière dominante : crêpe ») au 3, la Soirée et les traits au 4, chacune quand elle
+   peut atteindre 60 ; jamais deux exigences contraires (Légère et Chaude, une robe légère en velours, Travaillée
+   et un « au plus »…). Chaque cliente a son occasion préférée ; à partir de la kermesse, chaque événement impose
+   la sienne (le bal d'hiver : la soirée).
    **Avis en étoiles** : refusée, une étoile ; acceptée, deux, plus une à 60, 80 et 90 % de qualité (dans
    l'encadré de la cliente et l'annonce de l'accueil) ; rien n'en dépend.
    **Amitié et prestige** : une robe acceptée vaut +2 d'amitié avec la cliente (+1 de plus à 80 % de qualité),

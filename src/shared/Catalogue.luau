@@ -335,10 +335,10 @@ Catalogue.MATIERES = {
 	organza = { nom = "organza", rugosite = 0.3, reflet = 0.12, materiau = "SmoothPlastic", occasion = { soiree = 20 }, chaleur = -0.9 },
 	brocart = { nom = "brocart", rugosite = 0.4, reflet = 0.15, materiau = "SmoothPlastic", occasion = { soiree = 16, travail = 4 }, chaleur = 0.6 },
 	tulle = { nom = "tulle", rugosite = 0.6, reflet = 0.05, materiau = "Fabric", occasion = { soiree = 16, journee = 2 }, chaleur = -0.7 },
-	laine = { nom = "laine", rugosite = 1, reflet = 0, materiau = "Fabric", occasion = { travail = 18, journee = 4 }, chaleur = 0.9 },
+	laine = { nom = "laine", rugosite = 1, reflet = 0, materiau = "Fabric", occasion = { travail = 20, journee = 4 }, chaleur = 0.9 },
 	soie = { nom = "soie", rugosite = 0.35, reflet = 0.1, materiau = "SmoothPlastic", occasion = { soiree = 14, journee = 6 }, chaleur = -0.4 },
 	velours = { nom = "velours", rugosite = 0.8, reflet = 0, materiau = "Fabric", occasion = { soiree = 14, travail = 4 }, chaleur = 0.8 },
-	satin = { nom = "satin", rugosite = 0.25, reflet = 0.15, materiau = "SmoothPlastic", occasion = { soiree = 16, journee = 2 }, chaleur = -0.1 },
+	satin = { nom = "satin", rugosite = 0.25, reflet = 0.15, materiau = "SmoothPlastic", occasion = { soiree = 18, journee = 2 }, chaleur = -0.1 },
 }
 
 ---------------------------------------------------------------------------
