@@ -82,7 +82,7 @@ U.verifier(#Deblocages.nouveaux(au(50), au(99)) == 0, "rien de neuf sans changer
 U.verifier(Deblocages.resume(nouveaux) == "les satins (4), Dentelle noire", "en une ligne : les satins ensemble (" .. Deblocages.resume(nouveaux) .. ")")
 -- Chaque matière ouverte par le prestige a son nom au pluriel dans l'annonce (« les crêpes (4) », pas « crepe (4) »)
 local resume6 = Deblocages.resume(Deblocages.nouveaux(au(SEUILS_P[6] - 1), au(SEUILS_P[6])))
-U.verifier(resume6 == "les crêpes (4), les organzas (4), Papillon de soie, Galon argenté", "prestige 6 en une ligne : les crêpes et les organzas ensemble (" .. resume6 .. ")")
+U.verifier(resume6 == "Manches courtes, les crêpes (4), les organzas (4), Papillon de soie, Galon argenté", "prestige 6 en une ligne : les manches courtes, les crêpes et les organzas ensemble (" .. resume6 .. ")")
 for matiere in pairs(Deblocages.PRESTIGE_MATIERES) do
 	local tissus = {}
 	for _, t in ipairs(Catalogue.Tissus) do
@@ -112,3 +112,8 @@ U.verifier(Deblocages.toutOuvert(tout), "prestige 8 et six amitiés au niveau 4 
 tout.clientes.victoire.amitie = 17
 U.verifier(not Deblocages.toutOuvert(tout), "une amitié en retard : pas tout")
 U.verifier(not Deblocages.toutOuvert(depart), "au départ : pas tout")
+-- Sous-projet 4 : les manches courtes au prestige 6, la jupe crayon au 7 ; les quatre variantes des nouvelles
+-- clientes attendent le prestige 8 (le plan 8c les donnera à leur amitié)
+for id, niveau in pairs({ manches_courtes = 6, jupe_crayon = 7, corsage_cache_coeur = 8, corsage_bustier = 8, manches_trois_quarts = 8, col_marin = 8 }) do
+	U.verifier(Catalogue.variante(id) ~= nil and not Deblocages.ouvert(au(SEUILS_P[niveau] - 1), "variantes", id) and Deblocages.ouvert(au(SEUILS_P[niveau]), "variantes", id), id .. " : ouverte au prestige " .. niveau)
+end

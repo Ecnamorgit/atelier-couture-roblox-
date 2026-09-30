@@ -116,6 +116,23 @@ local pCorsage = Patron.point("corsage_droit_devant", "unique", 2.4, 4.2, M)
 U.verifier(U.proche(pJupe.Y, 0) and U.proche(pCorsage.Y, 0), "jupe et corsage se rejoignent à la taille")
 U.verifier(pJupe.Magnitude > pCorsage.Magnitude, "la jupe passe par-dessus le corsage")
 
+-- Sous-projet 4 : le col marin retombe plus bas dans le dos que devant ; la jupe crayon se resserre vers
+-- l'ourlet ; le bustier s'arrête sous les épaules
+local bMarin = Polygone.boite(Catalogue.piece("col_marin").contour)
+local m0, m1 = Polygone.etendueLigne(Catalogue.piece("col_marin").contour, bMarin.maxY)
+local marinDevant = Patron.point("col_marin", "droite", m0, bMarin.maxY, M)
+local marinDos = Patron.point("col_marin", "droite", m1, bMarin.maxY, M)
+U.verifier(marinDos.Y < marinDevant.Y - 0.5, "col marin : le bord retombe plus bas dans le dos que devant")
+local function horizontale(p)
+	return math.sqrt(p.X * p.X + p.Z * p.Z)
+end
+local crayonHanches = Patron.point("jupe_crayon_devant", "unique", 2.5, 1.8, M)
+local crayonOurlet = Patron.point("jupe_crayon_devant", "unique", 2.5, 6, M)
+local droiteOurlet = Patron.point("jupe_droite_devant", "unique", 2.5, 6, M)
+U.verifier(horizontale(crayonOurlet) < horizontale(crayonHanches) - 0.1 and horizontale(crayonOurlet) < horizontale(droiteOurlet), "jupe crayon : resserrée à l'ourlet, plus que la jupe droite")
+local hautBustier = Patron.point("corsage_bustier_devant", "unique", 1.2, 0, M)
+U.verifier(hautBustier.Y < 3.5 and Patron.point("corsage_droit_devant", "unique", 1.2, 0, M).Y > 4, "bustier : il s'arrête sous les épaules")
+
 -- Les manches partent de l'épaule, au bord du corsage
 local pManche = Patron.point("manche_longue", "droite", 1.6, 0, M)
 U.verifier(pManche.Y > 3.5 and pManche.Y < 4.5, "le haut de la manche est à hauteur d'épaule")

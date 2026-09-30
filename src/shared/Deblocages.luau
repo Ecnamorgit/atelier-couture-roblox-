@@ -10,7 +10,7 @@ local Histoire = require(dossier:WaitForChild("Histoire"))
 
 local Deblocages = {}
 
--- Prestige qui ouvre chaque matière (cotons et lins sont ouverts au départ) et deux garnitures
+-- Prestige qui ouvre chaque matière (cotons, lins et jute sont ouverts au départ) et des décorations
 Deblocages.PRESTIGE_MATIERES = { laine = 2, satin = 3, velours = 4, soie = 5, crepe = 6, organza = 6, brocart = 7, tulle = 8 }
 Deblocages.PRESTIGE_ACCESSOIRES = {
 	ruban_noir = 2,
@@ -23,6 +23,16 @@ Deblocages.PRESTIGE_ACCESSOIRES = {
 	ruban_velours = 7,
 	couronne_fleurs = 8,
 	dentelle_doree = 8,
+}
+-- Prestige qui ouvre des variantes (sous-projet 4) ; cache-cœur, bustier, trois-quarts et col marin attendent le
+-- prestige 8 jusqu'à l'arrivée des nouvelles clientes (plan 8c), dont l'amitié les ouvrira
+Deblocages.PRESTIGE_VARIANTES = {
+	manches_courtes = 6,
+	jupe_crayon = 7,
+	corsage_cache_coeur = 8,
+	corsage_bustier = 8,
+	manches_trois_quarts = 8,
+	col_marin = 8,
 }
 Deblocages.GENRES = { "variantes", "tissus", "accessoires" }
 
@@ -37,6 +47,9 @@ for _, t in ipairs(Catalogue.Tissus) do
 end
 for id, niveau in pairs(Deblocages.PRESTIGE_ACCESSOIRES) do
 	CONDITIONS.accessoires[id] = { prestige = niveau }
+end
+for id, niveau in pairs(Deblocages.PRESTIGE_VARIANTES) do
+	CONDITIONS.variantes[id] = { prestige = niveau }
 end
 for _, c in ipairs(Clientes.LISTE) do
 	for niveau, d in pairs(c.deblocages) do

@@ -65,6 +65,20 @@ local MANCHE_BALLON = {
 }
 local MANCHE_LONGUE = { { x = 0, y = 0.6 }, { x = 1.6, y = 0 }, { x = 3.2, y = 0.6 }, { x = 2.8, y = 5.6 }, { x = 0.4, y = 5.6 } }
 local COL_CLAUDINE = { { x = 0, y = 0 }, { x = 2, y = 0 }, { x = 2.4, y = 0.4 }, { x = 2.2, y = 1.2 }, { x = 1, y = 1.4 }, { x = 0, y = 1.2 } }
+-- Sous-projet 4 : cache-cœur (encolure croisée, plus basse d'un côté), bustier (sans épaules, haut en cœur),
+-- manches courte et trois-quarts, col marin (étroit devant, large dans le dos), jupe crayon (resserrée)
+local CORSAGE_CACHE_COEUR = {
+	{ x = 0, y = 0 }, { x = 1, y = 0 }, { x = 3, y = 2.6 }, { x = 3.8, y = 0 },
+	{ x = 4.8, y = 0 }, { x = 4.8, y = 4.2 }, { x = 0, y = 4.2 },
+}
+local BUSTIER_DEVANT = {
+	{ x = 0, y = 0.4 }, { x = 1.2, y = 0 }, { x = 2.4, y = 0.5 }, { x = 3.6, y = 0 },
+	{ x = 4.8, y = 0.4 }, { x = 4.8, y = 3 }, { x = 0, y = 3 },
+}
+local MANCHE_COURTE = { { x = 0, y = 0.6 }, { x = 1.6, y = 0 }, { x = 3.2, y = 0.6 }, { x = 3, y = 1.8 }, { x = 0.2, y = 1.8 } }
+local MANCHE_TROIS_QUARTS = { { x = 0, y = 0.6 }, { x = 1.6, y = 0 }, { x = 3.2, y = 0.6 }, { x = 2.9, y = 4 }, { x = 0.3, y = 4 } }
+local COL_MARIN = { { x = 0, y = 0 }, { x = 2.2, y = 0 }, { x = 2.4, y = 1.6 }, { x = 0.8, y = 1.6 } }
+local CRAYON = { { x = 0, y = 0 }, { x = 5, y = 0 }, { x = 4.6, y = 6 }, { x = 0.4, y = 6 } }
 
 Catalogue.Pieces = {
 	corsage_droit_devant = { nom = "Corsage devant", contour = rectangle(4.8, 4.2), coutures = { 2, 3, 4 },
@@ -77,15 +91,28 @@ Catalogue.Pieces = {
 		enroulement = { type = "corsage", cote = "devant" } },
 	corsage_bretelles_dos = { nom = "Corsage dos (bretelles)", contour = CORSAGE_BRETELLES, coutures = { 7, 8, 9 },
 		enroulement = { type = "corsage", cote = "dos" } },
+	corsage_cache_coeur_devant = { nom = "Corsage devant (cache-cœur)", contour = CORSAGE_CACHE_COEUR, coutures = { 5, 6, 7 },
+		enroulement = { type = "corsage", cote = "devant" } },
+	corsage_bustier_devant = { nom = "Bustier devant", contour = BUSTIER_DEVANT, coutures = { 5, 6, 7 },
+		enroulement = { type = "corsage", cote = "devant" } },
+	corsage_bustier_dos = { nom = "Bustier dos", contour = rectangle(4.8, 3), coutures = { 2, 3, 4 },
+		enroulement = { type = "corsage", cote = "dos" } },
 	manche_ballon = { nom = "Manche ballon", contour = MANCHE_BALLON, coutures = { 1, 2, 3, 4, 5 }, pliee = true,
 		enroulement = { type = "manche", bouffant = 0.25 } },
 	manche_longue = { nom = "Manche longue", contour = MANCHE_LONGUE, coutures = { 1, 2, 3, 5 }, pliee = true,
+		enroulement = { type = "manche", bouffant = 0 } },
+	manche_courte = { nom = "Manche courte", contour = MANCHE_COURTE, coutures = { 1, 2, 3, 5 }, pliee = true,
+		enroulement = { type = "manche", bouffant = 0 } },
+	manche_trois_quarts = { nom = "Manche trois-quarts", contour = MANCHE_TROIS_QUARTS, coutures = { 1, 2, 3, 5 }, pliee = true,
 		enroulement = { type = "manche", bouffant = 0 } },
 	col_claudine = { nom = "Col Claudine", contour = COL_CLAUDINE, coutures = { 1 }, pliee = true,
 		enroulement = { type = "col", forme = "claudine" } },
 	-- Col montant : le bord bas (arête 3) est cousu à l'encolure, le haut est libre
 	col_montant = { nom = "Col montant", contour = rectangle(2, 0.6), coutures = { 3 }, pliee = true,
 		enroulement = { type = "col", forme = "montant" } },
+	-- Col marin : le bord haut (arête 1) est cousu à l'encolure ; le reste retombe, plus bas dans le dos
+	col_marin = { nom = "Col marin", contour = COL_MARIN, coutures = { 1 }, pliee = true,
+		enroulement = { type = "col", forme = "marin" } },
 	jupe_droite_devant = { nom = "Jupe devant", contour = rectangle(5, 6), coutures = { 1, 2, 4 },
 		enroulement = { type = "jupe", cote = "devant", evasement = 0.03, fronces = 0 } },
 	jupe_droite_dos = { nom = "Jupe dos", contour = rectangle(5, 6), coutures = { 1, 2, 4 },
@@ -102,6 +129,11 @@ Catalogue.Pieces = {
 		enroulement = { type = "jupe", cote = "devant", evasement = 0.45, fronces = 0 } },
 	jupe_evasee_dos = { nom = "Jupe évasée dos", contour = EVASEE, coutures = { 1, 2, 4 }, biais = true,
 		enroulement = { type = "jupe", cote = "dos", evasement = 0.45, fronces = 0 } },
+	-- Jupe crayon : un évasement négatif la resserre sous les hanches (elle reste hors des jambes)
+	jupe_crayon_devant = { nom = "Jupe crayon devant", contour = CRAYON, coutures = { 1, 2, 4 },
+		enroulement = { type = "jupe", cote = "devant", evasement = -0.04, fronces = 0 } },
+	jupe_crayon_dos = { nom = "Jupe crayon dos", contour = CRAYON, coutures = { 1, 2, 4 },
+		enroulement = { type = "jupe", cote = "dos", evasement = -0.04, fronces = 0 } },
 }
 
 ---------------------------------------------------------------------------
@@ -114,14 +146,23 @@ Catalogue.Variantes = {
 		pieces = { "corsage_v_devant", "corsage_droit_dos" }, style = { elegant = 8, romantique = 4 } },
 	{ id = "corsage_bretelles", famille = "corsage", nom = "À bretelles",
 		pieces = { "corsage_bretelles_devant", "corsage_bretelles_dos" }, style = { decontracte = 8, mignon = 4 } },
+	{ id = "corsage_cache_coeur", famille = "corsage", nom = "Cache-cœur",
+		pieces = { "corsage_cache_coeur_devant", "corsage_droit_dos" }, style = { romantique = 8, chic = 4 } },
+	{ id = "corsage_bustier", famille = "corsage", nom = "Bustier",
+		pieces = { "corsage_bustier_devant", "corsage_bustier_dos" }, style = { gothique = 7, elegant = 5 } },
 	{ id = "manches_sans", famille = "manches", nom = "Sans manches", pieces = {}, style = { decontracte = 3 } },
 	{ id = "manches_ballon", famille = "manches", nom = "Ballon", pieces = { "manche_ballon" },
 		style = { mignon = 8, romantique = 4 } },
 	{ id = "manches_longues", famille = "manches", nom = "Longues", pieces = { "manche_longue" },
 		style = { elegant = 5, gothique = 5, chic = 3 } },
+	{ id = "manches_courtes", famille = "manches", nom = "Courtes", pieces = { "manche_courte" },
+		style = { decontracte = 6, mignon = 3 } },
+	{ id = "manches_trois_quarts", famille = "manches", nom = "Trois-quarts", pieces = { "manche_trois_quarts" },
+		style = { chic = 6, elegant = 4 } },
 	{ id = "col_sans", famille = "col", nom = "Sans col", pieces = {}, style = {} },
 	{ id = "col_claudine", famille = "col", nom = "Claudine", pieces = { "col_claudine" }, style = { mignon = 6, chic = 2 } },
 	{ id = "col_montant", famille = "col", nom = "Montant", pieces = { "col_montant" }, style = { gothique = 6, elegant = 4 } },
+	{ id = "col_marin", famille = "col", nom = "Marin", pieces = { "col_marin" }, style = { mignon = 5, decontracte = 5 } },
 	{ id = "jupe_droite", famille = "jupe", nom = "Droite",
 		pieces = { "jupe_droite_devant", "jupe_droite_dos" }, style = { chic = 8 } },
 	{ id = "jupe_trapeze", famille = "jupe", nom = "Trapèze",
@@ -130,6 +171,8 @@ Catalogue.Variantes = {
 		pieces = { "jupe_ample_devant", "jupe_ample_dos" }, style = { romantique = 8, mignon = 4 } },
 	{ id = "jupe_evasee", famille = "jupe", nom = "Longue évasée",
 		pieces = { "jupe_evasee_devant", "jupe_evasee_dos" }, style = { elegant = 10, gothique = 4, decontracte = -4 } },
+	{ id = "jupe_crayon", famille = "jupe", nom = "Crayon",
+		pieces = { "jupe_crayon_devant", "jupe_crayon_dos" }, style = { chic = 8, elegant = 4, decontracte = -2 } },
 }
 
 ---------------------------------------------------------------------------
