@@ -72,4 +72,5 @@ for _, cas in ipairs({ { "acompte", -3 }, { "acompte", 2.5 }, { "acompte", "x" }
 	p.enCours.commande[cas[1]] = cas[2]
 	local r2 = Sauvegarde.versEtat(p)
 	U.verifier(r2.etape == "accueil" and r2.commande == nil, cas[1] .. " illisible (" .. tostring(cas[2]) .. ") : commande abandonnée")
+	U.verifier(r2.argent == enCours.argent and r2.prestige == enCours.prestige and r2.clientes.colette ~= nil and r2.clientes.colette.mesures ~= nil, cas[1] .. " illisible : le reste de la partie est gardé")
 end

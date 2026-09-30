@@ -931,6 +931,7 @@ verifierTailles("accueil")
 serveur:atelier(joueur).etat.prestige = 530 -- (tout reste ouvert pour la suite)
 -- Le courrier : une lettre de Colette (la seule cliente déjà venue), qui dépasse de la boîte aux lettres
 verifier(texte("Une lettre de Colette est arrivée.") ~= nil and fenetre.Contenu:FindFirstChild("Lettre1") ~= nil and boutonNomme("Inviter_1") ~= nil, "une lettre de Colette arrive, avec « Inviter »")
+verifier(boutonNomme("Inviter_1").AbsoluteSize.Y >= 40, "« Inviter » assez haut pour le doigt")
 verifier(string.find(fenetre.Contenu.Lettre1.Text, "Colette : « ", 1, true) == 1, "la lettre annonce une exigence de sa commande")
 verifier(scene:FindFirstChild("Lettre") ~= nil, "une lettre dépasse de la boîte aux lettres du comptoir")
 -- Le carnet d'adresses : les clientes déjà venues, leur amitié, ce que le prochain niveau ouvrira
@@ -1052,6 +1053,9 @@ local Histoire = requireModule(dossier.Histoire)
 local e = serveur:atelier(joueur).etat
 verifier(texte("Événement : Le bal des lanternes — robes livrées 0 / 2") ~= nil and boutonNomme("CommandeHistoire") ~= nil, "l'événement en cours s'annonce à l'accueil")
 e.histoire.faites.lanternes_margot = true -- (la robe de Margot, déjà livrée : celle de Colette sera la dernière)
+-- (et trois lettres en attente : la boîte est pleine)
+local lettre = { cliente = "colette", commande = { cliente = "colette", taille = "M", exigences = { { type = "min", style = "romantique", valeur = 30 } } } }
+e.lettres = { lettre, table.clone(lettre), table.clone(lettre) }
 local def = Histoire.commande("lanternes_colette")
 cliquer("CommandeHistoire")
 local conversation = fenetre.Contenu.Conversation
@@ -1082,6 +1086,8 @@ cliquer("Livrer")
 verifier(titre() == "Aiguille & Dentelle" and fenetre.Contenu.Epilogue.Visible and texte("Le bal des lanternes a eu lieu !") ~= nil and texte("Souvenir : Lanterne de papier") ~= nil, "la dernière robe livrée : le bal a lieu, épilogue et souvenir")
 verifier(texte(Histoire.get("lanternes").epilogue) ~= nil and laColette.Head.Bulle.Texte.Text == def.repliques.merci, "l'épilogue ; Colette raconte la suite")
 verifierTailles("épilogue")
+local inviter3 = boutonNomme("Inviter_3")
+verifier(fenetre.Contenu.Courrier.Text == "Courrier (boîte pleine) :" and inviter3.Position.Y.Offset + inviter3.Size.Y.Offset <= 466, "boîte pleine : c'est dit, et les trois lettres tiennent dans la fenêtre")
 cliquer("FermerEpilogue")
 local suite = fenetre.Contenu.Suite
 verifier(suite.Visible and suite.Interlocutrice.Text == "Colette Marchand" and suite.Replique.Text == def.repliques.merci, "sous l'épilogue : la suite de l'histoire de Colette, lisible")

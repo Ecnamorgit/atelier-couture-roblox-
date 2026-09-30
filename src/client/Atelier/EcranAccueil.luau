@@ -219,12 +219,12 @@ return function(ctx)
 	end
 	-- Le courrier : chaque lettre annonce la première exigence de la commande ; « Inviter » fait venir la cliente
 	if etat.livraisons >= EtatAtelier.COURRIER_APRES then
-		UiKit.texte({ Name = "Courrier", Text = if #etat.lettres > 0 then "Courrier :" else "Courrier : pas de lettre pour l'instant.", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, y + 88), Size = UDim2.fromOffset(500, 22), Parent = ctx.contenu })
+		UiKit.texte({ Name = "Courrier", Text = if #etat.lettres >= EtatAtelier.LETTRES_MAX then "Courrier (boîte pleine) :" elseif #etat.lettres > 0 then "Courrier :" else "Courrier : pas de lettre pour l'instant.", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, y + 88), Size = UDim2.fromOffset(500, 22), Parent = ctx.contenu })
 		for i, l in ipairs(etat.lettres) do
 			local fiche = Clientes.get(l.cliente)
-			local yl = y + 114 + (i - 1) * 40
+			local yl = y + 114 + (i - 1) * 44
 			UiKit.texte({ Name = "Lettre" .. i, Text = ("%s : « %s »"):format(fiche.nom:match("^(%S+)"), UiKit.exigence(l.commande.exigences[1], Catalogue)), TextSize = 16, Position = UDim2.fromOffset(0, yl + 6), Size = UDim2.fromOffset(600, 22), Parent = ctx.contenu })
-			UiKit.boutonDoux({ Name = "Inviter_" .. i, Text = "Inviter", TextSize = 16, Position = UDim2.fromOffset(610, yl), Size = UDim2.fromOffset(120, 34), Parent = ctx.contenu }, function()
+			UiKit.boutonDoux({ Name = "Inviter_" .. i, Text = "Inviter", TextSize = 16, Position = UDim2.fromOffset(610, yl), Size = UDim2.fromOffset(120, 40), Parent = ctx.contenu }, function()
 				accueillie(ctx.session:inviter(i))
 			end)
 		end
