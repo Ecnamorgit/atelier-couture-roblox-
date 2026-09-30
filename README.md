@@ -7,7 +7,9 @@ et le tissu découpé se voit tel quel sur la robe en 3D.
 Le jeu est en cours de refonte, sous-projet par sous-projet
 (specs : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md` pour le cœur de l'atelier,
 `docs/superpowers/specs/2026-09-29-clientes-progression-design.md` pour les clientes et la progression,
-`docs/superpowers/specs/2026-09-30-histoire-evenements-design.md` pour l'histoire ; plans : `docs/superpowers/plans/`).
+`docs/superpowers/specs/2026-09-30-histoire-evenements-design.md` pour l'histoire,
+`docs/superpowers/specs/2026-09-30-ampleur-contenu-design.md` pour l'ampleur du catalogue et du quartier ; plans :
+`docs/superpowers/plans/`).
 
 ## État actuel (sous-projet 3 terminé côté code, plan 6 : l'histoire et les événements du quartier)
 
@@ -18,9 +20,10 @@ qu'une copie de l'état. Dans un jeu publié, la partie est sauvegardée (argent
 robes et commande en cours : une déconnexion ne perd pas le travail) :
 
 1. **Commande** : la clochette (ou E) fait entrer une cliente en personne (un avatar construit en code, son nom
-   au-dessus de la tête), avec 1 à 3 exigences tirées de ses styles préférés et de sa teinte. Six clientes, qui
+   au-dessus de la tête), avec 1 à 3 exigences tirées de ses styles préférés et de sa teinte. Dix clientes, qui
    reviennent : Colette, Margot et Salomé aux trois premières commandes ; Hélène, Inès et Victoire quand le
-   prestige de l'atelier atteint 2, 3 puis 4 ; ensuite, celle qu'on n'a pas vue depuis le plus longtemps. Chacune
+   prestige de l'atelier atteint 2, 3 puis 4 ; Apolline, Joséphine, Capucine et Maëlle aux prestiges 5 à 8 ;
+   ensuite, celle qu'on n'a pas vue depuis le plus longtemps. Chacune
    parle par une bulle, avec ses propres mots (présentation, arrivée, merci, déception). En passant commande,
    elle verse un **acompte** (un quart de la base d'une robe simple), déduit de la paie ; gardé si on abandonne.
    **Mesures** : à sa première visite, on la mesure. Sa silhouette est dessinée à ses vraies mesures ; on règle
@@ -60,10 +63,10 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    (« Prestige 3 — 62 / 100 »). Un abandon ne fait jamais perdre un niveau d'amitié.
    **Déblocages** : au départ, cotons et lins, huit variantes et six accessoires. Le prestige ouvre les laines (2),
    les satins (3), les velours (4), les soies (5), le crêpe et l'organza (6), le brocart (7) et le tulle (8) ; le
-   ruban noir (2), la dentelle noire (3) et deux décorations par niveau du 5 au 8 ; les manches courtes (6), la
-   jupe crayon (7), et en attendant les nouvelles clientes, le cache-cœur, le bustier, les manches trois-quarts et
-   le col marin (8) ; l'amitié de
-   chaque cliente (niveaux 2 et 4) ouvre une variante ou un accessoire de son style. Rien n'est sauvegardé :
+   ruban noir (2), la dentelle noire (3) et deux décorations par niveau du 5 au 8 ; les manches courtes (6) et la
+   jupe crayon (7) ; l'amitié de chaque cliente (niveaux 2 et 4) ouvre une variante ou un accessoire de son
+   style (celle des quatre dernières : le cache-cœur, les manches trois-quarts, le bustier et le col marin, puis
+   une décoration). Avec le bustier, manches et col se portent détachés, épaules nues. Rien n'est sauvegardé :
    tout se déduit du prestige et des amitiés. Les commandes ne demandent que ce qui est ouvert, et leurs
    exigences de style montent avec le prestige. L'accueil annonce ce qui vient de s'ouvrir.
    **Robes libres** (après deux commandes livrées) : « Robe libre » à l'accueil, une taille (S, M, L), et l'on
@@ -76,20 +79,22 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    chacune avec la première exigence de la commande qu'elle annonce. « Inviter » fait venir la cliente avec cette
    commande ; livrée et acceptée, elle rapporte un point d'amitié de plus. Les lettres n'expirent pas.
    **Carnet d'adresses** : les clientes déjà venues, leur niveau d'amitié (points et seuil suivant) et ce que
-   le prochain niveau ouvrira.
+   le prochain niveau ouvrira ; la liste défile.
    **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8, une robe libre de
    jute vendue sur quatre robes, les lettres invitées) atteint le prestige 2 à la 3e robe au plus tard, le 5 vers
-   la 19e, le 8 vers la 58e, et tout est ouvert vers la 66e (médianes). Le tirage d'une commande ne recalcule
+   la 19e, le 8 vers la 57e, et tout est ouvert vers la 123e (médianes, parties de 160 robes : l'amitié des quatre
+   dernières clientes, arrivées aux prestiges 5 à 8, ouvre les dernières variantes). Le tirage d'une commande ne recalcule
    jamais les styles robe par robe (les points de chaque croquis et de chaque tissu sont précalculés ; les tissus
    d'une autre teinte que celle demandée sont écartés d'abord).
-9. **L'histoire** : huit événements du quartier se suivent (le bal des lanternes, la kermesse, le vernissage, les
-   régates, la veillée des contes, le mariage de Margot, le concert du kiosque, le grand bal d'hiver). Le premier
+9. **L'histoire** : douze événements du quartier se suivent (le bal des lanternes, la kermesse, le vernissage, les
+   régates, la veillée des contes, le mariage de Margot, le concert du kiosque, le grand bal d'hiver, le salon du
+   livre, la première du théâtre, le mariage de Colette, le grand défilé du quartier). Le premier
    s'annonce après trois commandes livrées, les suivants à leur prestige. « Commande de l'événement » ouvre une
    conversation avec la cliente (pourquoi elle a besoin de cette robe, ce qu'elle voudrait), puis la commande,
-   avec une tenue imposée. Toutes les robes livrées, l'événement a lieu : son épilogue, un souvenir (une des huit
+   avec une tenue imposée. Toutes les robes livrées, l'événement a lieu : son épilogue, un souvenir (une des douze
    décorations nouvelles) et 15 de prestige ; le carnet d'adresses garde les souvenirs. Les commandes ordinaires
    continuent à côté.
-10. La suite : sous-projet 4 (porter la robe sur son avatar, défilés).
+10. La suite : sous-projet 5 (porter la robe sur son avatar, défilés entre joueurs), à décider.
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
@@ -135,9 +140,9 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Catalogue` | Pièces, variantes, tissus, accessoires, constantes |
   | `Coupon`, `Metrage` | Rouleau de découpe (pli, chevauchements) et métrage conseillé |
   | `Notation`, `Commandes` | Droit-fil, couture, qualité, styles, exigences, paie, ajustement aux mesures ; commandes réalisables, d'après les goûts de la cliente |
-  | `Clientes`, `Progression` | Les six clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux |
+  | `Clientes`, `Progression` | Les dix clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux |
   | `Deblocages` | Ce qui est fermé au départ et ce qui l'ouvre (prestige, amitié, événement) ; ce qu'une livraison vient d'ouvrir ; ce que l'amitié d'une cliente ouvrira ensuite |
-  | `Histoire` | Les huit événements du quartier : leurs robes, tenues, répliques, épilogues et souvenirs ; l'événement en cours et sa prochaine robe |
+  | `Histoire` | Les douze événements du quartier : leurs robes, tenues, répliques, épilogues et souvenirs ; l'événement en cours et sa prochaine robe |
   | `Pixels` | Motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron |
   | `Recette` | Recette d'une robe en JSON et validation complète (filtre du serveur au plan 4) |
   | `Maillage`, `Mannequin`, `Editables`, `ConstructeurRobe`, `Vitrines` | Robe 3D, mannequin, vitrines |
