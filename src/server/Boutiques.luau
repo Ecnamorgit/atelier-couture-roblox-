@@ -154,6 +154,30 @@ local function construire(indice, joueur, parent)
 	bloc(modele, origine, "Volant", Vector3.new(MX + 1.2, 4.35, MZ), Vector3.new(0.15, 0.9, 0.9), rgb(90, 90, 100), { forme = Enum.PartType.Cylinder, matiere = Enum.Material.Metal, decor = true })
 	local bobine = bloc(modele, origine, "Bobine", Vector3.new(MX + 0.4, 5.1, MZ), Vector3.new(0.35, 0.25, 0.25), rgb(210, 50, 90), { forme = Enum.PartType.Cylinder, decor = true })
 	bobine.CFrame = bobine.CFrame * CFrame.Angles(0, 0, math.rad(90)) -- debout sur le bras
+	-- Le chat de l'atelier (sous-projet 5) : un chat roux qui dort sur son coussin ; « Caresser » (touche F, E sonne
+	-- la clochette) le fait ronronner, chez le joueur qui le caresse seulement (module Chat du client)
+	local chat = Instance.new("Model")
+	chat.Name = "Chat"
+	local repere = origine * Boutique.CHAT
+	local ROUX, ROUX_FONCE = rgb(222, 132, 62), rgb(186, 96, 40)
+	bloc(chat, repere, "Coussin", Vector3.new(0, 0.2, 0), Vector3.new(2.4, 0.4, 2.4), rgb(176, 64, 96), { decor = true })
+	local corps = bloc(chat, repere, "Corps", Vector3.new(0, 0.95, 0.15), Vector3.new(1.5, 1.5, 1.5), ROUX, { forme = Enum.PartType.Ball, decor = true })
+	bloc(chat, repere, "Tete", Vector3.new(-0.1, 0.9, -0.75), Vector3.new(0.95, 0.95, 0.95), ROUX, { forme = Enum.PartType.Ball, decor = true })
+	for k, x in ipairs({ -0.35, 0.15 }) do
+		bloc(chat, repere, "Oreille" .. k, Vector3.new(x, 1.42, -0.75), Vector3.new(0.12, 0.32, 0.28), ROUX_FONCE, { forme = Enum.PartType.Wedge, decor = true })
+	end
+	local queue = bloc(chat, repere, "Queue", Vector3.new(0.5, 0.55, -0.6), Vector3.new(1.3, 0.25, 0.25), ROUX_FONCE, { forme = Enum.PartType.Cylinder, decor = true })
+	queue.CFrame = queue.CFrame * CFrame.Angles(0, math.rad(35), 0) -- enroulée devant elle
+	local invite = Instance.new("ProximityPrompt")
+	invite.Name = "Caresser"
+	invite.ActionText = "Caresser"
+	invite.ObjectText = "Le chat"
+	invite.KeyboardKeyCode = Enum.KeyCode.F
+	invite.HoldDuration = 0
+	invite.MaxActivationDistance = 10
+	invite.RequiresLineOfSight = false
+	invite.Parent = corps
+	chat.Parent = modele
 	modele.Parent = parent
 	return modele
 end

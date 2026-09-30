@@ -1383,6 +1383,23 @@ verifier(texte("Le bal des lanternes — souvenir : Lanterne de papier") ~= nil,
 cliquer("FermerCarnetAdresses")
 M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
 end
+do -- Sous-projet 5 : le chat de l'atelier ; une caresse le fait ronronner, remuer la queue, et des cœurs montent
+	local chat = maBoutique.Chat
+	local queue = chat.Queue
+	local repos = queue.CFrame
+	M.services.ProximityPromptService.PromptTriggered:Fire(chat.Corps.Caresser, joueur)
+	verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_ronron" and chat.Tete:FindFirstChild("Coeurs") ~= nil, "caresser le chat : il ronronne, des cœurs montent")
+	M.avancer(0.2)
+	verifier(queue.CFrame ~= repos, "il remue la queue")
+	M.services.ProximityPromptService.PromptTriggered:Fire(chat.Corps.Caresser, joueur)
+	local nCoeurs = 0
+	for _, c in ipairs(chat.Tete:GetChildren()) do
+		nCoeurs += if c.Name == "Coeurs" then 1 else 0
+	end
+	verifier(nCoeurs == 1, "une caresse à la fois")
+	M.avancer(3)
+	verifier(chat.Tete:FindFirstChild("Coeurs") == nil and queue.CFrame == repos, "puis il se rendort, la queue au repos")
+end
 -- La touche E sonne la clochette, fenêtre ouverte seulement (comme au comptoir)
 local toucheE = { KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }
 cliquer("Fermer")

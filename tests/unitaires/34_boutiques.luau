@@ -47,6 +47,25 @@ for _, nom in ipairs({ "Sol", "MurFond", "MurGauche", "MurDroit", "Vitre", "Comp
 	end
 end
 U.verifier(meubles, "sol, murs, vitre, comptoir et clochette, étagère, table de découpe, machine, enseigne")
+do -- Sous-projet 5 : le chat de l'atelier, sur son coussin près de la fenêtre ; « Caresser » (touche F)
+	local chat = b3:FindFirstChild("Chat")
+	local corps = chat and chat:FindFirstChild("Corps")
+	local invite = corps and corps:FindFirstChild("Caresser")
+	U.verifier(chat ~= nil and chat:FindFirstChild("Coussin") ~= nil and chat:FindFirstChild("Tete") ~= nil and chat:FindFirstChild("Queue") ~= nil, "un chat sur son coussin : un corps, une tête, une queue")
+	U.verifier(invite ~= nil and invite:IsA("ProximityPrompt") and invite.ActionText == "Caresser" and invite.KeyboardKeyCode == Enum.KeyCode.F and invite.HoldDuration == 0, "« Caresser », touche F (E sonne la clochette), sans appui long")
+	local p = Boutique.emplacement(3):PointToObjectSpace(chat.Coussin.CFrame.Position)
+	local demi = chat.Coussin.Size.X / 2
+	local vitrine = Boutique.VITRINE.Position
+	local dans = math.abs(p.X) + demi < Boutique.LARGEUR / 2 and p.Z - demi > Boutique.AVANT and p.Z + demi < Boutique.FOND
+	local presFenetre = p.X > Boutique.FENETRE[1] and p.Z < Boutique.AVANT + 8
+	local horsVitrine = math.abs(p.X - vitrine.X) >= 2 + demi or math.abs(p.Z - vitrine.Z) >= 2 + demi
+	U.verifier(dans and presFenetre and horsVitrine, "dans la boutique, près de la fenêtre, à côté du socle de la vitrine")
+	local bloquent = 0
+	for _, d in ipairs(chat:GetDescendants()) do
+		bloquent += if d:IsA("BasePart") and d.CanCollide ~= false then 1 else 0 -- (explicitement : Roblox fait tout bloquer par défaut)
+	end
+	U.verifier(bloquent == 0, "le chat ne gêne pas le passage")
+end
 local surfaceEnseigne = b3.Enseigne:FindFirstChild("SurfaceGui")
 local texteEnseigne = surfaceEnseigne and surfaceEnseigne:FindFirstChild("Texte")
 U.verifier(texteEnseigne ~= nil and string.find(texteEnseigne.Text, "Couturiere3", 1, true) ~= nil and texteEnseigne.TextSize >= 14, "enseigne au nom de la joueuse")

@@ -1,5 +1,6 @@
 local Sons = U.module("Sons")
 U.verifier(Sons.IDS.fete ~= nil, "un son de fête (la robe terminée)")
+U.verifier(Sons.IDS.ronron ~= nil, "le ronron du chat")
 local Session = U.module("Session")
 
 local SoundService = M.services.SoundService
