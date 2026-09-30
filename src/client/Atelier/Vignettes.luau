@@ -61,6 +61,32 @@ function Vignettes.piece(idPiece, idTissu, placement, plafond)
 	end)
 end
 
+-- Croquis du carnet (sous-projet 5) : la robe dessinée, coloriée de ses tissus ; tissus = { [famille] = idTissu }.
+-- Chaque choix en fait un nouveau : on ne garde que les derniers (ils occupent la mémoire des images).
+Vignettes.CROQUIS_GARDES = 6
+local croquisRecents = {}
+function Vignettes.croquis(croquis, tissus, largeur, hauteur)
+	local morceaux = {}
+	for _, famille in ipairs(Catalogue.FAMILLES) do
+		table.insert(morceaux, croquis[famille] .. "=" .. (tissus[famille] or ""))
+	end
+	local cle = ("croquis:%s:%dx%d"):format(table.concat(morceaux, ","), largeur, hauteur)
+	local contenu = figer(cle, function()
+		return Pixels.croquis(croquis, tissus, largeur, hauteur)
+	end)
+	if contenu then
+		local deja = table.find(croquisRecents, cle)
+		if deja then
+			table.remove(croquisRecents, deja)
+		end
+		table.insert(croquisRecents, cle)
+		while #croquisRecents > Vignettes.CROQUIS_GARDES do
+			cache[table.remove(croquisRecents, 1)] = nil
+		end
+	end
+	return contenu
+end
+
 -- Oublie les images des pièces découpées (commande finie ou recommencée) : elles occupent la mémoire des
 -- images et ne resserviront pas. Les motifs et les silhouettes restent.
 function Vignettes.oublierPieces()

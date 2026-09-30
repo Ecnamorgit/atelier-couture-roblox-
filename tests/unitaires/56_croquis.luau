@@ -44,3 +44,40 @@ U.verifier(Croquis.partieA(base, 25, 25) == nil and Croquis.partieA(base, 5, 5) 
 U.verifier(Croquis.partieA(habillee, 27, 24) == "manches" and Croquis.partieA(habillee, 73, 24) == "manches", "toucher une manche, à gauche comme à droite")
 U.verifier(Croquis.partieA(habillee, 43, 18) == "col" and Croquis.partieA(habillee, 57, 18) == "col", "toucher le col Claudine : il est dessus")
 U.verifier(Croquis.partieA({ corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_evasee" }, 50, 120) == "jupe" and Croquis.partieA(base, 50, 120) == nil, "la jupe longue descend à la cheville, la droite s'arrête au genou")
+
+-- Le dessin peint (Pixels.croquis) : transparent hors de la robe, blanc sans tissu, la couleur d'un tissu uni,
+-- un trait de crayon au bord, le mannequin esquissé sous la robe
+local Pixels = U.module("Pixels")
+local L, H = 200, 260
+local buf, l, h = Pixels.croquis(base, {}, L, H)
+local function pixel(x, y)
+	local i, j = math.floor(x / Croquis.LARGEUR * L), math.floor(y / Croquis.HAUTEUR * H)
+	local v = buffer.readu32(buf, (j * L + i) * 4)
+	return v % 256, math.floor(v / 256) % 256, math.floor(v / 65536) % 256, math.floor(v / 16777216)
+end
+U.verifier(l == L and h == H and buffer.len(buf) == L * H * 4, "une image de la taille demandée")
+local _, _, _, a = pixel(5, 5)
+U.verifier(a == 0, "hors de la robe : transparent (le papier du carnet est derrière)")
+local r, g, b, a2 = pixel(50, 62)
+U.verifier(a2 == 255 and r >= 245 and g >= 245 and b >= 240, "une partie sans tissu est blanche")
+local _, _, _, a3 = pixel(50, 100)
+U.verifier(a3 > 0 and a3 < 255, "le pied du mannequin esquissé sous la jupe courte, en gris léger")
+local uni
+for _, t in ipairs(Catalogue.Tissus) do
+	if t.motif.type == "uni" and t.motif.couleurs[1][1] < 200 then
+		uni = t
+		break
+	end
+end
+buf = Pixels.croquis(base, { jupe = uni.id }, L, H)
+r, g, b = pixel(50, 62)
+local c = uni.motif.couleurs[1]
+U.verifier(r == c[1] and g == c[2] and b == c[3], "la jupe prend la couleur de son tissu (" .. uni.nom .. ")")
+r = pixel(50, 32)
+U.verifier(r >= 245, "le corsage sans tissu reste blanc")
+local trait = false
+for di = -2, 2 do
+	local rr, gg, bb, aa = pixel(37.5 + di * Croquis.LARGEUR / L, 62)
+	trait = trait or (aa == 255 and rr < 100 and gg < 100 and bb < 100)
+end
+U.verifier(trait, "un trait de crayon foncé au bord de la jupe")
