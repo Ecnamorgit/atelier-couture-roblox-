@@ -50,6 +50,7 @@ U.verifier(meubles, "sol, murs, vitre, comptoir et clochette, étagère, table d
 local surfaceEnseigne = b3.Enseigne:FindFirstChild("SurfaceGui")
 local texteEnseigne = surfaceEnseigne and surfaceEnseigne:FindFirstChild("Texte")
 U.verifier(texteEnseigne ~= nil and string.find(texteEnseigne.Text, "Couturiere3", 1, true) ~= nil and texteEnseigne.TextSize >= 14, "enseigne au nom de la joueuse")
+U.verifier(string.find(texteEnseigne.Text, "Aiguille & Dentelle — ", 1, true) == 1, "l'enseigne porte le nom du jeu : « Aiguille & Dentelle — Couturiere3 »")
 U.verifier(surfaceEnseigne.SizingMode == Enum.SurfaceGuiSizingMode.PixelsPerStud and texteEnseigne.TextScaled, "enseigne lisible : dessinée à l'échelle de la planche, le texte s'adapte à la longueur du nom")
 local sol = b3.Sol
 local basSol = Boutique.emplacement(3):PointToObjectSpace(sol.CFrame.Position).Y - sol.Size.Y / 2

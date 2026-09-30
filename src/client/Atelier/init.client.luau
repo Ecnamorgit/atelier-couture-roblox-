@@ -26,7 +26,7 @@ local ECRANS = {
 	refus = require(script:WaitForChild("EcranRefus")),
 }
 local TITRES = {
-	accueil = "Atelier de couture",
+	accueil = "Aiguille & Dentelle",
 	mesures = "Les mesures",
 	carnet = "1. Carnet de croquis",
 	achat = "2. Achat du tissu",
@@ -204,7 +204,7 @@ end)
 UiKit.surClic = function()
 	Sons.jouer("clic")
 end
-local SONS_ACTIONS = { nouvelleCommande = "clochette", acheter = "achat", couper = "couper", epingler = "epingler", abandonner = "echec", vendre = "achat", offrir = "reussite", inviter = "clochette" }
+local SONS_ACTIONS = { nouvelleCommande = "clochette", acheter = "achat", couper = "couper", epingler = "epingler", abandonner = "echec", vendre = "achat", offrir = "reussite", inviter = "clochette", commandeHistoire = "clochette" }
 session:surAction(function(nom, reponse)
 	if nom == "livrer" then
 		Sons.jouer(if reponse.reussie then "reussite" else "echec")

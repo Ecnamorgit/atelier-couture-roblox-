@@ -96,7 +96,7 @@ local function construire(indice, joueur, parent)
 	texte.TextScaled = true -- un long nom tient sur la planche
 	texte.TextColor3 = rgb(255, 240, 220)
 	local nom = (joueur.DisplayName ~= nil and joueur.DisplayName ~= "") and joueur.DisplayName or joueur.Name
-	texte.Text = "L'atelier de " .. nom
+	texte.Text = "Aiguille & Dentelle — " .. nom
 	texte.Parent = surface
 	-- Comptoir et clochette, contre le mur de gauche
 	bloc(modele, origine, "Comptoir", Vector3.new(-9, 1.5, 38), Vector3.new(3, 3, 6), BOIS)

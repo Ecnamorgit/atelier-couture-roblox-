@@ -2,7 +2,8 @@
 -- commande (elle verse un acompte). Après une livraison, il annonce ce qu'a pensé la cliente précédente,
 -- l'amitié et le prestige gagnés, et ce qui vient de s'ouvrir (ou la vente, ou le cadeau, d'une robe libre).
 -- La jauge de prestige est sous la clochette ; « Robe libre » (après deux commandes livrées) et « Carnet
--- d'adresses » à côté ; le courrier (après cinq commandes livrées) en dessous, chaque lettre avec « Inviter ».
+-- d'adresses » à côté ; l'événement du quartier en cours (sous-projet 3) et le courrier (après cinq commandes
+-- livrées) en dessous. Quand un événement a lieu, son épilogue s'affiche par-dessus.
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
@@ -11,6 +12,7 @@ local Progression = require(Couture:WaitForChild("Progression"))
 local Deblocages = require(Couture:WaitForChild("Deblocages"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
+local Histoire = require(Couture:WaitForChild("Histoire"))
 
 -- « Amitié de Colette : +3 (niveau 2 !) » ; nil sans cliente
 local function ligneAmitie(amitie)
@@ -145,12 +147,63 @@ return function(ctx)
 	local fond = UiKit.arrondir(UiKit.creer("Frame", { Name = "JaugePrestige", BackgroundColor3 = C.secondaire, Position = UDim2.fromOffset(0, y + 26), Size = UDim2.fromOffset(360, 12), Parent = ctx.contenu }), 6)
 	local part = if suivant then (etat.prestige - seuil) / (suivant - seuil) else 1
 	UiKit.creer("Frame", { Name = "Rempli", BackgroundColor3 = C.accent, BorderSizePixel = 0, Size = UDim2.fromScale(math.clamp(part, 0, 1), 1), Parent = fond })
+	-- L'histoire : l'événement en cours ; sa prochaine robe commence par une conversation avec la cliente
+	local evenement, ouvert = Histoire.enCours(etat)
+	local texteEvenement
+	if not evenement then
+		texteEvenement = "Tous les événements du quartier ont eu lieu."
+	elseif ouvert then
+		local faites, total = Histoire.avancee(etat, evenement.id)
+		texteEvenement = ("Événement : %s — robes livrées %d / %d"):format(evenement.nom, faites, total)
+	elseif etat.livraisons < Histoire.LIVRAISONS_DEPART then
+		texteEvenement = ("Bientôt : %s (après trois commandes livrées)"):format(evenement.nom)
+	else
+		texteEvenement = ("Bientôt : %s (prestige %d)"):format(evenement.nom, evenement.prestige)
+	end
+	UiKit.texte({ Name = "Evenement", Text = texteEvenement, Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, y + 54), Size = UDim2.fromOffset(560, 22), Parent = ctx.contenu })
+	if ouvert then
+		local def = Histoire.prochaine(etat)
+		local cliente = Clientes.get(def.cliente)
+		local conversation = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Conversation", Text = "", AutoButtonColor = false, Visible = false, BackgroundColor3 = C.panneau, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = ctx.contenu }), 10)
+		UiKit.texte({ Name = "Interlocutrice", Text = cliente.nom, Font = Enum.Font.GothamBold, TextSize = 18, Size = UDim2.new(1, -130, 0, 34), ZIndex = 21, Parent = conversation })
+		local replique = UiKit.texte({ Name = "Replique", Text = def.repliques.demande, TextSize = 18, Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 90), ZIndex = 21, Parent = conversation })
+		local suivant, accepter
+		suivant = UiKit.bouton({ Name = "SuivantConversation", Text = "Suivant", Position = UDim2.fromOffset(0, 150), Size = UDim2.fromOffset(200, 44), ZIndex = 21, Parent = conversation }, function()
+			replique.Text = def.repliques.detail
+			suivant.Visible = false
+			accepter.Visible = true
+		end)
+		accepter = UiKit.bouton({ Name = "AccepterCommande", Text = "Accepter la commande", Visible = false, Position = UDim2.fromOffset(0, 150), Size = UDim2.fromOffset(260, 44), ZIndex = 21, Parent = conversation }, function()
+			conversation.Visible = false
+			accueillie(ctx.session:commandeHistoire())
+		end)
+		UiKit.boutonDoux({ Name = "PlusTard", Text = "Plus tard", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(110, 34), ZIndex = 21, Parent = conversation }, function()
+			conversation.Visible = false
+		end)
+		UiKit.bouton({ Name = "CommandeHistoire", Text = "Commande de l'événement", TextSize = 16, Position = UDim2.fromOffset(570, y + 48), Size = UDim2.fromOffset(260, 34), Parent = ctx.contenu }, function()
+			replique.Text = def.repliques.demande
+			suivant.Visible, accepter.Visible = true, false
+			conversation.Visible = true
+		end)
+	end
+	-- Un événement vient d'avoir lieu : son épilogue et son souvenir, par-dessus l'accueil
+	local eu = r and action == "livrer" and r.evenement
+	if eu then
+		local epilogue = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Epilogue", Text = "", AutoButtonColor = false, BackgroundColor3 = C.panneau, Size = UDim2.fromScale(1, 1), ZIndex = 22, Parent = ctx.contenu }), 10)
+		UiKit.texte({ Name = "TitreEpilogue", Text = ("%s a eu lieu !"):format(eu.nom), Font = Enum.Font.GothamBold, TextSize = 20, TextColor3 = C.accent, Size = UDim2.new(1, -130, 0, 34), ZIndex = 23, Parent = epilogue })
+		UiKit.texte({ Name = "TexteEpilogue", Text = eu.epilogue, TextSize = 18, Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 90), ZIndex = 23, Parent = epilogue })
+		local souvenir = Catalogue.accessoire(eu.souvenir)
+		UiKit.texte({ Name = "Souvenir", Text = ("Souvenir : %s (une nouvelle décoration). Prestige : +%d."):format(souvenir and souvenir.nom or eu.souvenir, Histoire.PRESTIGE_EVENEMENT), TextSize = 16, Position = UDim2.fromOffset(0, 144), Size = UDim2.new(1, 0, 0, 44), ZIndex = 23, Parent = epilogue })
+		UiKit.boutonDoux({ Name = "FermerEpilogue", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(110, 34), ZIndex = 23, Parent = epilogue }, function()
+			epilogue.Visible = false
+		end)
+	end
 	-- Le courrier : chaque lettre annonce la première exigence de la commande ; « Inviter » fait venir la cliente
 	if etat.livraisons >= EtatAtelier.COURRIER_APRES then
-		UiKit.texte({ Name = "Courrier", Text = if #etat.lettres > 0 then "Courrier :" else "Courrier : pas de lettre pour l'instant.", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, y + 50), Size = UDim2.fromOffset(500, 22), Parent = ctx.contenu })
+		UiKit.texte({ Name = "Courrier", Text = if #etat.lettres > 0 then "Courrier :" else "Courrier : pas de lettre pour l'instant.", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, y + 88), Size = UDim2.fromOffset(500, 22), Parent = ctx.contenu })
 		for i, l in ipairs(etat.lettres) do
 			local fiche = Clientes.get(l.cliente)
-			local yl = y + 76 + (i - 1) * 40
+			local yl = y + 114 + (i - 1) * 40
 			UiKit.texte({ Name = "Lettre" .. i, Text = ("%s : « %s »"):format(fiche.nom:match("^(%S+)"), UiKit.exigence(l.commande.exigences[1], Catalogue)), TextSize = 16, Position = UDim2.fromOffset(0, yl + 6), Size = UDim2.fromOffset(600, 22), Parent = ctx.contenu })
 			UiKit.boutonDoux({ Name = "Inviter_" .. i, Text = "Inviter", TextSize = 16, Position = UDim2.fromOffset(610, yl), Size = UDim2.fromOffset(120, 34), Parent = ctx.contenu }, function()
 				accueillie(ctx.session:inviter(i))
@@ -186,6 +239,17 @@ return function(ctx)
 				ZIndex = 21,
 				Parent = carnet,
 			})
+		end
+		-- Les événements qui ont eu lieu, et leurs souvenirs
+		local passes = {}
+		for _, ev in ipairs(Histoire.EVENEMENTS) do
+			if Histoire.aEuLieu(etat, ev.id) then
+				local souvenir = Catalogue.accessoire(ev.souvenir)
+				table.insert(passes, ("%s — souvenir : %s"):format(ev.nom, souvenir and souvenir.nom or ev.souvenir))
+			end
+		end
+		if #passes > 0 then
+			UiKit.texte({ Name = "Souvenirs", Text = "Souvenirs du quartier :\n" .. table.concat(passes, "\n"), TextSize = 16, Position = UDim2.fromOffset(0, 54 + #venues * 34), Size = UDim2.new(1, 0, 0, 22 * (#passes + 1)), ZIndex = 21, Parent = carnet })
 		end
 		-- (à droite du choix de la taille d'une robe libre, qui s'étend jusqu'à x = 576)
 		UiKit.boutonDoux({ Name = "OuvrirCarnetAdresses", Text = "Carnet d'adresses", Position = UDim2.fromOffset(592, ligne), Size = UDim2.fromOffset(220, 50), Parent = ctx.contenu }, function()
