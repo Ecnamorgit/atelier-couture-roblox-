@@ -1,6 +1,10 @@
 local Decorateur = U.module("Decorateur")
 local EtatAtelier = U.module("EtatAtelier")
 local Recette = U.module("Recette")
+local Notation = U.module("Notation")
+local Mercerie = U.module("Mercerie")
+local MANQUE_NOEUD = "Pas assez de Nœud de satin dans ta mercerie : achètes-en à la Mercerie."
+local MANQUE_RUBAN = "Pas assez de Ruban rose dans ta mercerie : achètes-en à la Mercerie."
 
 local recette = {
 	version = 1,
@@ -19,8 +23,8 @@ local recette = {
 ---------------------------------------------------------------------------
 -- Objets
 ---------------------------------------------------------------------------
-local d = Decorateur.nouveau(recette, {})
-U.verifier(#d.liste == 0 and d:cout() == 0 and d.selection == nil, "départ : rien de posé, rien à payer")
+local d = Decorateur.nouveau(recette, {}, { noeud_satin = 2 })
+U.verifier(#d.liste == 0 and d:usage("noeud_satin") == 0 and d:reste("noeud_satin") == 2 and d.selection == nil, "départ : rien de posé, deux nœuds dans la mercerie")
 U.verifier(not d:toucher(1, "unique", 0.5, 0.5).ok, "toucher la robe sans accessoire choisi : rien")
 U.verifier(not d:choisir("diamant") and d.choix == nil, "accessoire inconnu refusé")
 U.verifier(d:choisir("noeud_satin") and d.choix == "noeud_satin", "nœud choisi dans la palette")
@@ -30,7 +34,12 @@ local a = d.liste[1]
 U.verifier(a.id == "noeud_satin" and a.piece == 1 and a.u == 0.5 and a.v == 0.3 and a.echelle == 1 and a.angle == 0 and a.copie == nil, "nœud : pièce, place, taille 1, angle 0")
 d:toucher(3, "droite", 0.4, 0.6)
 U.verifier(d.liste[2].copie == "droite", "sur une manche : la copie touchée est gardée")
-U.verifier(d:cout() == 6, "deux nœuds : 6 po")
+local pris, dispo = d:usage("noeud_satin")
+U.verifier(pris == 2 and dispo == 2 and d:epuise("noeud_satin"), "deux nœuds posés sur deux : épuisé")
+local refus = d:toucher(1, "unique", 0.2, 0.2)
+U.verifier(not refus.ok and refus.erreur == MANQUE_NOEUD and #d.liste == 2, "un troisième nœud : refusé, la mercerie est vide")
+d:majStock({ noeud_satin = 3 })
+U.verifier(d:reste("noeud_satin") == 1 and not d:epuise("noeud_satin"), "un achat (trois nœuds en tout) : il en reste un à poser")
 d:tourner(45)
 d:tourner(170)
 U.verifier(d.liste[2].angle == -145, "rotation ramenée entre −180 et 180")
@@ -56,19 +65,19 @@ U.verifier(#d.liste == 0, "tout annulé")
 ---------------------------------------------------------------------------
 -- Garnitures : point par point, sur une seule pièce
 ---------------------------------------------------------------------------
-local g = Decorateur.nouveau(recette, {})
+local g = Decorateur.nouveau(recette, {}, { dentelle_blanche = EtatAtelier.MERCERIE_MAX_CM, perle = 5 })
 g:choisir("dentelle_blanche")
 r = g:toucher(4, "unique", 0, 1)
 U.verifier(r.ok and r.action == "point" and g.garniture ~= nil and #g.liste == 0, "premier point de la dentelle")
 U.verifier(not g:terminerGarniture(), "une garniture a besoin de deux points")
 g:toucher(4, "unique", 0.001, 1)
 U.verifier(not g:terminerGarniture() and #g.liste == 0, "une garniture de moins de 0,5 dm n'est pas terminée")
-U.verifier(g:cout() == 0 and #g:resultat() == 0, "trop courte : ni coût ni envoi")
+U.verifier(g:usage("dentelle_blanche") == 0 and #g:resultat() == 0, "trop courte : rien de pris, rien d'envoyé")
 g:annuler()
 U.verifier(not g:toucher(5, "unique", 0.5, 1).ok, "une garniture reste sur une seule pièce")
 g:toucher(4, "unique", 0.5, 1)
 g:toucher(4, "unique", 1, 1)
-U.verifier(g:cout() == 10, "dentelle en cours comptée dans le coût (5 dm à 2 po)")
+U.verifier(g:usage("dentelle_blanche") == math.ceil(Notation.longueurGarniture("jupe_droite_devant", g.garniture.trajet) * 10 - 1e-9), "dentelle en cours comptée dans ce que la robe prend")
 U.verifier(g:terminerGarniture() and #g.liste == 1 and g.garniture == nil and #g.liste[1].trajet == 3, "dentelle terminée : 3 points")
 g:toucher(4, "unique", 0, 0.5)
 for k = 1, 63 do
@@ -80,19 +89,20 @@ U.verifier(g.garniture == nil and #g.liste == 2, "changer d'accessoire termine l
 U.verifier(g:annuler() and #g.liste == 1, "annuler la garniture entière")
 
 ---------------------------------------------------------------------------
--- Coût : différence avec ce qui est déjà payé ; liste acceptée par EtatAtelier
+-- Mercerie : ce qui est déjà pris compte dans ce qu'on a ; liste acceptée par EtatAtelier
 ---------------------------------------------------------------------------
 local payees = { { id = "noeud_satin", piece = 1, u = 0.5, v = 0.3, echelle = 1, angle = 0 } }
 local avec = table.clone(recette)
 avec.accessoires = payees
-local p = Decorateur.nouveau(avec, payees)
-U.verifier(#p.liste == 1 and p:cout() == 0, "décorations déjà payées : rien de plus à payer")
+local p = Decorateur.nouveau(avec, payees, {})
+pris, dispo = p:usage("noeud_satin")
+U.verifier(#p.liste == 1 and pris == 1 and dispo == 1, "un nœud déjà pris (mercerie vide) : un posé sur un")
 p:selectionner(1)
 p:supprimer()
-U.verifier(p:cout() == -3, "retirer un nœud payé : remboursé")
+U.verifier(p:usage("noeud_satin") == 0 and p:reste("noeud_satin") == 1, "retirer un nœud déjà pris : il est de nouveau à poser")
 p.liste[1] = nil
-U.verifier(#payees == 1, "la liste payée n'est pas modifiée par l'éditeur")
-local final = Decorateur.nouveau(recette, {})
+U.verifier(#payees == 1, "la liste des décorations prises n'est pas modifiée par l'éditeur")
+local final = Decorateur.nouveau(recette, {}, { perle = 1, ruban_rose = 100 })
 final:choisir("perle")
 final:toucher(2, "unique", 0.5, 0.5)
 final:choisir("ruban_rose")
@@ -102,4 +112,37 @@ local liste = final:resultat()
 local verif = table.clone(recette)
 verif.accessoires = liste
 U.verifier(#liste == 2 and Recette.valider(verif), "résultat : garniture en cours terminée, recette valide")
-U.verifier(EtatAtelier.prixDecorations(recette.pieces, liste) == final:cout(), "le coût affiché est celui que facturera EtatAtelier")
+local besoins = EtatAtelier.besoinsMercerie(recette.pieces, liste)
+U.verifier(besoins.perle == (final:usage("perle")) and besoins.ruban_rose == (final:usage("ruban_rose")), "ce que la robe prend est ce qu'EtatAtelier prendra à la mercerie")
+
+---------------------------------------------------------------------------
+-- Une garniture ne dépasse pas la mercerie : le point de trop est refusé
+---------------------------------------------------------------------------
+local function cm(trajet)
+	return math.ceil(Notation.longueurGarniture("jupe_droite_devant", trajet) * 10 - 1e-9)
+end
+local court = cm({ { u = 0, v = 1 }, { u = 0.3, v = 1 } })
+local long = cm({ { u = 0, v = 1 }, { u = 0.3, v = 1 }, { u = 0.5, v = 1 } })
+assert(court >= 5 and long > court + 1, "(la jupe est assez large pour ce test)")
+local s = Decorateur.nouveau(recette, {}, { ruban_rose = court + 1 })
+s:choisir("ruban_rose")
+U.verifier(s:toucher(4, "unique", 0, 1).ok and s:toucher(4, "unique", 0.3, 1).ok, "ruban : de quoi poser le premier bout")
+local trop = s:toucher(4, "unique", 0.5, 1)
+U.verifier(not trop.ok and trop.erreur == MANQUE_RUBAN and #s.garniture.trajet == 2, "un point qui dépasse la mercerie : refusé, la garniture reste où elle en est")
+pris, dispo = s:usage("ruban_rose")
+U.verifier(pris == court and dispo == court + 1 and s:reste("ruban_rose") == 1 and s:epuise("ruban_rose"), "il reste 1 cm : trop peu pour une garniture (épuisé)")
+local vide = Decorateur.nouveau(recette, {}, { ruban_rose = 4 })
+vide:choisir("ruban_rose")
+local premier = vide:toucher(4, "unique", 0, 1)
+U.verifier(not premier.ok and premier.erreur == MANQUE_RUBAN and vide.garniture == nil, "moins de 5 cm de ruban : pas même un premier point")
+-- (relecture) devant une voyelle, « d' » : « Pas assez d'Étoile brodée »
+local etoile = Decorateur.nouveau(recette, {}, {})
+etoile:choisir("etoile_brodee")
+local sansEtoile = etoile:toucher(1, "unique", 0.5, 0.5)
+U.verifier(not sansEtoile.ok and sansEtoile.erreur == "Pas assez d'Étoile brodée dans ta mercerie : achètes-en à la Mercerie." and Decorateur.manque("Étoile brodée") == sansEtoile.erreur, "une étoile qu'on n'a pas : « Pas assez d'Étoile brodée » (" .. tostring(sansEtoile.erreur) .. ")")
+
+---------------------------------------------------------------------------
+-- Mercerie : les quantités en clair
+---------------------------------------------------------------------------
+U.verifier(Mercerie.metres(150) == "1,50" and Mercerie.metres(5) == "0,05" and Mercerie.metres(0) == "0,00", "des cm en mètres, à la française")
+U.verifier(Mercerie.stock("perle", 12) == "×12" and Mercerie.stock("perle", nil) == "×0" and Mercerie.stock("ruban_rose", 250) == "2,50 m", "quantités en clair : ×12, ×0, 2,50 m")

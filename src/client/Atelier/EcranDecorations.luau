@@ -2,6 +2,8 @@
 -- palette, toucher la robe pour la poser, ou toucher une décoration posée pour la sélectionner ; tourner
 -- (Q/E), agrandir, supprimer, annuler ; garnitures point par point. Glisser sur la scène fait tourner la vue.
 -- La logique est dans Decorateur ; « Présenter à la cliente » envoie la liste (EtatAtelier:decorer).
+-- Sous-projet 6 : la palette dit ce qu'il reste de chaque article dans la mercerie (grisé : épuisé) ; « Mercerie »,
+-- en bas, ouvre la boutique par-dessus, sans quitter la robe.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
@@ -9,6 +11,7 @@ local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Deblocages = require(Couture:WaitForChild("Deblocages"))
 local Decorateur = require(script.Parent:WaitForChild("Decorateur"))
+local Mercerie = require(script.Parent:WaitForChild("Mercerie"))
 local Sons = require(script.Parent:WaitForChild("Sons"))
 
 local SEUIL_GLISSER = 8 -- px : au-delà, c'est un glisser (la vue tourne), pas une touche
@@ -19,10 +22,11 @@ return function(ctx)
 	local UiKit, session, contenu, scene = ctx.UiKit, ctx.session, ctx.contenu, ctx.scene
 	local C = UiKit.COULEURS
 	local connexions = {}
-	local deco = Decorateur.nouveau(session.etat:recette(), session.etat.accessoires)
+	local deco = Decorateur.nouveau(session.etat:recette(), session.etat.accessoires, session.etat.mercerie)
 	local rafraichir
 
-	local cout = UiKit.texte({ Name = "Cout", Font = Enum.Font.GothamBold, TextSize = 18, Size = UDim2.new(1, 0, 0, 24), Parent = contenu })
+	-- L'article choisi : ce que la robe en prend, sur ce qu'on en a (« Perle : 2 / 12 », « Ruban rose : 0,20 / 1,50 m »)
+	local usage = UiKit.texte({ Name = "Usage", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.new(1, 0, 0, 24), Parent = contenu })
 	UiKit.texte({
 		Text = "Choisis une décoration, puis touche la robe. Glisse sur la scène pour tourner la vue.",
 		TextSize = 14,
@@ -32,8 +36,8 @@ return function(ctx)
 		Parent = contenu,
 	})
 
-	-- Palette : objets à l'unité, garnitures au dm. Les souvenirs des événements n'y sont qu'une fois ouverts (fermés,
-	-- ils dévoileraient l'histoire)
+	-- Palette : ce qu'il reste de chaque article (objets à l'unité, garnitures en mètres). Les souvenirs des événements
+	-- n'y sont qu'une fois ouverts (fermés, ils dévoileraient l'histoire)
 	local visibles = {}
 	for _, a in ipairs(Catalogue.Accessoires) do
 		local c = Deblocages.CONDITIONS.accessoires[a.id]
@@ -53,12 +57,8 @@ return function(ctx)
 	})
 	local boutons = {}
 	for k, a in ipairs(visibles) do
-		local prix = a.genre == "garniture" and ("%d po/dm"):format(a.prix) or ("%d po"):format(a.prix)
-		-- fermé : ce qu'il faut pour l'ouvrir à la place du prix
-		local detail = if Deblocages.ouvert(ctx.session.etat, "accessoires", a.id) then prix else Deblocages.raison("accessoires", a.id)
 		boutons[a.id] = UiKit.boutonDoux({
 			Name = "Deco_" .. a.id,
-			Text = a.nom .. " · " .. detail,
 			TextSize = 14,
 			TextWrapped = true,
 			Position = UDim2.new(((k - 1) % 2) * 0.5, 0, 0, ((k - 1) // 2) * LIGNE_PALETTE),
@@ -67,6 +67,10 @@ return function(ctx)
 		}, function()
 			if not Deblocages.ouvert(ctx.session.etat, "accessoires", a.id) then
 				ctx.message(Deblocages.message("accessoires", a.id), C.texteDoux)
+				return
+			end
+			if deco:epuise(a.id) then
+				ctx.message(Decorateur.manque(a.nom), C.texteDoux)
 				return
 			end
 			deco:choisir(a.id)
@@ -116,14 +120,37 @@ return function(ctx)
 			ctx.refus(r)
 		end
 	end)
+	-- La mercerie, par-dessus le panneau : un achat met la palette à jour, la robe reste telle quelle
+	UiKit.boutonDoux({ Name = "OuvrirMercerie", Text = "Mercerie", TextSize = 14, AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(124, 34), Parent = contenu }, function()
+		Mercerie.ouvrir(ctx, function()
+			deco:majStock(session.etat.mercerie)
+			rafraichir()
+		end)
+	end)
 
 	rafraichir = function()
-		local n = deco:cout()
-		cout.Text = n >= 0 and ("Coût : %d po"):format(n) or ("Remboursement : %d po"):format(-n)
+		if deco.choix then
+			local def = Catalogue.accessoire(deco.choix)
+			local pris, dispo = deco:usage(deco.choix)
+			usage.Text = if def.genre == "garniture"
+				then ("%s : %s / %s m"):format(def.nom, Mercerie.metres(pris), Mercerie.metres(dispo))
+				else ("%s : %d / %d"):format(def.nom, pris, dispo)
+		else
+			usage.Text = "Mercerie : choisis une décoration."
+		end
 		for id, b in pairs(boutons) do
+			local ouvert = Deblocages.ouvert(ctx.session.etat, "accessoires", id)
+			-- fermé : ce qu'il faut pour l'ouvrir à la place de ce qu'il en reste
+			b.Text = Catalogue.accessoire(id).nom .. " · " .. (if ouvert then Mercerie.stock(id, deco:reste(id)) else Deblocages.raison("accessoires", id))
 			b.BackgroundColor3 = id == deco.choix and C.accent or C.secondaire
 			b.TextColor3 = id == deco.choix and Color3.new(1, 1, 1) or C.texte
-			UiKit.griser(b, not Deblocages.ouvert(ctx.session.etat, "accessoires", id))
+			UiKit.griser(b, not ouvert)
+			-- épuisé : grisé aussi (on en rachète à la mercerie)
+			local epuise = ouvert and deco:epuise(id)
+			b:SetAttribute("Epuise", epuise)
+			if epuise then
+				b.BackgroundColor3, b.TextColor3 = C.ferme, C.texteDoux
+			end
 		end
 		finir.Visible = deco.garniture ~= nil
 		scene:montrerDecorations(deco.recette, deco.liste, deco.garniture, deco.selection)
@@ -197,7 +224,18 @@ return function(ctx)
 	end))
 
 	rafraichir()
+	-- L'état peut changer sans action de cet écran (réparé par le serveur après une réponse perdue) : la palette suit
+	-- la mercerie, tant que l'écran est là
+	local actif = true
+	local desabonner = session:surChangement(function(etat)
+		if actif and etat.etape == "decorations" then
+			deco:majStock(etat.mercerie)
+			rafraichir()
+		end
+	end)
 	return function()
+		actif = false
+		desabonner()
 		for _, c in ipairs(connexions) do
 			c:Disconnect()
 		end

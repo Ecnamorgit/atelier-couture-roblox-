@@ -55,7 +55,7 @@ U.verifier(U.proche(longueurDentelle, 5), "dentelle de 5 dm")
 U.verifier(EtatAtelier.prixDecorations(recette.pieces, { dentelle }) == math.ceil(2 * 5 - 1e-9), "garniture : prix au dm, arrondi au-dessus")
 
 ---------------------------------------------------------------------------
--- Décorer : liste complète, vérifiée, facturée à la différence
+-- Décorer : liste complète, vérifiée, prise à la mercerie à la différence (sous-projet 6)
 ---------------------------------------------------------------------------
 U.verifier(not EtatAtelier.nouveau():decorer({}).ok, "pas de décorations sans robe cousue")
 U.verifier(not e:decorer("x").ok and not e:decorer(nil).ok, "liste qui n'est pas une table refusée")
@@ -75,24 +75,26 @@ U.verifier(not e:decorer({ longue }).ok, "garniture de 65 points refusée")
 U.verifier(e.etape == "decorations" and #e.accessoires == 0, "rien ne change après un refus")
 
 local argent = e.argent
+e.mercerie = { noeud_satin = 5, perle = 5, dentelle_blanche = 100 }
 local r = e:decorer({ noeud, perle, dentelle })
-U.verifier(r.ok and r.prix == 3 + 1 + 10 and e.argent == argent - 14, "décorations facturées")
+U.verifier(r.ok and e.argent == argent and e.mercerie.noeud_satin == 4 and e.mercerie.perle == 4 and e.mercerie.dentelle_blanche == 50, "décorations prises à la mercerie (5 dm de dentelle : 50 cm), pas d'argent")
 U.verifier(e.etape == "photo" and #e.accessoires == 3, "décorations envoyées : direction la photo")
 noeud.u = 0.9
 U.verifier(e.accessoires[1].u == 0.5, "la liste gardée est une copie")
 noeud.u = 0.5
 U.verifier(#e:recette().accessoires == 3 and e:recette().accessoires[3].id == "dentelle_blanche", "la recette porte les décorations")
 
--- Retour aux décorations, puis retrait de la dentelle : remboursée
+-- Retour aux décorations, puis retrait de la dentelle : elle revient à la mercerie
 U.verifier(e:retourDecorations().ok and e.etape == "decorations", "retour de la photo aux décorations")
 r = e:decorer({ noeud, perle })
-U.verifier(r.ok and r.prix == -10 and e.argent == argent - 4, "décoration retirée : remboursée")
+U.verifier(r.ok and e.argent == argent and e.mercerie.dentelle_blanche == 100 and e.mercerie.noeud_satin == 4, "décoration retirée : revenue à la mercerie")
 U.verifier(e:retourDecorations().ok, "encore un retour")
 local cheres = {}
 for k = 1, 60 do
 	cheres[k] = { id = "broche_camee", piece = 1, u = 0.5, v = k / 61, echelle = 1, angle = 0 }
 end
-U.verifier(not e:decorer(cheres).ok and e.argent == argent - 4 and #e.accessoires == 2, "pas assez d'argent : refusé, rien ne change")
+local rCheres = e:decorer(cheres)
+U.verifier(not rCheres.ok and rCheres.erreur == "Mercerie insuffisante : il te manque Broche camée ×60." and e.argent == argent and #e.accessoires == 2 and e.mercerie.noeud_satin == 4, "pas assez dans la mercerie : refusé, rien ne change")
 
 ---------------------------------------------------------------------------
 -- Livraison : la cliente juge la robe
@@ -109,7 +111,7 @@ e:decorer({ perle, noeud })
 r = e:livrer()
 local bilan = Notation.bilan(e.robes[1])
 local paie = Notation.paie(4, 1, bilan.qualite)
-U.verifier(r.ok and r.reussie and r.paie == paie and r.verse == paie - r.acompte and e.argent == avant - 3 + r.verse, "robe acceptée : paie = base × (0,5 + qualité), moins l'acompte")
+U.verifier(r.ok and r.reussie and r.paie == paie and r.verse == paie - r.acompte and e.argent == avant + r.verse, "robe acceptée : paie = base × (0,5 + qualité), moins l'acompte")
 U.verifier(e.etape == "accueil" and e.commande == nil, "robe livrée : retour à l'accueil")
 U.verifier(#e.robes == 1 and #e.robes[1].accessoires == 2 and e.robes[1].pieces[1].couture == 1, "la robe livrée part en vitrine (recette gardée)")
 U.verifier(next(e.coupees) == nil and next(e.epinglees) == nil and next(e.coutures) == nil and #e.accessoires == 0, "atelier prêt pour la commande suivante")
@@ -134,8 +136,9 @@ U.verifier(e3:livrer().reussie and #e3.robes == 10 and e3.robes[1].marque == nil
 -- Recommencer depuis les décorations : les décorations posées sont perdues, comme le tissu coupé
 local e4 = jusquAuxDecorations({ { type = "qualite", valeur = 0.5 } })
 local argent4 = e4.argent
+e4.mercerie = { noeud_satin = 2 }
 e4:decorer({ noeud })
-U.verifier(e4:recommencer().ok and #e4.accessoires == 0 and e4.argent == argent4 - 3, "recommencer : les décorations posées sont perdues")
+U.verifier(e4:recommencer().ok and #e4.accessoires == 0 and e4.argent == argent4 and e4.mercerie.noeud_satin == 1, "recommencer : les décorations posées sont perdues (elles ne reviennent pas à la mercerie)")
 
 -- Relecture finale : le rouleau ne dépasse jamais la longueur qu'une recette accepte (100 dm)
 local Recette = U.module("Recette")

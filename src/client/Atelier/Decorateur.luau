@@ -1,7 +1,8 @@
 -- Decorateur : logique de l'éditeur de décorations (sans affichage), testable seule.
 -- Tient la liste des décorations au format de la recette : objets posés au toucher, garnitures point
--- par point (une seule pièce, 64 points au plus), sélection, rotation, taille, suppression, annulation,
--- et le coût à payer (différence avec ce qui est déjà payé, calculée comme EtatAtelier la facturera).
+-- par point (une seule pièce, 64 points au plus), sélection, rotation, taille, suppression, annulation.
+-- Sous-projet 6 : les décorations se prennent à la mercerie ; on ne pose pas plus que ce qu'on a (le stock, plus ce que
+-- la robe a déjà pris), compté comme EtatAtelier le prendra.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
@@ -9,6 +10,7 @@ local Patron = require(Couture:WaitForChild("Patron"))
 local Recette = require(Couture:WaitForChild("Recette"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Notation = require(Couture:WaitForChild("Notation"))
+local Deblocages = require(Couture:WaitForChild("Deblocages"))
 
 local Decorateur = {}
 Decorateur.__index = Decorateur
@@ -33,11 +35,12 @@ local function dans01(n)
 end
 
 -- recette : recette de la robe (etat:recette()), avec les décorations déjà posées ;
--- payees : décorations déjà facturées (etat.accessoires)
-function Decorateur.nouveau(recette, payees)
+-- prises : décorations déjà prises à la mercerie (etat.accessoires) ; stock : la mercerie (etat.mercerie)
+function Decorateur.nouveau(recette, prises, stock)
 	return setmetatable({
 		recette = recette,
-		payees = copier(payees),
+		prises = copier(prises),
+		stock = table.clone(stock),
 		liste = copier(recette.accessoires or {}),
 		choix = nil, -- identifiant de l'accessoire choisi dans la palette
 		selection = nil, -- indice dans la liste
@@ -48,6 +51,43 @@ end
 
 local function memoriser(self)
 	table.insert(self.historique, copier(self.liste))
+end
+
+-- La mercerie a changé (un achat) : le nouveau stock
+function Decorateur:majStock(stock)
+	self.stock = table.clone(stock)
+end
+
+-- Ce qu'une liste de décorations prend d'un article (unités, ou cm pour une garniture)
+local function besoin(self, liste, id)
+	return EtatAtelier.besoinsMercerie(self.recette.pieces, liste)[id] or 0
+end
+
+-- Un article pour cette robe : ce que les décorations posées en prennent, et ce qu'on en a (le stock, plus ce que la
+-- robe a déjà pris). Une garniture en cours compte dès qu'elle compte pour la robe (deux points, 0,5 dm)
+function Decorateur:usage(id)
+	return besoin(self, self:resultat(), id), (self.stock[id] or 0) + besoin(self, self.prises, id)
+end
+
+-- Ce qu'il reste d'un article à poser
+function Decorateur:reste(id)
+	local pris, dispo = self:usage(id)
+	return dispo - pris
+end
+
+-- Plus rien à poser : plus d'unité d'un objet, moins de 0,5 dm d'une garniture
+function Decorateur:epuise(id)
+	local def = Catalogue.accessoire(id)
+	return self:reste(id) < (if def.genre == "garniture" then math.ceil(Recette.LONGUEUR_MIN_GARNITURE * 10 - 1e-9) else 1)
+end
+
+-- Le refus d'un article qui manque (« de » ou « d' » devant son nom)
+function Decorateur.manque(nom)
+	return ("Pas assez %s dans ta mercerie : achètes-en à la Mercerie."):format(Deblocages.de(nom))
+end
+
+local function manque(def)
+	return { ok = false, erreur = Decorateur.manque(def.nom) }
 end
 
 -- Une garniture compte si elle a au moins deux points et mesure au moins 0,5 dm
@@ -93,6 +133,9 @@ function Decorateur:toucher(indicePiece, copie, u, v)
 	local copieGardee = copie ~= Patron.copies(p.id)[1] and copie or nil
 	local def = Catalogue.accessoire(self.choix)
 	if def.genre == "objet" then
+		if self:epuise(def.id) then
+			return manque(def)
+		end
 		memoriser(self)
 		table.insert(self.liste, { id = self.choix, piece = indicePiece, copie = copieGardee, u = u, v = v, echelle = 1, angle = 0 })
 		self.selection = #self.liste
@@ -100,6 +143,9 @@ function Decorateur:toucher(indicePiece, copie, u, v)
 	end
 	local g = self.garniture
 	if not g then
+		if self:epuise(def.id) then
+			return manque(def)
+		end
 		self.garniture = { id = self.choix, piece = indicePiece, copie = copieGardee, trajet = { { u = u, v = v } } }
 		return { ok = true, action = "point" }
 	end
@@ -108,6 +154,14 @@ function Decorateur:toucher(indicePiece, copie, u, v)
 	end
 	if #g.trajet >= Recette.MAX_POINTS_GARNITURE then
 		return { ok = false, erreur = "Cette garniture a déjà 64 points." }
+	end
+	-- Un point de trop pour la mercerie : refusé (la garniture reste où elle en est)
+	local essai = copier({ g })[1]
+	table.insert(essai.trajet, { u = u, v = v })
+	local liste = copier(self.liste)
+	table.insert(liste, essai)
+	if besoin(self, liste, g.id) > (self.stock[g.id] or 0) + besoin(self, self.prises, g.id) then
+		return manque(def)
 	end
 	table.insert(g.trajet, { u = u, v = v })
 	return { ok = true, action = "point" }
@@ -179,12 +233,6 @@ local function complete(self)
 		table.insert(liste, copier({ g })[1])
 	end
 	return liste
-end
-
--- Pièces d'or à payer (négatif : remboursement)
-function Decorateur:cout()
-	local pieces = self.recette.pieces
-	return EtatAtelier.prixDecorations(pieces, complete(self)) - EtatAtelier.prixDecorations(pieces, self.payees)
 end
 
 -- Liste à envoyer (EtatAtelier:decorer)

@@ -14,6 +14,7 @@ local Clientes = require(Couture:WaitForChild("Clientes"))
 local Deblocages = require(Couture:WaitForChild("Deblocages"))
 local Croquis = require(Couture:WaitForChild("Croquis"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
+local Mercerie = require(script.Parent:WaitForChild("Mercerie"))
 
 local NOMS_FAMILLES = { corsage = "Corsage", manches = "Manches", col = "Col", jupe = "Jupe" }
 local ORDRE_LIGNES = { "corsage", "col", "manches", "jupe" } -- comme sur la page d'un carnet : du haut vers le bas
@@ -117,11 +118,15 @@ return function(ctx)
 	local entete = if etat.commande.libre then ("Robe libre (taille %s) : à ton idée."):format(etat.commande.taille) else ("%s (taille %s) veut :"):format(qui, etat.commande.taille)
 	UiKit.texte({ Name = "Entete", Text = entete, Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(12, 12), Size = UDim2.new(1, -24, 0, 22), Parent = droite })
 	local lignesExigences = {}
+	local yExigence = 36
 	for i, e in ipairs(etat.commande.exigences) do
-		lignesExigences[i] = UiKit.texte({ Name = "Exigence" .. i, TextSize = 14, Position = UDim2.fromOffset(12, 14 + i * 22), Size = UDim2.new(1, -24, 0, 20), Parent = droite })
+		-- (une exigence d'accessoire dit aussi ce qu'on en a dans la mercerie, sur une seconde ligne)
+		local haut = if e.type == "accessoire" then 40 else 20
+		lignesExigences[i] = UiKit.texte({ Name = "Exigence" .. i, TextSize = 14, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(12, yExigence), Size = UDim2.new(1, -24, 0, haut), Parent = droite })
+		yExigence += haut + 2
 	end
 	local jauges = {}
-	local y0 = 34 + #etat.commande.exigences * 22 + 12
+	local y0 = yExigence + 10
 	for i, style in ipairs(Catalogue.STYLES) do
 		local y = y0 + (i - 1) * 30
 		UiKit.texte({ Text = Catalogue.NOMS_STYLES[style], TextSize = 14, Position = UDim2.fromOffset(12, y), Size = UDim2.fromOffset(100, 20), Parent = droite })
@@ -352,6 +357,9 @@ return function(ctx)
 			local texte = UiKit.exigence(e, Catalogue)
 			if e.type == "qualite" and ajustement and ajustement < 1 then
 				texte ..= (" (ajustement %d %%)"):format(math.floor(ajustement * 100 + 0.5))
+			elseif e.type == "accessoire" then
+				local q = etat.mercerie[e.id] or 0
+				texte ..= "\n      (en stock : " .. (if Catalogue.accessoire(e.id).genre == "garniture" then Mercerie.metres(q) .. " m" else tostring(q)) .. ")"
 			end
 			lignesExigences[i].Text = SYMBOLES[statut] .. "  " .. texte
 			lignesExigences[i].TextColor3 = COULEURS_STATUT[statut]

@@ -167,6 +167,9 @@ end
 function Session:acheter(idTissu, dm)
 	return agir(self, "acheter", idTissu, dm)
 end
+function Session:acheterMercerie(idAccessoire, quantite)
+	return agir(self, "acheterMercerie", idAccessoire, quantite)
+end
 function Session:commencerDecoupe()
 	return agir(self, "commencerDecoupe")
 end

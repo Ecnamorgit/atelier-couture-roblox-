@@ -228,7 +228,7 @@ end)
 UiKit.surClic = function()
 	Sons.jouer("clic")
 end
-local SONS_ACTIONS = { nouvelleCommande = "clochette", acheter = "achat", couper = "couper", epingler = "epingler", abandonner = "echec", vendre = "achat", offrir = "reussite", inviter = "clochette", commandeHistoire = "clochette" }
+local SONS_ACTIONS = { nouvelleCommande = "clochette", acheter = "achat", acheterMercerie = "achat", couper = "couper", epingler = "epingler", abandonner = "echec", vendre = "achat", offrir = "reussite", inviter = "clochette", commandeHistoire = "clochette" }
 session:surAction(function(nom, reponse)
 	if nom == "rendreCouture" and session.etat.etape == "decorations" then
 		-- La dernière pièce cousue : la robe est terminée, une pluie de confettis et un petit son de fête

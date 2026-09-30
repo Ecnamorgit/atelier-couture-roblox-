@@ -15,7 +15,7 @@ U.verifier(copie.clientes.colette.amitie == 5 and copie.clientes.colette.mesures
 ---------------------------------------------------------------------------
 -- Sauvegarde v3 : relue à l'identique
 ---------------------------------------------------------------------------
-U.verifier(Sauvegarde.VERSION == 3, "format v3")
+U.verifier(Sauvegarde.VERSION >= 3, "format v3 ou plus récent")
 local partie = Sauvegarde.depuisEtat(e)
 U.verifier(partie.prestige == 42 and partie.livraisons == 2 and partie.visites == 3 and partie.clientes.colette.amitie == 5, "partie : prestige, livraisons, visites, fiches")
 local relue = Sauvegarde.versEtat(M.transmettre(partie))
@@ -44,9 +44,9 @@ U.verifier(relue.prestige == 0 and relue.livraisons == 0 and relue.visites == 2,
 -- Migration v2 → v3 : le travail passé compte (20 points de prestige par robe gardée)
 ---------------------------------------------------------------------------
 local v2 = { version = 2, argent = 300, stock = {}, debloques = {}, recettes = { {}, {}, {} } }
-local v3 = Sauvegarde.migrer(v2)
+local v3 = Sauvegarde.MIGRATIONS[2](v2)
 U.verifier(v3.version == 3 and v3.prestige == 60 and v3.livraisons == 3 and v3.visites == 0 and next(v3.clientes) == nil and v3.argent == 300, "v2 → v3 : prestige des robes passées, aucune cliente")
-U.verifier(Sauvegarde.migrer({ argent = 480 }).version == 3, "v1 → v3 : les migrations s'enchaînent")
+U.verifier(Sauvegarde.migrer({ argent = 480 }).version == Sauvegarde.VERSION, "v1 → dernier format : les migrations s'enchaînent")
 
 ---------------------------------------------------------------------------
 -- Une commande à l'étape des mesures (pas encore de mesures) se relit ; une cliente inconnue non

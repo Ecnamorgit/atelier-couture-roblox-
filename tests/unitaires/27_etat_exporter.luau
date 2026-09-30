@@ -64,6 +64,7 @@ for _, id in ipairs(ORDRE) do
 	local _, longueur = Patron.trajetCouture(id)
 	etat:rendreCouture(id, table.create(math.round(longueur / 0.1), 0.02), longueur)
 end
+etat.mercerie.noeud_satin = 1 -- (sous-projet 6 : à la mercerie)
 etat:decorer({ { id = "noeud_satin", piece = 1, copie = "unique", u = 0.4, v = 0.3, echelle = 1, angle = 15 } })
 U.verifier(etat.etape == "photo", "robe décorée (mise en place du test)")
 local photo = recopie(etat)
