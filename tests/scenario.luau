@@ -810,6 +810,7 @@ for k = 3, 6 do
 	coudre(30)
 	verifier(boutonNomme("PieceSuivante").Text == (k == 6 and "Finir la couture" or "Pièce suivante"), "bouton de fin de pièce " .. k)
 	cliquer("PieceSuivante")
+	verifier(k == 6 or gui.Atelier:FindFirstChild("Confettis") == nil, "pièce " .. k .. " cousue, la robe pas finie : pas encore de confettis")
 end
 
 ---------------------------------------------------------------------------
@@ -818,6 +819,16 @@ end
 verifier(ratee ~= nil and ratee < 20, "la couture ratée est mal notée : " .. tostring(ratee))
 verifier(titre() == "6. Décorations", "robe cousue : les décorations")
 verifier(fenetre.AnchorPoint.X == 1 and #robe:GetChildren() == 8, "panneau à droite, la robe cousue sur le mannequin")
+do -- Sous-projet 5 : la robe terminée, une pluie de confettis par-dessus la fenêtre et un petit son de fête
+	local confettis = gui.Atelier:FindFirstChild("Confettis")
+	verifier(confettis ~= nil and #confettis:GetChildren() >= 40 and confettis.ZIndex > gui.Atelier.Dialogue.ZIndex and table.find(M.sonsJoues, "Atelier_fete") ~= nil, "robe terminée : des confettis, un son de fête")
+	local premier = confettis:GetChildren()[1]
+	local hauteurAvant = premier.Position.Y.Scale
+	M.avancer(0.5)
+	verifier(premier.Position.Y.Scale > hauteurAvant + 0.1, "les confettis tombent")
+	M.avancer(3)
+	verifier(gui.Atelier:FindFirstChild("Confettis") == nil, "puis ils disparaissent")
+end
 verifierTailles("décorations")
 local SessionModule = requireModule(scriptClient.Session)
 local ScenePoste = requireModule(scriptClient.Scene)

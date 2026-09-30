@@ -13,6 +13,7 @@ local Scene = require(script:WaitForChild("Scene"))
 local Vignettes = require(script:WaitForChild("Vignettes"))
 local Sons = require(script:WaitForChild("Sons"))
 local Dialogue = require(script:WaitForChild("Dialogue"))
+local Confettis = require(script:WaitForChild("Confettis"))
 
 local ECRANS = {
 	accueil = require(script:WaitForChild("EcranAccueil")),
@@ -214,7 +215,11 @@ UiKit.surClic = function()
 end
 local SONS_ACTIONS = { nouvelleCommande = "clochette", acheter = "achat", couper = "couper", epingler = "epingler", abandonner = "echec", vendre = "achat", offrir = "reussite", inviter = "clochette", commandeHistoire = "clochette" }
 session:surAction(function(nom, reponse)
-	if nom == "livrer" then
+	if nom == "rendreCouture" and session.etat.etape == "decorations" then
+		-- La dernière pièce cousue : la robe est terminée, une pluie de confettis et un petit son de fête
+		Confettis.lancer(gui)
+		Sons.jouer("fete")
+	elseif nom == "livrer" then
 		Sons.jouer(if reponse.reussie then "reussite" else "echec")
 	elseif SONS_ACTIONS[nom] then
 		Sons.jouer(SONS_ACTIONS[nom])

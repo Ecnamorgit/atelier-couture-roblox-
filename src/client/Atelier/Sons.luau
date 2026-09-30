@@ -18,6 +18,7 @@ Sons.IDS = {
 	decoration = 17208204604, -- Roblox GUI - Bubble
 	photo = 17208312548, -- Roblox GUI - Camera Shutter
 	reussite = 1839881844, -- APM Music : « Spinning Around (b) », 2 s enjouées
+	fete = 9045129322, -- APM Music : « It's All A Big Joke - Tag2 », 3 s de bois et de guitare sautillants (robe terminée)
 	echec = 17208214688, -- Roblox GUI - Call Decline
 	musique = 1837589367, -- APM Music : « Fishing For Compliments », jazz tranquille (en boucle)
 }
