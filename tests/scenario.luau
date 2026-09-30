@@ -1029,11 +1029,54 @@ for _, nom in ipairs({ "Piece_corsage_cache_coeur_devant_unique", "Piece_manche_
 	end
 end
 verifier(#manquantes == 0, "robe en variantes nouvelles montrée en 3D à la photo (manquent : " .. table.concat(manquantes, ", ") .. ")")
+-- Sous-projet 4 : dix clientes déjà venues et douze événements passés (l'état d'avant revient ensuite) ; toutes
+-- dans le choix « Offrir à… », puis toutes dans le carnet d'adresses de l'accueil
+local avant8c = { clientes = table.clone(serveur:atelier(joueur).etat.clientes), faites = table.clone(serveur:atelier(joueur).etat.histoire.faites) }
+do
+	local e = serveur:atelier(joueur).etat
+	for _, c in ipairs(Clientes.LISTE) do
+		local fiche = if e.clientes[c.id] then table.clone(e.clientes[c.id]) else { amitie = 0, vues = 0, derniere = 0 }
+		fiche.vues = math.max(1, fiche.vues)
+		e.clientes[c.id] = fiche
+	end
+	for _, ev in ipairs(requireModule(dossier.Histoire).EVENEMENTS) do
+		for _, c in ipairs(ev.commandes) do
+			e.histoire.faites[c.id] = true
+		end
+	end
+	e.etape = "decorations" -- (l'écran de la photo se refait en y revenant)
+	requireModule(scriptClient.Session).courante:actualiser()
+	cliquer("Presenter")
+	cliquer("Offrir")
+	local derniere = boutonNomme("Offrir_maelle")
+	verifier(derniere.Position.Y.Offset + derniere.Size.Y.Offset <= fenetre.Size.Y.Offset + fenetre.Contenu.Size.Y.Offset, "dix clientes à qui offrir : toutes dans la fenêtre")
+	cliquer("FermerChoixCliente")
+end
 cliquer("Offrir")
 cliquer("Offrir_colette")
 local gainCadeau = serveur:atelier(joueur).etat.clientes.colette.amitie - amitieColette
 verifier(titre() == "Aiguille & Dentelle" and texte(if gainCadeau >= 3 then "Colette adore la robe que tu lui offres !" else "Colette te remercie pour la robe.") ~= nil and texte("Amitié de Colette : +") ~= nil, "offerte à Colette : l'accueil l'annonce, selon ce qu'elle en pense (+" .. gainCadeau .. ")")
 verifier(serveur:atelier(joueur).etat.clientes.colette.amitie > amitieColette, "son amitié monte")
+do
+	cliquer("OuvrirCarnetAdresses")
+	local liste = fenetre.Contenu.CarnetAdresses:FindFirstChild("Liste")
+	local bas = 0
+	for _, d in ipairs(liste and liste:GetChildren() or {}) do
+		if d:IsA("GuiObject") then
+			bas = math.max(bas, d.Position.Y.Offset + d.Size.Y.Offset)
+		end
+	end
+	verifier(liste ~= nil and liste:IsA("ScrollingFrame") and bas > 0 and (if liste.CanvasSize then liste.CanvasSize.Y.Offset else 0) >= bas and liste:FindFirstChild("Adresse_maelle") ~= nil and texte("Le grand défilé du quartier — souvenir : Rosette d'honneur") ~= nil, "dix clientes et douze souvenirs : le carnet d'adresses défile jusqu'au dernier")
+	cliquer("FermerCarnetAdresses")
+	local e = serveur:atelier(joueur).etat
+	for _, c in ipairs(Clientes.LISTE) do
+		if c.id ~= "colette" then
+			e.clientes[c.id] = avant8c.clientes[c.id]
+		end
+	end
+	e.histoire.faites = avant8c.faites
+	requireModule(scriptClient.Session).courante:actualiser()
+end
 end
 
 ---------------------------------------------------------------------------

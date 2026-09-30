@@ -244,6 +244,8 @@ return function(ctx)
 		UiKit.boutonDoux({ Name = "FermerCarnetAdresses", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(110, 34), ZIndex = 21, Parent = carnet }, function()
 			carnet.Visible = false
 		end)
+		-- Sous le titre, une liste qui défile (dix clientes et douze souvenirs ne tiennent pas dans la fenêtre)
+		local liste = UiKit.creer("ScrollingFrame", { Name = "Liste", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, 0, 1, -40), ScrollBarThickness = 10, ScrollingDirection = Enum.ScrollingDirection.Y, ZIndex = 21, Parent = carnet })
 		for k, v in ipairs(venues) do
 			local niveau = Progression.niveauAmitie(v.fiche.amitie)
 			local seuil = Progression.SEUILS_AMITIE[niveau + 2]
@@ -254,12 +256,13 @@ return function(ctx)
 				Name = "Adresse_" .. v.cliente.id,
 				Text = ("%s — amitié niveau %d (%s) · %s"):format(v.cliente.nom, niveau, points, ouvre),
 				TextSize = 16,
-				Position = UDim2.fromOffset(0, 44 + (k - 1) * 34),
-				Size = UDim2.new(1, 0, 0, 30),
+				Position = UDim2.fromOffset(0, 4 + (k - 1) * 34),
+				Size = UDim2.new(1, -14, 0, 30),
 				ZIndex = 21,
-				Parent = carnet,
+				Parent = liste,
 			})
 		end
+		local bas = 4 + #venues * 34
 		-- Les événements qui ont eu lieu, et leurs souvenirs
 		local passes = {}
 		for _, ev in ipairs(Histoire.EVENEMENTS) do
@@ -269,8 +272,10 @@ return function(ctx)
 			end
 		end
 		if #passes > 0 then
-			UiKit.texte({ Name = "Souvenirs", Text = "Souvenirs du quartier :\n" .. table.concat(passes, "\n"), TextSize = 16, Position = UDim2.fromOffset(0, 54 + #venues * 34), Size = UDim2.new(1, 0, 0, 22 * (#passes + 1)), ZIndex = 21, Parent = carnet })
+			UiKit.texte({ Name = "Souvenirs", Text = "Souvenirs du quartier :\n" .. table.concat(passes, "\n"), TextSize = 16, Position = UDim2.fromOffset(0, bas + 10), Size = UDim2.new(1, -14, 0, 22 * (#passes + 1)), ZIndex = 21, Parent = liste })
+			bas += 10 + 22 * (#passes + 1)
 		end
+		liste.CanvasSize = UDim2.fromOffset(0, bas)
 		-- (à droite du choix de la taille d'une robe libre, qui s'étend jusqu'à x = 576)
 		UiKit.boutonDoux({ Name = "OuvrirCarnetAdresses", Text = "Carnet d'adresses", Position = UDim2.fromOffset(592, ligne), Size = UDim2.fromOffset(220, 50), Parent = ctx.contenu }, function()
 			carnet.Visible = true
