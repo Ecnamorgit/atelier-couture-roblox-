@@ -933,7 +933,7 @@ do -- Sous-projet 6 : pas de nœud de satin dans le kit : grisé, on ne peut pas
 	verifier(noeudVide:GetAttribute("Epuise") == true and noeudVide:GetAttribute("Ferme") == false and noeudVide.Text == "Nœud de satin · ×0", "nœud de satin épuisé : grisé, « ×0 »")
 end
 cliquer("Deco_noeud_satin")
-verifier(fenetre.Message.Text == "Plus assez de Nœud de satin dans ta mercerie : achètes-en à la Mercerie." and boutonNomme("Deco_noeud_satin").BackgroundColor3 ~= ACCENT, "toucher un article épuisé : un message, rien n'est choisi")
+verifier(fenetre.Message.Text == "Pas assez de Nœud de satin dans ta mercerie : achètes-en à la Mercerie." and boutonNomme("Deco_noeud_satin").BackgroundColor3 ~= ACCENT, "toucher un article épuisé : un message, rien n'est choisi")
 do -- La mercerie, par-dessus le panneau, sans quitter la robe : deux nœuds de satin
 	local argentAvant = argent()
 	cliquer("OuvrirMercerie")
@@ -951,6 +951,12 @@ do -- La mercerie, par-dessus le panneau, sans quitter la robe : deux nœuds de 
 	verifier(argent() == argentAvant - 6 and serveur:atelier(joueur).etat.mercerie.noeud_satin == 2 and boutonNomme("Case_noeud_satin").Text == "Nœud de satin · ×2" and fenetre.Message.Text == "Acheté : Nœud de satin, ×2 (6 po).", "acheté : 6 po, deux nœuds dans la mercerie")
 	verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_achat", "l'achat fait sonner la caisse")
 	verifier(boutonNomme("Deco_noeud_satin").Text == "Nœud de satin · ×2" and boutonNomme("Deco_noeud_satin"):GetAttribute("Epuise") == false, "la palette suit l'achat")
+	-- (relecture) Une réponse perdue : l'état arrive plus tard du serveur ; la mercerie et la palette le suivent
+	serveur:atelier(joueur).etat.mercerie.perle = 14
+	SessionModule.courante:actualiser()
+	verifier(boutonNomme("Case_perle").Text == "Perle · ×14" and boutonNomme("Deco_perle").Text == "Perle · ×14", "l'état réparé par le serveur : la mercerie et la palette le suivent")
+	serveur:atelier(joueur).etat.mercerie.perle = 10
+	SessionModule.courante:actualiser()
 	verifierTailles("mercerie")
 	cliquer("FermerMercerie")
 	verifier(contenuD:FindFirstChild("Mercerie") == nil and titre() == "6. Décorations", "la mercerie se referme : on est toujours aux décorations")

@@ -110,6 +110,16 @@ function Mercerie.ouvrir(ctx, auChangement)
 		end
 	end, 0.4)
 	majFiche()
+	-- L'état peut changer sans achat d'ici (réparé par le serveur après une réponse perdue) : les casiers suivent, tant
+	-- que le panneau est là
+	local desabonner
+	desabonner = session:surChangement(function()
+		if panneau.Parent then
+			majFiche()
+		else
+			desabonner()
+		end
+	end)
 	return panneau
 end
 

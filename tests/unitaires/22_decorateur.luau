@@ -3,8 +3,8 @@ local EtatAtelier = U.module("EtatAtelier")
 local Recette = U.module("Recette")
 local Notation = U.module("Notation")
 local Mercerie = U.module("Mercerie")
-local MANQUE_NOEUD = "Plus assez de Nœud de satin dans ta mercerie : achètes-en à la Mercerie."
-local MANQUE_RUBAN = "Plus assez de Ruban rose dans ta mercerie : achètes-en à la Mercerie."
+local MANQUE_NOEUD = "Pas assez de Nœud de satin dans ta mercerie : achètes-en à la Mercerie."
+local MANQUE_RUBAN = "Pas assez de Ruban rose dans ta mercerie : achètes-en à la Mercerie."
 
 local recette = {
 	version = 1,
@@ -135,6 +135,11 @@ local vide = Decorateur.nouveau(recette, {}, { ruban_rose = 4 })
 vide:choisir("ruban_rose")
 local premier = vide:toucher(4, "unique", 0, 1)
 U.verifier(not premier.ok and premier.erreur == MANQUE_RUBAN and vide.garniture == nil, "moins de 5 cm de ruban : pas même un premier point")
+-- (relecture) devant une voyelle, « d' » : « Pas assez d'Étoile brodée »
+local etoile = Decorateur.nouveau(recette, {}, {})
+etoile:choisir("etoile_brodee")
+local sansEtoile = etoile:toucher(1, "unique", 0.5, 0.5)
+U.verifier(not sansEtoile.ok and sansEtoile.erreur == "Pas assez d'Étoile brodée dans ta mercerie : achètes-en à la Mercerie." and Decorateur.manque("Étoile brodée") == sansEtoile.erreur, "une étoile qu'on n'a pas : « Pas assez d'Étoile brodée » (" .. tostring(sansEtoile.erreur) .. ")")
 
 ---------------------------------------------------------------------------
 -- Mercerie : les quantités en clair

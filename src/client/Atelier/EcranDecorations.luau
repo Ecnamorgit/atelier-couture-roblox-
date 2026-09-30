@@ -70,7 +70,7 @@ return function(ctx)
 				return
 			end
 			if deco:epuise(a.id) then
-				ctx.message(("Plus assez de %s dans ta mercerie : achètes-en à la Mercerie."):format(a.nom), C.texteDoux)
+				ctx.message(Decorateur.manque(a.nom), C.texteDoux)
 				return
 			end
 			deco:choisir(a.id)
@@ -224,7 +224,18 @@ return function(ctx)
 	end))
 
 	rafraichir()
+	-- L'état peut changer sans action de cet écran (réparé par le serveur après une réponse perdue) : la palette suit
+	-- la mercerie, tant que l'écran est là
+	local actif = true
+	local desabonner = session:surChangement(function(etat)
+		if actif and etat.etape == "decorations" then
+			deco:majStock(etat.mercerie)
+			rafraichir()
+		end
+	end)
 	return function()
+		actif = false
+		desabonner()
 		for _, c in ipairs(connexions) do
 			c:Disconnect()
 		end

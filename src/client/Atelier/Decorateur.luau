@@ -10,6 +10,7 @@ local Patron = require(Couture:WaitForChild("Patron"))
 local Recette = require(Couture:WaitForChild("Recette"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
 local Notation = require(Couture:WaitForChild("Notation"))
+local Deblocages = require(Couture:WaitForChild("Deblocages"))
 
 local Decorateur = {}
 Decorateur.__index = Decorateur
@@ -80,8 +81,13 @@ function Decorateur:epuise(id)
 	return self:reste(id) < (if def.genre == "garniture" then math.ceil(Recette.LONGUEUR_MIN_GARNITURE * 10 - 1e-9) else 1)
 end
 
+-- Le refus d'un article qui manque (« de » ou « d' » devant son nom)
+function Decorateur.manque(nom)
+	return ("Pas assez %s dans ta mercerie : achètes-en à la Mercerie."):format(Deblocages.de(nom))
+end
+
 local function manque(def)
-	return { ok = false, erreur = ("Plus assez de %s dans ta mercerie : achètes-en à la Mercerie."):format(def.nom) }
+	return { ok = false, erreur = Decorateur.manque(def.nom) }
 end
 
 -- Une garniture compte si elle a au moins deux points et mesure au moins 0,5 dm
