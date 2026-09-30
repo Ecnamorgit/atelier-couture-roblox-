@@ -279,8 +279,13 @@ do -- Au départ, les jauges du carnet ne promettent que ce que les tissus ouver
 	local imposes = Notation.accessoiresImposes(etatC.commande.exigences)
 	local fTous = Notation.fourchette(croquisDepart, {}, imposes)
 	local fOuverts = Notation.fourchette(croquisDepart, {}, imposes, requireModule(dossier.Deblocages).ouverts(etatC).tissus)
-	local plage = fenetre.Contenu.Droite.Jauge_elegant.Plage.Size.X.Scale
-	verifier(fOuverts.elegant.max < fTous.elegant.max and math.abs(plage - fOuverts.elegant.max / 100) < 1e-9, "au départ, la jauge « élégant » s'arrête à ce que les tissus ouverts peuvent donner")
+	local ecarts = {}
+	for _, style in ipairs(Catalogue.STYLES) do
+		if math.abs(fenetre.Contenu.Droite["Jauge_" .. style].Plage.Size.X.Scale - fOuverts[style].max / 100) > 1e-9 then
+			table.insert(ecarts, style)
+		end
+	end
+	verifier(fOuverts.elegant.max < fTous.elegant.max and #ecarts == 0, "au départ, les six jauges s'arrêtent à ce que les tissus ouverts peuvent donner (en défaut : " .. table.concat(ecarts, ", ") .. ")")
 end
 -- Pour la suite, une couturière confirmée : tout le catalogue ouvert (prestige et amitiés au plus haut)
 local etatServeur = serveur:atelier(joueur).etat

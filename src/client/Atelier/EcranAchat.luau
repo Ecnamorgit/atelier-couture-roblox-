@@ -6,6 +6,7 @@ local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Polygone = require(Couture:WaitForChild("Polygone"))
 local Metrage = require(Couture:WaitForChild("Metrage"))
 local EtatAtelier = require(Couture:WaitForChild("EtatAtelier"))
+local Deblocages = require(Couture:WaitForChild("Deblocages"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 
 local PX_APERCU = 20 -- pixels par dm dans l'aperçu du rouleau (14 dm de large : 280 px)
@@ -190,7 +191,7 @@ return function(ctx)
 			end
 			local r = session:acheter(idTissu, q)
 			if r.ok then
-				ctx.message(("Acheté : %d dm de %s (%d po)."):format(q, t.nom, r.prix), C.ok)
+				ctx.message(("Acheté : %d dm %s (%d po)."):format(q, Deblocages.de(t.nom), r.prix), C.ok)
 			else
 				ctx.refus(r)
 			end

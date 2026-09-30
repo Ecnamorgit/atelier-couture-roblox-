@@ -22,7 +22,7 @@ local function ligneAmitie(amitie)
 	end
 	local prenom = fiche.nom:match("^(%S+)")
 	local niveau = if amitie.niveau > amitie.niveauAvant then (" (niveau %d !)"):format(amitie.niveau) else ""
-	return ("Amitié de %s : %s%d%s"):format(prenom, amitie.gain >= 0 and "+" or "", amitie.gain, niveau)
+	return ("Amitié %s : %s%d%s"):format(Deblocages.de(prenom), amitie.gain >= 0 and "+" or "", amitie.gain, niveau)
 end
 
 return function(ctx)
@@ -67,7 +67,7 @@ return function(ctx)
 		end
 		local expeditrice = r.lettre and Clientes.get(r.lettre.cliente)
 		if expeditrice then
-			annonce ..= ("\nUne lettre de %s est arrivée."):format(expeditrice.nom:match("^(%S+)"))
+			annonce ..= ("\nUne lettre %s est arrivée."):format(Deblocages.de(expeditrice.nom:match("^(%S+)")))
 		end
 	elseif action == "abandonner" then
 		annonce, couleur = "Commande abandonnée : pas de paie cette fois.", C.alerte

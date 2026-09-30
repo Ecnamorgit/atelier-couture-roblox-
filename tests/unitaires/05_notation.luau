@@ -75,6 +75,14 @@ U.verifier(U.proche(f2.decontracte.min, 29) and U.proche(f2.decontracte.max, 29)
 local ouvertsDepart = U.module("Deblocages").ouverts({ prestige = 0, clientes = {} }).tissus
 local fOuverts = Notation.fourchette(croquis, {}, nil, ouvertsDepart)
 U.verifier(fOuverts.elegant.max < f.elegant.max and fOuverts.elegant.min >= f.elegant.min, ("tissus ouverts seulement : la fourchette se resserre (élégant au plus %g au lieu de %g)"):format(fOuverts.elegant.max, f.elegant.max))
+-- … mais les tissus ouverts comptent toujours : le chic va jusqu'au meilleur tissu ouvert en chic
+local meilleurChic = 0
+for _, t in ipairs(Catalogue.Tissus) do
+	if ouvertsDepart[t.id] then
+		meilleurChic = math.max(meilleurChic, t.style.chic or 0)
+	end
+end
+U.verifier(meilleurChic > 0 and U.proche(fOuverts.chic.max, f.chic.acquis + Catalogue.K.tissu * meilleurChic), ("tissus ouverts seulement : ils comptent toujours (chic au plus %g, meilleur tissu ouvert : %g points)"):format(fOuverts.chic.max, meilleurChic))
 
 -- Bilan d'une recette complète
 local recette = {
