@@ -13,7 +13,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 7 en cours, plans 19 à 23 : des robes plus riches, à couches ; seize étiquettes)
+## État actuel (sous-projet 7, plans 19 à 24 : des robes plus riches, à couches ; seize étiquettes ; les portraits des clientes)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -27,8 +27,10 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    prestige de l'atelier atteint 2, 3 puis 4 ; Apolline, Joséphine, Capucine et Maëlle aux prestiges 5 à 8 ;
    ensuite, celle qu'on n'a pas vue depuis le plus longtemps. Chacune
    parle avec ses propres mots (présentation, arrivée, merci, déception) : fenêtre de l'atelier ouverte, dans un
-   encadré à son prénom, en haut à gauche de l'écran (un appui le referme jusqu'à sa prochaine parole) ;
-   fenêtre fermée, dans une bulle au-dessus de sa tête. En passant commande,
+   encadré à son prénom, en haut à gauche de l'écran (un appui le referme jusqu'à sa prochaine parole), avec son
+   **portrait** dessiné au crayon (sa coiffure, sa tenue ; contente, neutre ou déçue selon ce qu'elle dit et son
+   avis ; une illustration téléversée pourra le remplacer, l'initiale de son prénom si la mémoire des images est
+   pleine) ; fenêtre fermée, dans une bulle au-dessus de sa tête. En passant commande,
    elle verse un **acompte** (un quart de la base d'une robe simple), déduit de la paie ; gardé si on abandonne.
    **Mesures** : à sa première visite, on la mesure sur un mannequin de couture à trois molettes (poitrine,
    taille, hanches), sa silhouette en pointillé par-dessus : on tourne chaque molette (en glissant de haut en bas,
@@ -127,8 +129,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    cliente déjà venue, et dépasse de la boîte aux lettres du comptoir ; l'accueil montre jusqu'à trois lettres,
    chacune avec la première exigence de la commande qu'elle annonce. « Inviter » fait venir la cliente avec cette
    commande ; livrée et acceptée, elle rapporte un point d'amitié de plus. Les lettres n'expirent pas.
-   **Carnet d'adresses** : les clientes déjà venues, leur niveau d'amitié (points et seuil suivant) et ce que
-   le prochain niveau ouvrira ; la liste défile.
+   **Carnet d'adresses** : les clientes déjà venues, leur portrait (contente à partir d'une amitié de niveau 3),
+   leur niveau d'amitié (points et seuil suivant) et ce que le prochain niveau ouvrira ; la liste défile.
    **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8, une robe libre de
    jute vendue sur quatre robes, les lettres invitées) atteint le prestige 2 à la 3e robe au plus tard, le 5 vers
    la 19e, le 8 vers la 57e, et tout est ouvert vers la 123e (médianes, parties de 160 robes : l'amitié des quatre
@@ -201,7 +203,7 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Clientes`, `Progression` | Les dix clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux ; avis en étoiles, titres de la réputation, rang de la couturière |
   | `Deblocages` | Ce qui est fermé au départ et ce qui l'ouvre (prestige, amitié, événement) ; ce qu'une livraison vient d'ouvrir ; ce que l'amitié d'une cliente ouvrira ensuite |
   | `Histoire` | Les douze événements du quartier : leurs robes, tenues, répliques, épilogues et souvenirs ; l'événement en cours et sa prochaine robe |
-  | `Croquis`, `Pixels` | Dessin de face de chaque modèle (formes des parties, plis, mannequin) ; motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron, croquis colorié du carnet |
+  | `Croquis`, `Pixels` | Dessin de face de chaque modèle (formes des parties, plis, mannequin) ; motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron, croquis colorié du carnet, portrait au crayon de chaque cliente |
   | `Recette` | Recette d'une robe en JSON et validation complète (filtre du serveur au plan 4) |
   | `Maillage`, `Mannequin`, `Editables`, `ConstructeurRobe`, `Vitrines` | Robe 3D, mannequin, vitrines |
   | `Boutique` | Plan d'une boutique (repère local) et les 8 emplacements de la rue |
@@ -229,7 +231,8 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   renvoie, acceptée ou refusée ; elle signale l'attente à l'interface et redemande l'état après une réponse
   perdue. `TableDecoupe` et `MachineCoudre` sont la logique pure de la table
   de découpe, de la machine à coudre et de l'éditeur de décorations (`Decorateur`) ; `Cliente` construit
-  l'avatar de la cliente et sa bulle ; `Dialogue`, l'encadré où elle parle fenêtre ouverte ; `Confettis`, la
+  l'avatar de la cliente et sa bulle ; `Dialogue`, l'encadré où elle parle fenêtre ouverte ; `Portrait`, son
+  médaillon (dessin, illustration ou initiale) ; `Confettis`, la
   pluie de la robe terminée ; `Chat`, les caresses au chat de l'atelier ; `Scene` tient, dans la boutique du
   joueur, la cliente, le mannequin,
   la robe épinglée, l'aperçu des décorations, les réglages de la photo et la caméra du poste ; `Sons` joue
