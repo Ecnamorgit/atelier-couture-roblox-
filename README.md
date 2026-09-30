@@ -13,7 +13,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 6 en cours, plans 15 et 16 : les mesures à molettes, la mercerie)
+## État actuel (sous-projet 6 en cours, plans 15 à 17 : les mesures à molettes, la mercerie, le tissu entamé)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -48,11 +48,15 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    ouvert est grisé, avec ce qu'il faut pour l'ouvrir (« Prestige 3 », « Amitié d'Hélène : 2 ») ; son patron
    ne se trace pas, et le serveur le refuse aussi.
 3. **Achat** : métrage conseillé par tissu, quantité réglable, coût au mètre ; toucher l'échantillon d'un tissu
-   montre le rouleau conseillé, avec les pièces rangées dessus.
+   montre le rouleau conseillé, avec les pièces rangées dessus. Pour un rouleau entamé, la quantité proposée ne
+   compte que le tissu neuf (« Neuf : 9 dm (11 entamés) »).
 4. **Table de découpe** : les pièces du patron se glissent (souris ou doigt) et se tournent (boutons, R, molette
    sur la pièce) sur le rouleau, qu'on déroule en le faisant défiler (ou avec A et D). Droit-fil aimanté,
    pièces pliées coupées en double au pli, chevauchements refusés, place proposée ; une ligne marque le tissu
-   entamé (couper consomme le rouleau jusqu'au bas de la pièce la plus basse).
+   entamé. **Le tissu entamé** : les pièces coupées laissent leurs trous dans une bande en haut du rouleau, qui reste
+   dans le stock ; à la robe suivante dans ce tissu, les trous sont grisés et interdits, on coupe dans leurs vides
+   ou dessous (« Proposer une place » les évite). Au-delà de 24 trous, la bande est jetée d'elle-même (elle quitte
+   alors le stock), et on l'annonce. Une robe libre compte en matières ce qu'elle ajoute à la bande.
 5. **Épinglage** : le mannequin prend les mesures de la cliente ; chaque pièce touchée s'y épingle,
    dans le tissu exactement tel qu'il a été découpé.
 6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé
@@ -124,7 +128,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
 10. La suite : porter la robe sur son avatar et les défilés entre joueurs, ou d'autres écarts avec *Dressmaker*
    (compteur de mètres, robes plus riches) : à décider.
 
-« Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
+« Recommencer la robe » (les décorations posées sont perdues ; le tissu coupé reste en trous sur le rouleau) et
+« Livrer la robe »
 demandent une confirmation (deuxième appui).
 
 **Réseau lent ou coupé** : au-delà de 0,3 s d'attente du serveur, « Un instant… » s'affiche en gris sous la
