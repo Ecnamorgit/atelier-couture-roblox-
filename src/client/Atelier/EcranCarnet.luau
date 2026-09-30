@@ -68,14 +68,16 @@ return function(ctx)
 		end
 		local u = (position.X - dessin.AbsolutePosition.X) / dessin.AbsoluteSize.X
 		local v = (position.Y - dessin.AbsolutePosition.Y) / dessin.AbsoluteSize.Y
-		local famille = Croquis.partieA(croquis, u * Croquis.LARGEUR, v * Croquis.HAUTEUR)
+		-- (sous-projet 7 : une couche, un volant, ne choisit que le tissu de ses pièces)
+		local famille, piecesTouchees = Croquis.partieA(croquis, u * Croquis.LARGEUR, v * Croquis.HAUTEUR)
 		if famille then
-			ouvrirChoix(Catalogue.variante(croquis[famille]).pieces, famille)
+			ouvrirChoix(piecesTouchees, famille)
 		end
 	end)
 
 	-- Les pièces du croquis et leur tissu (une ligne par pièce : la toucher choisit son tissu)
-	local listePieces = UiKit.creer("Frame", { Name = "Pieces", BackgroundTransparency = 1, Position = UDim2.fromOffset(334, 6), Size = UDim2.fromOffset(198, 300), Parent = page })
+	-- (une liste qui défile, au-dessus des lignes ◀ ▶ : une robe à couches a jusqu'à dix pièces)
+	local listePieces = UiKit.creer("ScrollingFrame", { Name = "Pieces", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollingDirection = Enum.ScrollingDirection.Y, Position = UDim2.fromOffset(334, 6), Size = UDim2.fromOffset(198, HAUT_LIGNES - 6), Parent = page })
 
 	-- Une ligne ◀ modèle ▶ par famille, avec un point par modèle
 	local lignes = {}
@@ -158,6 +160,7 @@ return function(ctx)
 		fermerChoix()
 		choix = UiKit.arrondir(UiKit.creer("TextButton", { Name = "ChoixTissu", Text = "", AutoButtonColor = false, BackgroundColor3 = C.fond, Size = UDim2.fromScale(1, 1), ZIndex = 10, Parent = contenu }), 10)
 		choix:SetAttribute("Famille", famille)
+		choix:SetAttribute("Pieces", table.concat(pieces, ","))
 		UiKit.boutonDoux({ Name = "FermerChoix", Text = "Retour", Position = UDim2.new(1, -120, 0, 0), Size = UDim2.fromOffset(110, 34), ZIndex = 11, Parent = choix }, fermerChoix)
 		local grille = UiKit.creer("ScrollingFrame", {
 			Name = "Grille",
@@ -260,6 +263,12 @@ return function(ctx)
 			local premiere = Catalogue.variante(croquis[famille]).pieces[1]
 			tissusDessin[famille] = premiere and tissus[premiere] or nil
 		end
+		-- (sous-projet 7) une partie qui porte ses pièces, un volant, prend le tissu de la première
+		for _, partie in ipairs(Croquis.parties(croquis)) do
+			if partie.pieces then
+				tissusDessin[partie.pieces[1]] = tissus[partie.pieces[1]]
+			end
+		end
 		-- L'image se fige en attendant Roblox : à part, pour ne pas faire attendre le reste de l'écran ; seul le
 		-- dernier dessin demandé s'affiche (deux modèles choisis coup sur coup peuvent arriver dans le désordre)
 		dessinDemande += 1
@@ -297,7 +306,7 @@ return function(ctx)
 		listePieces:ClearAllChildren()
 		for i, id in ipairs(pieces) do
 			local t = tissus[id] and Catalogue.tissu(tissus[id])
-			local ligne = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Tissu_" .. id, Text = "", AutoButtonColor = true, BackgroundColor3 = C.panneau, BackgroundTransparency = 0.3, Position = UDim2.fromOffset(0, (i - 1) * 36), Size = UDim2.fromOffset(198, 34), Parent = listePieces }), 6)
+			local ligne = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Tissu_" .. id, Text = "", AutoButtonColor = true, BackgroundColor3 = C.panneau, BackgroundTransparency = 0.3, Position = UDim2.fromOffset(0, (i - 1) * 36), Size = UDim2.fromOffset(192, 34), Parent = listePieces }), 6)
 			ligne.Activated:Connect(function()
 				if appuiDessous() then
 					ouvrirChoix({ id })
@@ -312,7 +321,8 @@ return function(ctx)
 			UiKit.texte({ Name = "Piece", Text = Catalogue.piece(id).nom, Font = Enum.Font.GothamBold, TextSize = 14, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 1), Size = UDim2.fromOffset(158, 16), Parent = ligne })
 			UiKit.texte({ Name = "Tissu", Text = t and t.nom or "(aucun tissu)", TextSize = 14, TextColor3 = t and C.texte or C.texteDoux, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 17), Size = UDim2.fromOffset(158, 16), Parent = ligne })
 		end
-		UiKit.boutonDoux({ Name = "ToutEnUnTissu", Text = "Même tissu pour toute la robe", TextSize = 14, Position = UDim2.fromOffset(0, #pieces * 36 + 4), Size = UDim2.fromOffset(198, 32), Parent = listePieces }, function()
+		listePieces.CanvasSize = UDim2.fromOffset(0, #pieces * 36 + 40)
+		UiKit.boutonDoux({ Name = "ToutEnUnTissu", Text = "Même tissu pour toute la robe", TextSize = 14, Position = UDim2.fromOffset(0, #pieces * 36 + 4), Size = UDim2.fromOffset(192, 32), Parent = listePieces }, function()
 			if dernierTissu then
 				for _, id in ipairs(pieces) do
 					tissus[id] = dernierTissu
