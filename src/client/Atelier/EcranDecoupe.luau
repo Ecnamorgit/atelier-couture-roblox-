@@ -60,7 +60,8 @@ return function(ctx)
 	local panneau = UiKit.creer("Frame", { Name = "Panneau", BackgroundTransparency = 1, Position = UDim2.fromOffset(14 * PX + 24, 0), Size = UDim2.new(1, -(14 * PX + 24), 1, 0), Parent = contenu })
 	-- Onglets des tissus : une barre qui défile quand il y a plus de deux tissus
 	local onglets = UiKit.creer("ScrollingFrame", { Name = "Onglets", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollingDirection = Enum.ScrollingDirection.X, ScrollBarThickness = 10, ScrollBarImageColor3 = C.accent, Size = UDim2.new(1, 0, 0, 44), Parent = panneau })
-	local liste = UiKit.creer("Frame", { Name = "ListePieces", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 156), Parent = panneau })
+	-- (une liste qui défile : une robe à couches a jusqu'à dix pièces d'un même tissu)
+	local liste = UiKit.creer("ScrollingFrame", { Name = "ListePieces", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollingDirection = Enum.ScrollingDirection.Y, CanvasSize = UDim2.new(), Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 156), Parent = panneau })
 	local droitFil = UiKit.texte({ Name = "DroitFil", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, 204), Size = UDim2.new(1, 0, 0, 22), Parent = panneau })
 	-- (sous-projet 6) le compteur du rouleau, sous « Couper » : ce qui est entamé, et ce que cette robe y ajoute
 	local infoRouleau = UiKit.texte({ Name = "InfoRouleau", TextSize = 14, TextColor3 = C.texteDoux, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(0, 396), Size = UDim2.new(1, 0, 0, 34), Parent = panneau })
@@ -237,7 +238,7 @@ return function(ctx)
 		liste:ClearAllChildren()
 		for k, id in ipairs(table_:piecesRestantes()) do
 			local actif = id == table_.selection
-			local b = UiKit.boutonDoux({ Name = "Piece_" .. id, Text = Catalogue.piece(id).nom .. (Catalogue.piece(id).pliee and " (pliée)" or ""), TextSize = 14, Position = UDim2.fromOffset(0, (k - 1) * 26), Size = UDim2.new(1, 0, 0, 24), Parent = liste }, function()
+			local b = UiKit.boutonDoux({ Name = "Piece_" .. id, Text = Catalogue.piece(id).nom .. (Catalogue.piece(id).pliee and " (pliée)" or ""), TextSize = 14, Position = UDim2.fromOffset(0, (k - 1) * 26), Size = UDim2.new(1, -6, 0, 24), Parent = liste }, function()
 				table_:selectionner(id)
 				rafraichir()
 				montrerPiece()
@@ -245,6 +246,7 @@ return function(ctx)
 			b.BackgroundColor3 = actif and C.accent or C.panneau
 			b.TextColor3 = actif and Color3.new(1, 1, 1) or C.texte
 		end
+		liste.CanvasSize = UDim2.fromOffset(0, #table_:piecesRestantes() * 26)
 		placerPiece()
 	end
 

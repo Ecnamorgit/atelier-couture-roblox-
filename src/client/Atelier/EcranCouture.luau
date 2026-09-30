@@ -48,8 +48,9 @@ return function(ctx)
 
 	-- Panneau de commandes
 	local panneau = UiKit.creer("Frame", { Name = "Panneau", BackgroundTransparency = 1, Position = UDim2.fromOffset(LARGEUR_PLATEAU + 16, 0), Size = UDim2.new(1, -(LARGEUR_PLATEAU + 16), 1, 0), Parent = contenu })
-	local listePieces = UiKit.creer("Frame", { Name = "Pieces", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 144), Parent = panneau })
+	-- (une liste qui défile : une robe à couches a jusqu'à dix pièces)
 	local ids = session.etat:piecesDuCroquis()
+	local listePieces = UiKit.creer("ScrollingFrame", { Name = "Pieces", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollingDirection = Enum.ScrollingDirection.Y, CanvasSize = UDim2.fromOffset(0, #ids * 24), Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 144), Parent = panneau })
 	local lignes = {}
 	for i, id in ipairs(ids) do
 		lignes[id] = UiKit.texte({ Name = "Ligne" .. i, TextSize = 14, Position = UDim2.fromOffset(0, (i - 1) * 24), Size = UDim2.new(1, 0, 0, 22), Parent = listePieces })

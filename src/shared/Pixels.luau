@@ -223,7 +223,8 @@ end
 ---------------------------------------------------------------------------
 -- Croquis du carnet (sous-projet 5) : la robe de face, chaque partie remplie du motif de son tissu (blanche sans
 -- tissu), un trait de crayon autour, les plis en traits fins, le mannequin esquissé derrière. Fond transparent :
--- le papier du carnet est dessous. tissus = { [famille] = idTissu ou nil }. Retourne buffer, largeur, hauteur.
+-- le papier du carnet est dessous. tissus = { [famille] = idTissu ou nil } (sous-projet 7 : et [idPiece] pour une
+-- partie qui porte ses pièces, un volant). Retourne buffer, largeur, hauteur.
 ---------------------------------------------------------------------------
 local BLANC_CROQUIS = { 252, 250, 245 }
 local CRAYON = { 64, 50, 56 }
@@ -265,8 +266,8 @@ function Pixels.croquis(croquis, tissus, largeur, hauteur)
 	-- Le motif n'est calculé qu'aux points de la robe (un motif entier, 256 × 256 points par tissu, prendrait
 	-- l'essentiel du temps, à chaque modèle ou tissu choisi, sur téléphone)
 	local tissuDe = {}
-	for famille, id in pairs(tissus) do
-		tissuDe[famille] = Catalogue.tissu(id)
+	for cle, id in pairs(tissus) do
+		tissuDe[cle] = Catalogue.tissu(id)
 	end
 	local blanc = empaqueter(BLANC_CROQUIS[1], BLANC_CROQUIS[2], BLANC_CROQUIS[3])
 	local crayon = empaqueter(CRAYON[1], CRAYON[2], CRAYON[3])
@@ -279,7 +280,8 @@ function Pixels.croquis(croquis, tissus, largeur, hauteur)
 				if etiquette(i - 1, j) ~= k or etiquette(i + 1, j) ~= k or etiquette(i, j - 1) ~= k or etiquette(i, j + 1) ~= k then
 					valeur = crayon
 				else
-					local t = tissuDe[parties[k].famille]
+					local partie = parties[k]
+					local t = tissuDe[if partie.pieces then partie.pieces[1] else partie.famille]
 					if t then
 						local c = MOTIFS[t.motif.type](t.motif, (i * MOTIF_PAR_PX) % N, (j * MOTIF_PAR_PX) % N)
 						valeur = empaqueter(c[1], c[2], c[3])

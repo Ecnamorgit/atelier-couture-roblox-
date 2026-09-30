@@ -44,6 +44,8 @@ Catalogue.FAMILLES = { "corsage", "manches", "col", "jupe" }
 -- enroulement : comment la pièce entoure le corps (voir Patron)
 -- pliee : coupée dans le tissu plié → deux copies miroir (gauche, droite)
 -- biais : prévue pour être coupée à 45°
+-- Sous-projet 7 : poids (dans la paie, 1 par défaut ; 0,5 pour une petite pièce ajoutée : volant, basque), grille
+-- (quadrillage propre à la pièce, par finesse : voir Maillage)
 ---------------------------------------------------------------------------
 local function rectangle(l, h)
 	return { { x = 0, y = 0 }, { x = l, y = 0 }, { x = l, y = h }, { x = 0, y = h } }
@@ -79,6 +81,12 @@ local MANCHE_COURTE = { { x = 0, y = 0.6 }, { x = 1.6, y = 0 }, { x = 3.2, y = 0
 local MANCHE_TROIS_QUARTS = { { x = 0, y = 0.6 }, { x = 1.6, y = 0 }, { x = 3.2, y = 0.6 }, { x = 2.9, y = 4 }, { x = 0.3, y = 4 } }
 local COL_MARIN = { { x = 0, y = 0 }, { x = 2.2, y = 0 }, { x = 2.4, y = 1.6 }, { x = 0.8, y = 1.6 } }
 local CRAYON = { { x = 0, y = 0 }, { x = 5, y = 0 }, { x = 4.6, y = 6 }, { x = 0.4, y = 6 } }
+-- Sous-projet 7 : la basque, courte et évasée, sous la taille, par-dessus la jupe
+local BASQUE = { { x = 0.8, y = 0 }, { x = 5.6, y = 0 }, { x = 6.4, y = 1.2 }, { x = 0, y = 1.2 } }
+-- Un volant froncé : une bande longue (sa longueur fait le tour, froncée) et basse, cousue par le haut
+-- (en vitrine, 24 colonnes : avec 16, chaque sommet tomberait sur un creux des fronces, et le volant serait lisse)
+local GRILLE_VOLANT = { robe = { colonnes = 32, lignes = 3 }, vitrine = { colonnes = 24, lignes = 2 } }
+local GRILLE_BASQUE = { robe = { colonnes = 12, lignes = 4 }, vitrine = { colonnes = 6, lignes = 2 } }
 
 Catalogue.Pieces = {
 	corsage_droit_devant = { nom = "Corsage devant", contour = rectangle(4.8, 4.2), coutures = { 2, 3, 4 },
@@ -135,6 +143,16 @@ Catalogue.Pieces = {
 		enroulement = { type = "jupe", cote = "devant", evasement = -0.04, fronces = 0 } },
 	jupe_crayon_dos = { nom = "Jupe crayon dos", contour = CRAYON, coutures = { 1, 2, 4 },
 		enroulement = { type = "jupe", cote = "dos", evasement = -0.04, fronces = 0 } },
+	-- Sous-projet 7 : des couches. Le volant, cousu d'un bord (le haut), part à 5 dm sous la taille, par-dessus la jupe
+	-- droite, et descend 0,6 dm plus bas qu'elle ; la basque, par-dessus la jupe, s'évase depuis la taille
+	volant_devant = { nom = "Volant devant", contour = rectangle(9, 1.6), coutures = { 1 }, poids = 0.5, grille = GRILLE_VOLANT,
+		enroulement = { type = "jupe", cote = "devant", depart = 5, couche = 1, evasement = 0.03, ampleur = 0.3, fronces = 0.35 } },
+	volant_dos = { nom = "Volant dos", contour = rectangle(9, 1.6), coutures = { 1 }, poids = 0.5, grille = GRILLE_VOLANT,
+		enroulement = { type = "jupe", cote = "dos", depart = 5, couche = 1, evasement = 0.03, ampleur = 0.3, fronces = 0.35 } },
+	basque_devant = { nom = "Basque devant", contour = BASQUE, coutures = { 1 }, poids = 0.5, grille = GRILLE_BASQUE,
+		enroulement = { type = "jupe", cote = "devant", depart = 0, couche = 1, evasement = 0, ampleur = 0.35, fronces = 0 } },
+	basque_dos = { nom = "Basque dos", contour = BASQUE, coutures = { 1 }, poids = 0.5, grille = GRILLE_BASQUE,
+		enroulement = { type = "jupe", cote = "dos", depart = 0, couche = 1, evasement = 0, ampleur = 0.35, fronces = 0 } },
 }
 
 ---------------------------------------------------------------------------
@@ -174,6 +192,12 @@ Catalogue.Variantes = {
 		pieces = { "jupe_evasee_devant", "jupe_evasee_dos" }, style = { elegant = 10, gothique = 4, decontracte = -4 } },
 	{ id = "jupe_crayon", famille = "jupe", nom = "Crayon",
 		pieces = { "jupe_crayon_devant", "jupe_crayon_dos" }, style = { chic = 8, elegant = 4, decontracte = -2 } },
+	-- Sous-projet 7 : des couches. (Une variante ne change jamais de pièces : les robes gardées et les recettes des
+	-- vitrines resteraient invalides ; on en ajoute de nouvelles.)
+	{ id = "corsage_basque", famille = "corsage", nom = "À basque",
+		pieces = { "corsage_droit_devant", "corsage_droit_dos", "basque_devant", "basque_dos" }, style = { elegant = 6, chic = 6, romantique = 2 } },
+	{ id = "jupe_volant", famille = "jupe", nom = "À volant",
+		pieces = { "jupe_droite_devant", "jupe_droite_dos", "volant_devant", "volant_dos" }, style = { romantique = 8, mignon = 6 } },
 }
 
 ---------------------------------------------------------------------------

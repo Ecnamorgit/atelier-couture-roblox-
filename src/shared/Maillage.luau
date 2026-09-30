@@ -18,17 +18,19 @@ Maillage.FINESSES = {
 -- Retourne { positions = {Vector3}, normales = {Vector3}, uvs = { {u, v} }, patron = { {x, y} },
 --            faces = { {i1, i2, i3} } } ; faces tournées vers l'extérieur.
 -- uv : coordonnées dans la boîte du patron (0,0 en haut à gauche), comme l'image de Pixels.imagePiece.
+-- Une pièce peut avoir sa propre grille par finesse (sous-projet 7 : un volant, long et bas, froncé serré).
 function Maillage.piece(idPiece, copie, mesures, finesse)
 	local def = Catalogue.piece(idPiece)
 	assert(def, "pièce inconnue : " .. tostring(idPiece))
-	local grille = Maillage.FINESSES[finesse or "robe"]
-	assert(grille, "finesse inconnue : " .. tostring(finesse))
+	assert(Maillage.FINESSES[finesse or "robe"], "finesse inconnue : " .. tostring(finesse))
+	local grille = def.grille and def.grille[finesse or "robe"] or Maillage.FINESSES[finesse or "robe"]
 	local b = Polygone.boite(def.contour)
 	local l, h = b.maxX - b.minX, b.maxY - b.minY
 	local out = { positions = {}, normales = {}, uvs = {}, patron = {}, faces = {} }
 	local indices = {}
 	for j = 0, grille.lignes do
-		local y = b.minY + h * j / grille.lignes
+		-- (la dernière ligne exactement sur le bord : 1,6 × 3 / 3 donne un peu plus que 1,6, hors de la pièce)
+		local y = if j == grille.lignes then b.maxY else b.minY + h * j / grille.lignes
 		local x0, x1 = Polygone.etendueLigne(def.contour, y)
 		indices[j] = {}
 		if x0 then

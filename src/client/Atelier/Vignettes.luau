@@ -70,6 +70,17 @@ function Vignettes.croquis(croquis, tissus, largeur, hauteur)
 	for _, famille in ipairs(Catalogue.FAMILLES) do
 		table.insert(morceaux, croquis[famille] .. "=" .. (tissus[famille] or ""))
 	end
+	-- (sous-projet 7) le tissu d'une partie qui porte ses pièces, un volant, compte aussi
+	local pieces = {}
+	for cle in pairs(tissus) do
+		if not table.find(Catalogue.FAMILLES, cle) then
+			table.insert(pieces, cle)
+		end
+	end
+	table.sort(pieces)
+	for _, cle in ipairs(pieces) do
+		table.insert(morceaux, cle .. "=" .. tissus[cle])
+	end
 	local cle = ("croquis:%s:%dx%d"):format(table.concat(morceaux, ","), largeur, hauteur)
 	local contenu = figer(cle, function()
 		return Pixels.croquis(croquis, tissus, largeur, hauteur)

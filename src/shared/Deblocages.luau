@@ -29,6 +29,8 @@ Deblocages.PRESTIGE_ACCESSOIRES = {
 Deblocages.PRESTIGE_VARIANTES = {
 	manches_courtes = 6,
 	jupe_crayon = 7,
+	jupe_volant = 4, -- (sous-projet 7)
+	corsage_basque = 5,
 }
 Deblocages.GENRES = { "variantes", "tissus", "accessoires" }
 

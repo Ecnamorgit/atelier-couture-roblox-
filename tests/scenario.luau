@@ -456,6 +456,37 @@ do
 	d.Activated:Fire({ Position = Vector3.new(point.X, point.Y, 0) }, 1)
 	verifier(fenetre.Contenu:FindFirstChild("ChoixTissu") == nil and fenetre.Contenu.Page.Pieces.Tissu_jupe_trapeze_devant.Tissu.Text == "Coton blanc", "double clic sur un tissu : choisi, et le second appui ne rouvre pas le choix")
 end
+do -- Sous-projet 7 : une jupe à volant et un corsage à basque ; leurs couches ont leurs pièces, leur tissu, leur partie du dessin
+	choisirModele("jupe_volant")
+	choisirModele("corsage_basque")
+	local page = fenetre.Contenu.Page
+	local liste = page.Pieces
+	local lignes = 0
+	for _, e in ipairs(liste:GetChildren()) do
+		lignes += if e.Name:sub(1, 6) == "Tissu_" then 1 else 0
+	end
+	verifier(liste:IsA("ScrollingFrame") and lignes == 10 and liste.CanvasSize.Y.Offset >= 10 * 36 and liste.Position.Y.Offset + liste.Size.Y.Offset <= page.Precedent_corsage.Position.Y.Offset, ("dix pièces : la liste défile, au-dessus des lignes des modèles (%d)"):format(lignes))
+	local tout = page:FindFirstChild("ToutEnUnTissu")
+	verifier(tout ~= nil and tout.Position.Y.Offset >= liste.Position.Y.Offset + liste.Size.Y.Offset and tout.Position.Y.Offset + tout.Size.Y.Offset <= page.Precedent_corsage.Position.Y.Offset, "« Même tissu pour toute la robe » reste en vue, sous la liste qui défile")
+	local d = page.Dessin
+	local function toucher(x, y)
+		M.avancer(0.5)
+		d.Activated:Fire({ Position = Vector3.new(d.AbsolutePosition.X + d.AbsoluteSize.X * x / 100, d.AbsolutePosition.Y + d.AbsoluteSize.Y * y / 130, 0) }, 1)
+	end
+	local imageAvant = d.ImageContent
+	toucher(52, 81)
+	local ouvert = fenetre.Contenu:FindFirstChild("ChoixTissu")
+	verifier(ouvert ~= nil and ouvert:GetAttribute("Pieces") == "volant_devant,volant_dos", "toucher le volant dessiné : le choix du tissu de ses deux pièces")
+	M.avancer(0.5)
+	fenetre.Contenu.ChoixTissu.Grille.Tissu_velours_noir.Activated:Fire()
+	verifier(liste.Tissu_volant_devant.Tissu.Text == "Velours noir" and liste.Tissu_volant_dos.Tissu.Text == "Velours noir" and liste.Tissu_jupe_droite_devant.Tissu.Text ~= "Velours noir", "le volant prend le velours noir, la jupe garde son tissu")
+	verifier(d.ImageContent ~= nil and d.ImageContent ~= imageAvant, "le dessin se colorie du tissu du volant")
+	toucher(50, 47)
+	verifier(fenetre.Contenu.ChoixTissu:GetAttribute("Pieces") == "basque_devant,basque_dos", "toucher la basque dessinée : ses deux pièces")
+	cliquer("FermerChoix")
+	choisirModele("corsage_v")
+	choisirModele("jupe_trapeze")
+end
 local pieces = fenetre.Contenu.Page.Pieces
 local nbBoutonsTissu = 0
 for _, d in ipairs(pieces:GetChildren()) do
