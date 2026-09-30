@@ -91,14 +91,19 @@ local function texte(nomOuMotif)
 	return nil
 end
 -- Règle de la spec §4 : les textes mesurent au moins 14 px à l'échelle 1
+-- Et aucun texte laissé à celui de Roblox (« Label », « Button ») : un texte jamais réglé
 local function verifierTailles(ecran)
-	local petits = {}
+	local petits, parDefaut = {}, {}
 	for _, d in ipairs(gui:GetDescendants()) do
 		if (d:IsA("TextLabel") or d:IsA("TextButton")) and estVisible(d) and d.Text ~= "" and d.TextSize < 14 then
 			table.insert(petits, d.Name .. "=" .. d.TextSize)
 		end
+		if (d:IsA("TextLabel") or d:IsA("TextButton")) and estVisible(d) and (d.Text == "Label" or d.Text == "Button") then
+			table.insert(parDefaut, d.Name)
+		end
 	end
 	verifier(#petits == 0, ecran .. " : textes d'au moins 14 px ; trop petits : " .. table.concat(petits, ", "))
+	verifier(#parDefaut == 0, ecran .. " : aucun texte laissé à celui de Roblox ; en défaut : " .. table.concat(parDefaut, ", "))
 end
 local function titre()
 	return fenetre.Titre.Text
@@ -935,6 +940,7 @@ do -- La mercerie, par-dessus le panneau, sans quitter la robe : deux nœuds de 
 	local merc = contenuD:FindFirstChild("Mercerie")
 	verifier(merc ~= nil and merc:IsA("TextButton") and merc.Text == "" and merc.ZIndex > 20, "« Mercerie » : la boutique par-dessus le panneau (un bouton sans texte, qui arrête les appuis)")
 	verifier(merc.Casiers:FindFirstChild("Case_lanterne_papier") == nil and boutonNomme("Case_perle").Text == "Perle · ×10", "un casier par article ouvert, avec ce qu'on en a")
+	verifierTailles("mercerie, rien de choisi")
 	cliquer("AcheterMercerie")
 	verifier(fenetre.Message.Text == "Choisis d'abord un article." and argent() == argentAvant, "« Acheter » sans article : rien")
 	cliquer("Case_noeud_satin")

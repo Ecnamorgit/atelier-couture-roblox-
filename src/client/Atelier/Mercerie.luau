@@ -50,7 +50,7 @@ function Mercerie.ouvrir(ctx, auChangement)
 	UiKit.creer("Frame", { Name = "Trait", BackgroundColor3 = C.accent, BackgroundTransparency = 0.5, BorderSizePixel = 0, Position = UDim2.new(0, 8, 1, -140), Size = UDim2.new(1, -16, 0, 2), ZIndex = 31, Parent = panneau })
 	local fiche = UiKit.creer("Frame", { Name = "Fiche", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 8, 1, -8), Size = UDim2.new(1, -16, 0, 126), ZIndex = 31, Parent = panneau })
 	local article = UiKit.texte({ Name = "Article", Text = "Choisis un article.", Font = Enum.Font.GothamBold, TextSize = 14, Size = UDim2.new(1, 0, 0, 20), ZIndex = 32, Parent = fiche })
-	local stylesTexte = UiKit.texte({ Name = "Styles", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(0, 20), Size = UDim2.new(1, 0, 0, 20), ZIndex = 32, Parent = fiche })
+	local stylesTexte = UiKit.texte({ Name = "Styles", Text = "", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(0, 20), Size = UDim2.new(1, 0, 0, 20), ZIndex = 32, Parent = fiche })
 	local quantiteTexte = UiKit.texte({ Name = "Quantite", Font = Enum.Font.GothamBold, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(52, 46), Size = UDim2.fromOffset(110, 34), ZIndex = 32, Parent = fiche })
 	local choisi, quantite = nil, 1
 	local cases, acheter = {}, nil
@@ -61,7 +61,7 @@ function Mercerie.ouvrir(ctx, auChangement)
 			b.TextColor3 = if id == choisi then Color3.new(1, 1, 1) else C.texte
 		end
 		if not choisi then
-			quantiteTexte.Text = ""
+			quantiteTexte.Text, stylesTexte.Text = "", ""
 			acheter.Text = "Acheter"
 			return
 		end

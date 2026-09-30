@@ -384,6 +384,9 @@ local function nouvelleInstance(classe)
 end
 M.nouvelleInstance = nouvelleInstance
 
+-- Le texte d'une étiquette, d'un bouton ou d'une zone de saisie neufs, comme dans Roblox (vérifié dans Studio) : un
+-- texte jamais réglé s'affiche « Label »
+local TEXTES_PAR_DEFAUT = { TextLabel = "Label", TextButton = "Button", TextBox = "TextBox" }
 local DEFAUTS = {
 	Visible = true,
 	Text = "",
@@ -430,6 +433,9 @@ INST.__index = function(self, k)
 				i = rawget(i, "__props").Parent
 			end
 			return Vector2.new(x, y)
+		end
+		if k == "Text" and TEXTES_PAR_DEFAUT[classe] then
+			return TEXTES_PAR_DEFAUT[classe]
 		end
 		return DEFAUTS[k]
 	end
