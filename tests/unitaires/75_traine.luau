@@ -8,10 +8,14 @@ local Croquis = U.module("Croquis")
 local Deblocages = U.module("Deblocages")
 local Clientes = U.module("Clientes")
 local Etiquettes = U.module("Etiquettes")
+local Boutique = U.module("Boutique")
 
 local v = Catalogue.variante("jupe_traine")
 U.verifier(v and table.concat(v.pieces, ",") == "traine_devant,traine_dos" and Deblocages.raison("variantes", "jupe_traine") == "Prestige 8" and Croquis.connue("jupe_traine"), "la jupe à traîne : un devant de jupe longue et la traîne ; au prestige 8 ; dessinée")
-U.verifier(Patron.SOL < Mannequin.HAUTEUR_TAILLE and Mannequin.HAUTEUR_TAILLE - Patron.SOL <= 0.15, "la traîne se couche juste au-dessus du sol")
+-- (relecture) Juste au-dessus du plancher de la boutique (le mannequin de l'atelier a sa taille à 9 dm du sol du monde,
+-- le plancher dépasse de Boutique.PLANCHER) et du socle de la vitrine (9 dm sous la taille)
+local plancher = Mannequin.HAUTEUR_TAILLE - Boutique.PLANCHER / Catalogue.STUDS_PAR_DM
+U.verifier(Boutique.MANNEQUIN.Position.Y == Mannequin.HAUTEUR_TAILLE * Catalogue.STUDS_PAR_DM and Patron.SOL <= plancher - 0.1 and Patron.SOL >= plancher - 0.3, ("la traîne se couche juste au-dessus du plancher de la boutique (%.2f dm sous la taille, plancher à %.2f)"):format(Patron.SOL, plancher))
 
 -- Les points de la traîne (grille serrée), aux mesures du catalogue et des clientes (à 1,5 dm près)
 local mesuresEssai = table.clone(Catalogue.TAILLES)
@@ -24,7 +28,6 @@ local b = Polygone.boite(contour)
 local DEMI_SOCLE = 2 -- dm : rayon du socle du mannequin (4 dm de large)
 local VITRINE = 2 / Catalogue.STUDS_PAR_DM -- dm : demi-largeur du socle de la vitrine (4 studs)
 local bas, dedans, horsSocle, dehorsVitrine = 0, 0, {}, {}
-local plusLoin = 0
 for nom, m in pairs(mesuresEssai) do
 	for j = 0, 44 do
 		local y = b.minY + (b.maxY - b.minY) * j / 44
@@ -40,9 +43,6 @@ for nom, m in pairs(mesuresEssai) do
 			end
 			if math.abs(p.X) > VITRINE or math.abs(p.Z) > VITRINE then
 				dehorsVitrine[nom] = true
-			end
-			if nom == "M" then
-				plusLoin = math.max(plusLoin, p.Z)
 			end
 		end
 	end
@@ -83,6 +83,18 @@ for j = 0, 20 do
 	ecart = math.max(ecart, (dosDroit - devantDroit).Magnitude, (dosGauche - devantGauche).Magnitude)
 end
 U.verifier(ecart < 1e-6, ("les côtés de la traîne rejoignent ceux du devant (écart %.6f dm)"):format(ecart))
+
+-- (relecture) Le devant ne s'étend pas : son ourlet garde une normale tournée vers l'extérieur, pas vers le ciel
+local b2 = Polygone.boite(Catalogue.piece("traine_devant").contour)
+local n = Patron.normale("traine_devant", "unique", (b2.minX + b2.maxX) / 2, b2.maxY, M)
+local nDos = Patron.normale("traine_dos", "unique", 5, 10.5, M)
+U.verifier(math.abs(n.Y) < 0.5 and n.Z < -0.5 and nDos.Y > 0.9, ("l'ourlet du devant regarde devant (%.2f, %.2f, %.2f) ; la traîne couchée, le ciel"):format(n.X, n.Y, n.Z))
+
+-- (relecture) Le dessin : la jupe et sa traîne sont une même partie ; les toucher choisit les deux pièces
+local TRAINE = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_traine" }
+local _, piecesTraine = Croquis.partieA(TRAINE, 50, 126)
+local _, piecesJupe = Croquis.partieA(TRAINE, 50, 80)
+U.verifier(table.concat(piecesTraine or {}, ",") == "traine_devant,traine_dos" and table.concat(piecesJupe or {}, ",") == "traine_devant,traine_dos", "toucher la traîne ou la jupe : le devant et la traîne ensemble")
 
 -- Une jupe longue : la traîne rend la robe aussi chaude qu'une jupe évasée
 U.verifier(Etiquettes.variante("jupe_traine").chaleur == Etiquettes.variante("jupe_evasee").chaleur, "longueur : la traîne compte comme une jupe longue")

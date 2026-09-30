@@ -17,8 +17,9 @@ local INCLINAISON_BRAS = math.rad(12)
 Patron.ELLIPSE = { x = EX, z = EZ }
 -- Sous-projet 7 : écart de rayon par couche (0,06 dm d'air, plus les fronces du dessous, 0,14 dm au plus)
 Patron.ECART_COUCHE = 0.2
--- Plan 23 : une traîne se couche 0,1 dm au-dessus du sol (le mannequin a sa taille à 9 dm du sol)
-Patron.SOL = 8.9
+-- Plan 23 : une traîne se couche à 8,7 dm sous la taille : le mannequin a sa taille à 9 dm du sol du monde, et le
+-- plancher des boutiques dépasse de 0,05 stud (8,83 dm sous la taille) ; en vitrine, le socle est à 9 dm (relecture)
+Patron.SOL = 8.7
 
 local function lisse(t)
 	t = math.clamp(t, 0, 1)
@@ -111,11 +112,13 @@ local function jupe(e, u, v, hauteur, m)
 	local r = rT + (rH - rT) * lisse(yd / LIGNE_HANCHES) + e.evasement * math.max(0, yd - LIGNE_HANCHES)
 		+ (e.ampleur or 0) * v * hauteur + (e.couche or 0) * Patron.ECART_COUCHE
 	r += e.fronces * v * 0.5 * (0.5 + 0.5 * math.sin(phi * 16))
-	if aPlat > 0 then
-		r += aPlat * math.max(0, math.sin(phi))
-		return Vector3.new(r * EX * math.cos(phi), -yd, r * EZ * math.sin(phi)), Vector3.new(0, 1, 0)
-	end
 	local dehors = Vector3.new(math.cos(phi), 0, math.sin(phi))
+	if aPlat > 0 then
+		local etendue = math.max(0, math.sin(phi))
+		r += aPlat * etendue
+		-- (relecture) couchée, la traîne regarde le ciel ; le devant, qui ne s'étend pas, garde son ourlet tourné dehors
+		return Vector3.new(r * EX * math.cos(phi), -yd, r * EZ * math.sin(phi)), if etendue > 0 then Vector3.new(0, 1, 0) else dehors
+	end
 	return Vector3.new(r * EX * math.cos(phi), -yd, r * EZ * math.sin(phi)), dehors
 end
 

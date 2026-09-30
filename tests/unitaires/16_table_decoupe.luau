@@ -152,6 +152,34 @@ local okEtages, pourquoiEtages = suivrePropositions({ corsage = "corsage_bretell
 	col_marin = "coton_blanc",
 })
 U.verifier(okEtages, "deux étages, une jupe et un corsage dans le même lin : dans le métrage conseillé (" .. tostring(pourquoiEtages) .. ")")
+-- (relecture du plan 23) La table prend les pièces dans l'ordre des places prévues : la première proposée est en haut
+-- du rouleau, même quand c'est une manche pliée ; une pièce posée ailleurs, la table revient à la première place libre
+do
+	local e = EtatAtelier.nouveau(100000)
+	U.commander(e, Random.new(1))
+	assert(e:validerCroquis({ corsage = "corsage_droit", manches = "manches_longues", col = "col_sans", jupe = "jupe_droite" }, {
+		corsage_droit_devant = "lin_bleu",
+		corsage_droit_dos = "lin_bleu",
+		manche_longue = "lin_bleu",
+		jupe_droite_devant = "soie_rouge",
+		jupe_droite_dos = "soie_rouge",
+	}).ok)
+	assert(e:acheter("lin_bleu", 20).ok) -- (de quoi poser la première pièce plus bas)
+	assert(e:acheter("soie_rouge", Metrage.conseil({ "jupe_droite_devant", "jupe_droite_dos" })).ok)
+	e:commencerDecoupe()
+	local t = TableDecoupe.nouvelle(e)
+	t:choisirTissu("lin_bleu")
+	local _, _, _, dy = Metrage.encombrement(t.selection, 0)
+	U.verifier(t.placement.y - dy < 0.2, ("la première pièce proposée (%s) est en haut du rouleau (%.2f dm)"):format(tostring(t.selection), t.placement.y - dy))
+	-- La première pièce coupée ailleurs (6 dm plus bas) : la suivante va à la première place libre, en haut (le métrage
+	-- conseillé l'aurait mise sous la première)
+	local premiere = t.selection
+	assert(e:couper(premiere, { x = t.placement.x, y = t.placement.y + 6, angle = t.placement.angle }).ok)
+	local suivante = t:piecesRestantes()[1]
+	t:selectionner(suivante)
+	local _, _, _, dy2 = Metrage.encombrement(suivante, 0)
+	U.verifier(t.placement.y - dy2 < 0.2 and e.coupons.lin_bleu:verifier(suivante, t.placement), "une pièce posée ailleurs : la suivante à la première place libre, valide")
+end
 local rng = Random.new(42)
 local echecs, premier = 0, nil
 for _ = 1, 150 do

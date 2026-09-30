@@ -102,13 +102,9 @@ local FORMES = {
 			P({ 39, 42, 61, 42, 71, 82, 29, 82 }),
 		},
 	},
-	-- La traîne dépasse derrière l'ourlet de la jupe longue (dessinée dessous)
-	jupe_traine = {
-		parties = {
-			avecPieces({ "traine_dos" }, P({ 19, 118, 81, 118, 88, 128, 12, 128 })),
-			P({ 39, 42, 61, 42, 66, 60, 81, 124, 19, 124, 34, 60 }),
-		},
-	},
+	-- La jupe longue, qui s'élargit au sol : la traîne dépasse derrière l'ourlet. C'est le dos de la jupe : une seule
+	-- partie, qui prend le tissu de ses deux pièces (relecture)
+	jupe_traine = { parties = { P({ 39, 42, 61, 42, 66, 60, 81, 118, 88, 128, 12, 128, 19, 118, 34, 60 }) } },
 	corsage_ceinture = {
 		parties = {
 			P({ 34, 17, 41, 17, 42, 22, 58, 22, 59, 17, 66, 17, 67, 24, 65, 32, 61, 42, 39, 42, 35, 32, 33, 24 }),

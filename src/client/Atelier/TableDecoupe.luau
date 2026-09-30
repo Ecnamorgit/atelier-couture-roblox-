@@ -33,15 +33,41 @@ local function avant(a, b)
 	return a < b
 end
 
--- Pièces du tissu en cours qui restent à couper, dans l'ordre de proposition
+-- Pièces du tissu en cours qui restent à couper, dans l'ordre de proposition. (Relecture du plan 23) dans l'ordre des
+-- places que prévoit le métrage conseillé, du haut du rouleau vers le bas puis de gauche à droite : en suivant la table,
+-- chaque pièce proposée est la plus haute qui reste (une manche pliée peut passer avant le corsage)
 function TableDecoupe:piecesRestantes(idTissu)
-	local out = {}
+	idTissu = idTissu or self.tissu
+	local out, duTissu = {}, {}
+	for _, id in ipairs(self.etat:piecesDuCroquis()) do
+		if self.etat.tissus[id] == idTissu then
+			table.insert(duTissu, id)
+		end
+	end
 	for _, id in ipairs(self.etat:piecesAPoser()) do
-		if self.etat.tissus[id] == (idTissu or self.tissu) then
+		if self.etat.tissus[id] == idTissu then
 			table.insert(out, id)
 		end
 	end
-	table.sort(out, avant)
+	local prevues = Metrage.disposition(duTissu)
+	local function coin(id)
+		local p = prevues[id]
+		local _, _, dx, dy = Metrage.encombrement(id, p.angle)
+		return p.y - dy, p.x - dx
+	end
+	table.sort(out, function(a, b)
+		if not (prevues[a] and prevues[b]) then
+			return avant(a, b)
+		end
+		local ya, xa = coin(a)
+		local yb, xb = coin(b)
+		if math.abs(ya - yb) > 1e-9 then
+			return ya < yb
+		elseif math.abs(xa - xb) > 1e-9 then
+			return xa < xb
+		end
+		return a < b
+	end)
 	return out
 end
 
