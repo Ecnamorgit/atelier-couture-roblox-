@@ -538,17 +538,17 @@ function Scene:effacerCliente()
 	end
 end
 
--- Pendant la caméra du poste, les autres joueurs entrés dans la boutique sont effacés (pour ce joueur
--- seulement) : ils cacheraient la robe et entreraient dans la photo. L'avatar du joueur est laissé à Roblox,
--- dont les caméras règlent sa transparence.
+-- Pendant la caméra du poste, les avatars qui cacheraient la robe et entreraient dans la photo sont effacés
+-- (pour ce joueur seulement) : le sien, où qu'il soit (les caméras de Roblox ne l'effacent pas quand la caméra
+-- est fixe), et les autres joueurs entrés dans la boutique.
 function Scene:effacerAvatars()
 	local moi = Players.LocalPlayer
 	for _, j in ipairs(Players:GetPlayers()) do
-		local avatar = j ~= moi and j.Character
+		local avatar = j.Character
 		local racine = avatar and avatar:FindFirstChild("HumanoidRootPart")
 		if racine then
 			local p = self.origine:PointToObjectSpace(racine.CFrame.Position)
-			local dedans = math.abs(p.X) <= Boutique.LARGEUR / 2 + 1 and p.Z >= Boutique.AVANT - 1 and p.Z <= Boutique.FOND + 1
+			local dedans = j == moi or (math.abs(p.X) <= Boutique.LARGEUR / 2 + 1 and p.Z >= Boutique.AVANT - 1 and p.Z <= Boutique.FOND + 1)
 			for _, d in ipairs(avatar:GetDescendants()) do
 				if d:IsA("BasePart") then
 					d.LocalTransparencyModifier = if self.cameraFixe and dedans then 1 else 0
