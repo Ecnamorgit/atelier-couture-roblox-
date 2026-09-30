@@ -30,7 +30,8 @@ function Dialogue.nouveau(parent, UiKit)
 		ZIndex = 40,
 		Parent = parent,
 	}), 12)
-	UiKit.creer("UIStroke", { Color = C.accent, Thickness = 2, Parent = self.cadre })
+	-- (un contour sous un bouton suit son texte, vide ici, sauf en mode « Border »)
+	UiKit.creer("UIStroke", { Color = C.accent, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = self.cadre })
 	self.mise = UiKit.creer("UIScale", { Parent = self.cadre })
 	self.nom = UiKit.texte({ Name = "Nom", Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = C.accent, Position = UDim2.fromOffset(MARGE, 8), Size = UDim2.new(1, -2 * MARGE, 0, 20), ZIndex = 41, Parent = self.cadre })
 	self.texte = UiKit.texte({ Name = "Texte", TextSize = Dialogue.TAILLE_TEXTE, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(MARGE, HAUT_TEXTE), Size = UDim2.new(1, -2 * MARGE, 0, 20), ZIndex = 41, Parent = self.cadre })

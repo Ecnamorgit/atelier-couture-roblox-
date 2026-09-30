@@ -212,7 +212,7 @@ return function(ctx)
 	if nouveaux and #nouveaux > 0 then
 		local CARTES, GENRES = 8, { tissus = "Tissu", variantes = "Modèle", accessoires = "Décoration" }
 		local affiche = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Affiche", Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.fromRGB(255, 244, 218), Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = ctx.contenu }), 10)
-		UiKit.creer("UIStroke", { Color = C.accent, Thickness = 3, Parent = affiche })
+		UiKit.creer("UIStroke", { Color = C.accent, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = affiche })
 		UiKit.texte({ Name = "TitreAffiche", Text = "Nouveautés à l'atelier !", Font = Enum.Font.GothamBlack, TextSize = 30, TextColor3 = C.accent, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 14), Size = UDim2.new(1, 0, 0, 40), ZIndex = 21, Parent = affiche })
 		UiKit.texte({ Name = "SousTitre", Text = "Ta réputation grandit : voici ce qui vient d'arriver.", TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 56), Size = UDim2.new(1, 0, 0, 22), ZIndex = 21, Parent = affiche })
 		for k, n in ipairs(nouveaux) do
@@ -257,7 +257,7 @@ return function(ctx)
 		local ev = Histoire.get(eu.id)
 		local PAPIER, ENCRE = Color3.fromRGB(244, 238, 222), Color3.fromRGB(44, 36, 32)
 		local epilogue = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Epilogue", Text = "", AutoButtonColor = false, BackgroundColor3 = PAPIER, Size = UDim2.fromScale(1, 1), ZIndex = 22, Parent = ctx.contenu }), 4)
-		UiKit.creer("UIStroke", { Color = ENCRE, Thickness = 2, Parent = epilogue })
+		UiKit.creer("UIStroke", { Color = ENCRE, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = epilogue })
 		UiKit.texte({ Name = "Journal", Text = Histoire.GAZETTE, Font = Enum.Font.Garamond, TextSize = 42, TextColor3 = ENCRE, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 8), Size = UDim2.new(1, 0, 0, 46), ZIndex = 23, Parent = epilogue })
 		UiKit.texte({ Name = "Date", Text = ("N° %d — Jour %d de l'atelier — Édition du quartier"):format(ev.rang, etat.livraisons + etat.ventes), Font = Enum.Font.Garamond, TextSize = 16, TextColor3 = ENCRE, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 56), Size = UDim2.new(1, 0, 0, 20), ZIndex = 23, Parent = epilogue })
 		for k, y in ipairs({ 80, 84 }) do -- le double filet sous le titre du journal

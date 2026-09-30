@@ -174,7 +174,7 @@ local function construire(indice, joueur, parent)
 	invite.ObjectText = "Le chat"
 	invite.KeyboardKeyCode = Enum.KeyCode.F
 	invite.HoldDuration = 0
-	invite.MaxActivationDistance = 10
+	invite.MaxActivationDistance = 7 -- (de près : pas à travers le mur de la boutique voisine)
 	invite.RequiresLineOfSight = false
 	invite.Parent = corps
 	chat.Parent = modele

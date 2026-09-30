@@ -52,7 +52,7 @@ do -- Sous-projet 5 : le chat de l'atelier, sur son coussin près de la fenêtre
 	local corps = chat and chat:FindFirstChild("Corps")
 	local invite = corps and corps:FindFirstChild("Caresser")
 	U.verifier(chat ~= nil and chat:FindFirstChild("Coussin") ~= nil and chat:FindFirstChild("Tete") ~= nil and chat:FindFirstChild("Queue") ~= nil, "un chat sur son coussin : un corps, une tête, une queue")
-	U.verifier(invite ~= nil and invite:IsA("ProximityPrompt") and invite.ActionText == "Caresser" and invite.KeyboardKeyCode == Enum.KeyCode.F and invite.HoldDuration == 0, "« Caresser », touche F (E sonne la clochette), sans appui long")
+	U.verifier(invite ~= nil and invite:IsA("ProximityPrompt") and invite.ActionText == "Caresser" and invite.KeyboardKeyCode == Enum.KeyCode.F and invite.HoldDuration == 0 and invite.MaxActivationDistance <= 7, "« Caresser », touche F (E sonne la clochette), sans appui long, de près (pas à travers le mur du voisin)")
 	local p = Boutique.emplacement(3):PointToObjectSpace(chat.Coussin.CFrame.Position)
 	local demi = chat.Coussin.Size.X / 2
 	local vitrine = Boutique.VITRINE.Position

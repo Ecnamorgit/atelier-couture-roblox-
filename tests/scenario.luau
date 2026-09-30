@@ -1351,6 +1351,7 @@ verifier(titre() == "Aiguille & Dentelle" and fenetre.Contenu.Epilogue.Visible a
 do -- Sous-projet 5 : l'épilogue est la une de la gazette du quartier
 	local une = fenetre.Contenu.Epilogue
 	local e1, e2 = Histoire.enColonnes(Histoire.get("lanternes").epilogue)
+	verifier(une.UIStroke.ApplyStrokeMode == Enum.ApplyStrokeMode.Border and fenetre.Contenu.Affiche.UIStroke.ApplyStrokeMode == Enum.ApplyStrokeMode.Border, "le filet de la gazette et le cadre de l'affiche entourent le panneau (pas son texte vide)")
 	verifier(une.Journal.Text == Histoire.GAZETTE and string.match(une.Date.Text, "^N° 1 — Jour %d+ de l'atelier") ~= nil and une.Colonne1.Text == e1 and une.Colonne2.Text == e2 and une.Colonne2.Position.X.Scale == 0.5, "la une de la gazette : le journal, le numéro et le jour, l'épilogue en deux colonnes")
 	verifier(laColette.Head.Bulle.Texte.Text == def.repliques.merci, "Colette raconte la suite")
 	-- (le prestige 6 ouvre plus de huit nouveautés : huit cartes, et le reste en une ligne)
@@ -1385,6 +1386,12 @@ M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
 end
 do -- Sous-projet 5 : le chat de l'atelier ; une caresse le fait ronronner, remuer la queue, et des cœurs montent
 	local chat = maBoutique.Chat
+	-- Fenêtre ouverte, pas d'invite « Caresser » (elle passerait dans la vue du poste et sur la photo)
+	local invites = M.services.ProximityPromptService
+	verifier(fenetre.Visible and invites.Enabled == false, "fenêtre ouverte : pas d'invite de proximité")
+	cliquer("Fermer")
+	verifier(invites.Enabled == true, "fenêtre fermée : l'invite du chat revient")
+	cliquer("OuvrirAtelier")
 	local queue = chat.Queue
 	local repos = queue.CFrame
 	M.services.ProximityPromptService.PromptTriggered:Fire(chat.Corps.Caresser, joueur)
