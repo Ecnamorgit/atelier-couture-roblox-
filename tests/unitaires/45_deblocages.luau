@@ -50,6 +50,19 @@ end
 U.verifier(not Deblocages.ouvert(au(19), "tissus", "laine_noire") and Deblocages.ouvert(au(20), "tissus", "laine_noire"), "laines au prestige 2 (20 points)")
 U.verifier(not Deblocages.ouvert(au(49), "tissus", "satin_rose") and Deblocages.ouvert(au(50), "tissus", "satin_rose"), "satins au prestige 3")
 U.verifier(Deblocages.ouvert(au(100), "tissus", "velours_noir") and not Deblocages.ouvert(au(100), "tissus", "soie_rouge") and Deblocages.ouvert(au(170), "tissus", "soie_rouge"), "velours au 4, soies au 5")
+U.verifier(not Deblocages.ouvert(au(259), "tissus", "crepe_noir") and Deblocages.ouvert(au(260), "tissus", "crepe_noir") and Deblocages.ouvert(au(260), "tissus", "organza_blanc"), "crêpe et organza au prestige 6")
+U.verifier(not Deblocages.ouvert(au(379), "tissus", "brocart_or") and Deblocages.ouvert(au(380), "tissus", "brocart_or") and not Deblocages.ouvert(au(529), "tissus", "tulle_rose") and Deblocages.ouvert(au(530), "tissus", "tulle_rose"), "brocart au 7, tulle au 8")
+-- Chaque niveau de prestige, de 2 à 8, ouvre quelque chose
+local SEUILS_P = { 0, 20, 50, 100, 170, 260, 380, 530 }
+for niveau = 2, 8 do
+	U.verifier(#Deblocages.nouveaux(au(SEUILS_P[niveau] - 1), au(SEUILS_P[niveau])) > 0, "le prestige " .. niveau .. " ouvre quelque chose")
+end
+-- Deux décorations par niveau, du 5 au 8
+for niveau, paire in pairs({ [5] = { "noeud_dore", "perle_noire" }, [6] = { "papillon_soie", "galon_argent" }, [7] = { "broche_etoile", "ruban_velours" }, [8] = { "couronne_fleurs", "dentelle_doree" } }) do
+	for _, id in ipairs(paire) do
+		U.verifier(Catalogue.accessoire(id) ~= nil and not Deblocages.ouvert(au(SEUILS_P[niveau] - 1), "accessoires", id) and Deblocages.ouvert(au(SEUILS_P[niveau]), "accessoires", id), id .. " : ouvert au prestige " .. niveau)
+	end
+end
 
 -- L'amitié ouvre les variantes et accessoires de la cliente
 local amie = { prestige = 0, clientes = { colette = { amitie = 7 } } }
@@ -67,6 +80,18 @@ end
 U.verifier(#nouveaux == 5 and nouveaux[1].genre == "tissus" and nouveaux[5].id == "dentelle_noire", "prestige 3 : quatre satins et la dentelle noire (" .. table.concat(noms, ", ") .. ")")
 U.verifier(#Deblocages.nouveaux(au(50), au(99)) == 0, "rien de neuf sans changer de niveau")
 U.verifier(Deblocages.resume(nouveaux) == "les satins (4), Dentelle noire", "en une ligne : les satins ensemble (" .. Deblocages.resume(nouveaux) .. ")")
+-- Chaque matière ouverte par le prestige a son nom au pluriel dans l'annonce (« les crêpes (4) », pas « crepe (4) »)
+local resume6 = Deblocages.resume(Deblocages.nouveaux(au(SEUILS_P[6] - 1), au(SEUILS_P[6])))
+U.verifier(resume6 == "les crêpes (4), les organzas (4), Papillon de soie, Galon argenté", "prestige 6 en une ligne : les crêpes et les organzas ensemble (" .. resume6 .. ")")
+for matiere in pairs(Deblocages.PRESTIGE_MATIERES) do
+	local tissus = {}
+	for _, t in ipairs(Catalogue.Tissus) do
+		if t.matiere == matiere then
+			table.insert(tissus, { genre = "tissus", id = t.id, nom = t.nom })
+		end
+	end
+	U.verifier(string.sub(Deblocages.resume(tissus), 1, 4) == "les ", matiere .. " : son nom au pluriel dans l'annonce (" .. Deblocages.resume(tissus) .. ")")
+end
 U.verifier(Deblocages.message("tissus", "soie_rouge") == "Pas encore ouvert : Soie rouge (Prestige 5).", "le refus dit ce qu'il faut pour ouvrir")
 local prochain = Deblocages.prochainDeCliente("colette", 0)
 U.verifier(prochain ~= nil and prochain.niveau == 2 and prochain.nom == "Jupe ample froncée", "carnet d'adresses : l'amitié de Colette ouvrira ensuite la jupe ample (niveau 2)")
@@ -79,11 +104,11 @@ local n = Deblocages.nouveaux(avantAmitie, apresAmitie)
 U.verifier(#n == 1 and n[1].id == "jupe_ample" and n[1].nom == "Jupe ample froncée", "amitié de Colette au niveau 2 : la jupe ample froncée")
 
 -- Tout ouvert : prestige 5 et amitié 4 avec les six clientes
-local tout = { prestige = 170, clientes = {} }
+local tout = { prestige = 530, clientes = {} }
 for _, c in ipairs(Clientes.LISTE) do
 	tout.clientes[c.id] = { amitie = 18 }
 end
-U.verifier(Deblocages.toutOuvert(tout), "prestige 5 et six amitiés au niveau 4 : tout est ouvert")
+U.verifier(Deblocages.toutOuvert(tout), "prestige 8 et six amitiés au niveau 4 : tout est ouvert")
 tout.clientes.victoire.amitie = 17
 U.verifier(not Deblocages.toutOuvert(tout), "une amitié en retard : pas tout")
 U.verifier(not Deblocages.toutOuvert(depart), "au départ : pas tout")

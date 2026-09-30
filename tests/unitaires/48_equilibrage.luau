@@ -140,7 +140,7 @@ for n = 1, ROBES do
 		toutOuvertA = n
 	end
 end
-return { prestige2 = niveauA[2] or math.huge, prestige5 = niveauA[5] or math.huge, toutOuvert = toutOuvertA or math.huge, plusPauvre = plusPauvre, livrees = livrees, commandes = commandes, vendues = vendues, invitees = invitees }
+return { prestige2 = niveauA[2] or math.huge, prestige5 = niveauA[5] or math.huge, prestige8 = niveauA[8] or math.huge, toutOuvert = toutOuvertA or math.huge, plusPauvre = plusPauvre, livrees = livrees, commandes = commandes, vendues = vendues, invitees = invitees }
 end
 
 -- Vingt parties : les tirages changent d'une partie à l'autre, l'équilibrage se juge sur l'ensemble
@@ -159,15 +159,17 @@ local function serie(cle)
 end
 local p2 = serie("prestige2")
 local p5, medianeP5 = serie("prestige5")
+local p8, medianeP8 = serie("prestige8")
 local tout, medianeTout = serie("toutOuvert")
 local pauvres = serie("plusPauvre")
 local function texte(v)
 	return if v == math.huge then "jamais" else tostring(v)
 end
 local invitees, medianeInvitees = serie("invitees")
-local bilan = ("%d parties de %d robes, une robe libre de jute vendue sur quatre, %s commandes par lettre (médiane) : prestige 2 à la robe %s au plus tard ; 5 de la %s à la %s (médiane %s) ; tout ouvert de la %s à la %s (médiane %s) ; au plus bas %d po"):format(PARTIES, ROBES, texte(medianeInvitees), texte(p2[#p2]), texte(p5[1]), texte(p5[#p5]), texte(medianeP5), texte(tout[1]), texte(tout[#tout]), texte(medianeTout), pauvres[1])
+local bilan = ("%d parties de %d robes, une robe libre de jute vendue sur quatre, %s commandes par lettre (médiane) : prestige 2 à la robe %s au plus tard ; 5 de la %s à la %s (médiane %s) ; 8 à la %s (médiane) ; tout ouvert de la %s à la %s (médiane %s) ; au plus bas %d po"):format(PARTIES, ROBES, texte(medianeInvitees), texte(p2[#p2]), texte(p5[1]), texte(p5[#p5]), texte(medianeP5), texte(medianeP8), texte(tout[1]), texte(tout[#tout]), texte(medianeTout), pauvres[1])
 print("Équilibrage : " .. bilan)
 U.verifier(p2[#p2] <= 3, "prestige 2 en trois robes au plus, dans chaque partie (" .. bilan .. ")")
+U.verifier(medianeP8 <= 70, "le prestige 8 (qui ouvre maintenant le tulle et deux décorations) est atteint vers la 70e robe au plus tard, en médiane (" .. bilan .. ")")
 U.verifier(medianeP5 >= 12 and medianeP5 <= 20 and p5[#p5] <= 25, "prestige 5 entre la 12e et la 20e robe en médiane, à la 25e au plus tard (" .. bilan .. ")")
 U.verifier(medianeTout >= 50 and medianeTout <= 80, "tout le catalogue ouvert entre la 50e et la 80e robe, en médiane (" .. bilan .. ")")
 U.verifier(medianeInvitees >= 10, "le courrier fait venir des clientes (" .. bilan .. ")")

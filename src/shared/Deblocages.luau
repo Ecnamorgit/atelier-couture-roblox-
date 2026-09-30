@@ -11,8 +11,19 @@ local Histoire = require(dossier:WaitForChild("Histoire"))
 local Deblocages = {}
 
 -- Prestige qui ouvre chaque matière (cotons et lins sont ouverts au départ) et deux garnitures
-Deblocages.PRESTIGE_MATIERES = { laine = 2, satin = 3, velours = 4, soie = 5 }
-Deblocages.PRESTIGE_ACCESSOIRES = { ruban_noir = 2, dentelle_noire = 3 }
+Deblocages.PRESTIGE_MATIERES = { laine = 2, satin = 3, velours = 4, soie = 5, crepe = 6, organza = 6, brocart = 7, tulle = 8 }
+Deblocages.PRESTIGE_ACCESSOIRES = {
+	ruban_noir = 2,
+	dentelle_noire = 3,
+	noeud_dore = 5,
+	perle_noire = 5,
+	papillon_soie = 6,
+	galon_argent = 6,
+	broche_etoile = 7,
+	ruban_velours = 7,
+	couronne_fleurs = 8,
+	dentelle_doree = 8,
+}
 Deblocages.GENRES = { "variantes", "tissus", "accessoires" }
 
 -- CONDITIONS[genre][id] = { prestige = n }, { cliente = id, amitie = n } ou { evenement = id } ; absent : ouvert
@@ -167,7 +178,16 @@ function Deblocages.nouveaux(avant, apres)
 	return out
 end
 
-local MATIERES = { laine = "les laines", satin = "les satins", velours = "les velours", soie = "les soies" }
+local MATIERES = {
+	laine = "les laines",
+	satin = "les satins",
+	velours = "les velours",
+	soie = "les soies",
+	crepe = "les crêpes",
+	organza = "les organzas",
+	brocart = "les brocarts",
+	tulle = "les tulles",
+}
 
 -- Ce qui vient de s'ouvrir, en une ligne : les tissus d'une même matière ensemble (« les satins (4), Dentelle
 -- noire »)
