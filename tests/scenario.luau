@@ -1075,6 +1075,21 @@ do -- Sous-projet 5 : son avis en étoiles, dans l'annonce
 end
 verifier(texte("Amitié de Colette : +") ~= nil and texte("Prestige : +") ~= nil, "l'accueil annonce l'amitié et le prestige gagnés")
 verifier(texte("Acompte de ") ~= nil and texte("(niveau 3 !)") ~= nil and texte("Nouveau : les satins (4), Dentelle noire.") ~= nil, "l'accueil rappelle l'acompte, le niveau de prestige atteint et ce qui vient de s'ouvrir")
+do -- Sous-projet 5 : l'affiche des nouveautés, une carte par nouveauté (l'échantillon de chaque tissu)
+	local affiche = fenetre.Contenu:FindFirstChild("Affiche")
+	local cartes, echantillons = 0, 0
+	for _, c in ipairs(affiche and affiche:GetChildren() or {}) do
+		if c.Name:match("^Nouveau_") then
+			cartes += 1
+			echantillons += if c.Image.ImageContent ~= nil and c.Image.ImageContent.statique then 1 else 0
+		end
+	end
+	verifier(affiche ~= nil and affiche.Visible and affiche.TitreAffiche.Text == "Nouveautés à l'atelier !" and cartes == 5 and echantillons == 4 and affiche.Nouveau_dentelle_noire.Nom.Text == "Dentelle noire", "l'affiche des nouveautés : cinq cartes, l'échantillon des quatre satins (" .. cartes .. ", " .. echantillons .. ")")
+	M.services.UserInputService.InputBegan:Fire({ KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }, false)
+	verifier(titre() == "Aiguille & Dentelle", "E ne sonne pas la clochette tant que l'affiche est ouverte")
+	cliquer("FermerAffiche")
+	verifier(not affiche.Visible, "l'affiche se referme")
+end
 local prestigeJoueur = serveur:atelier(joueur).etat.prestige
 verifier(fenetre.Contenu.Prestige.Text == ("Réputation : Appréciée (prestige 3) — %d / 100"):format(prestigeJoueur), "jauge de prestige : « Réputation : Appréciée (prestige 3) — " .. prestigeJoueur .. " / 100 »")
 verifier(math.abs(fenetre.Contenu.JaugePrestige.Rempli.Size.X.Scale - (prestigeJoueur - 50) / 50) < 1e-6, "la jauge se remplit vers le niveau suivant")
@@ -1171,6 +1186,7 @@ serveur:atelier(joueur).etat.livraisons = 14
 cliquer("Vendre")
 cliquer("Vendre")
 verifier(titre() == "Aiguille & Dentelle" and argent() == avantVente + prixLibre and texte(("Robe vendue ! +%d pièces d'or"):format(prixLibre)) ~= nil, "robe vendue : le prix dans la caisse, annoncé")
+verifier(fenetre.Contenu:FindFirstChild("Affiche") == nil, "rien de nouveau : pas d'affiche")
 verifier(texte("Nouveau rang : Couturière !") ~= nil, "la quinzième robe : « Nouveau rang : Couturière ! »")
 serveur:atelier(joueur).etat.livraisons = livraisonsVraies
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_achat" and serveur:atelier(joueur).etat.ventes == 1, "vendue : la caisse sonne")
@@ -1337,6 +1353,13 @@ do -- Sous-projet 5 : l'épilogue est la une de la gazette du quartier
 	local e1, e2 = Histoire.enColonnes(Histoire.get("lanternes").epilogue)
 	verifier(une.Journal.Text == Histoire.GAZETTE and string.match(une.Date.Text, "^N° 1 — Jour %d+ de l'atelier") ~= nil and une.Colonne1.Text == e1 and une.Colonne2.Text == e2 and une.Colonne2.Position.X.Scale == 0.5, "la une de la gazette : le journal, le numéro et le jour, l'épilogue en deux colonnes")
 	verifier(laColette.Head.Bulle.Texte.Text == def.repliques.merci, "Colette raconte la suite")
+	-- (le prestige 6 ouvre plus de huit nouveautés : huit cartes, et le reste en une ligne)
+	local affiche, cartes = fenetre.Contenu.Affiche, 0
+	for _, c in ipairs(affiche:GetChildren()) do
+		cartes += if c.Name:match("^Nouveau_") then 1 else 0
+	end
+	local n = #requireModule(scriptClient.Session).courante.derniere.reponse.nouveaux
+	verifier(affiche.Visible and n > 8 and cartes == 8 and affiche.EtEncore.Text == ("Et encore %d autres nouveautés."):format(n - 8), "sous la gazette, l'affiche : huit cartes, et « Et encore " .. (n - 8) .. " autres nouveautés. »")
 end
 verifierTailles("épilogue")
 local inviter3 = boutonNomme("Inviter_3")
@@ -1352,6 +1375,8 @@ cliquer("FermerEpilogue")
 local suite = fenetre.Contenu.Suite
 verifier(suite.Visible and suite.Interlocutrice.Text == "Colette Marchand" and suite.Replique.Text == def.repliques.merci, "sous l'épilogue : la suite de l'histoire de Colette, lisible")
 cliquer("FermerSuite")
+verifier(fenetre.Contenu.Affiche.Visible, "sous la suite de l'histoire, l'affiche des nouveautés")
+cliquer("FermerAffiche")
 verifier(not fenetre.Contenu.Epilogue.Visible and texte("Événement : La kermesse du square — robes livrées 0 / 2") ~= nil, "l'événement suivant s'annonce")
 cliquer("OuvrirCarnetAdresses")
 verifier(texte("Le bal des lanternes — souvenir : Lanterne de papier") ~= nil, "le carnet d'adresses garde les souvenirs du quartier")
