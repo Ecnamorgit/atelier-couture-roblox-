@@ -1,4 +1,4 @@
--- Clientes : les six clientes qui reviennent à l'atelier (contenu original, rien de Dressmaker). Chacune a ses
+-- Clientes : les dix clientes qui reviennent à l'atelier (contenu original, rien de Dressmaker). Chacune a ses
 -- vraies mesures (dm, proches de sa taille), ses styles et sa teinte préférés (ses commandes en viennent), sa
 -- tenue, ses répliques, le prestige qu'il faut pour qu'elle vienne, et ce que son amitié ouvre (sous-projet 2).
 -- Données, et une règle pure : qui vient à la clochette.
@@ -110,6 +110,75 @@ Clientes.LISTE = {
 			arrivee = "Bonjour ! Je reviens vous confier une robe.",
 			merci = "Exactement ce qu'il me fallait. Bravo.",
 			deception = "Je m'attendais à mieux, franchement.",
+		},
+	},
+	-- Sous-projet 4 : quatre clientes qui arrivent tard (prestiges 5 à 8)
+	{
+		id = "apolline",
+		nom = "Apolline Garnier",
+		taille = "M",
+		mesures = { poitrine = 8.7, taille = 7.0, hanches = 9.3 },
+		styles = { "romantique", "chic" },
+		teinte = "violet",
+		prestige = 5,
+		tenue = { peau = rgb(236, 196, 164), haut = rgb(150, 110, 190), bas = rgb(240, 235, 245), cheveux = rgb(60, 40, 30) },
+		deblocages = { [2] = { variante = "corsage_cache_coeur" }, [4] = { accessoire = "violette" } },
+		repliques = {
+			presentation = "Bonjour. Je m'appelle Apolline, j'écris des poèmes… et j'aimerais qu'une robe m'en inspire un.",
+			arrivee = "Me revoici. Votre atelier me donne toujours des idées de vers.",
+			merci = "Elle est si belle que je vais lui écrire un sonnet.",
+			deception = "Hum… Je ne trouve pas les mots. Et c'est rare, chez moi.",
+		},
+	},
+	{
+		id = "josephine",
+		nom = "Joséphine Lambert",
+		taille = "L",
+		mesures = { poitrine = 9.7, taille = 7.9, hanches = 10.1 },
+		styles = { "chic", "decontracte" },
+		teinte = "brun",
+		prestige = 6,
+		tenue = { peau = rgb(200, 150, 120), haut = rgb(150, 100, 60), bas = rgb(60, 55, 50), cheveux = rgb(40, 30, 25) },
+		deblocages = { [2] = { variante = "manches_trois_quarts" }, [4] = { accessoire = "boucle_ecaille" } },
+		repliques = {
+			presentation = "Bonjour ! Joséphine, de la librairie d'en face. Je vous regarde coudre depuis ma vitrine.",
+			arrivee = "C'est encore moi ! J'ai fermé la boutique une heure pour venir vous voir.",
+			merci = "Parfaite. Je la porterai pour les dédicaces.",
+			deception = "Ce n'est pas vraiment moi, je crois.",
+		},
+	},
+	{
+		id = "capucine",
+		nom = "Capucine Morel",
+		taille = "S",
+		mesures = { poitrine = 8.3, taille = 6.5, hanches = 8.7 },
+		styles = { "gothique", "romantique" },
+		teinte = "rouge",
+		prestige = 7,
+		tenue = { peau = rgb(245, 220, 205), haut = rgb(150, 20, 40), bas = rgb(30, 25, 30), cheveux = rgb(20, 15, 15) },
+		deblocages = { [2] = { variante = "corsage_bustier" }, [4] = { accessoire = "dentelle_rouge" } },
+		repliques = {
+			presentation = "Capucine, comédienne. On m'a dit que vous habilliez les grands soirs.",
+			arrivee = "Le rideau se lève bientôt : j'ai besoin de vous.",
+			merci = "Bravo ! Je vous dois mon entrée en scène.",
+			deception = "Le public ne va pas aimer. Moi non plus.",
+		},
+	},
+	{
+		id = "maelle",
+		nom = "Maëlle Bertin",
+		taille = "M",
+		mesures = { poitrine = 8.8, taille = 6.9, hanches = 9.5 },
+		styles = { "decontracte", "mignon" },
+		teinte = "bleu",
+		prestige = 8,
+		tenue = { peau = rgb(230, 190, 160), haut = rgb(40, 70, 140), bas = rgb(245, 245, 250), cheveux = rgb(200, 150, 80) },
+		deblocages = { [2] = { variante = "col_marin" }, [4] = { accessoire = "coquillage" } },
+		repliques = {
+			presentation = "Bonjour ! Maëlle. Je rentre d'un tour du monde à la voile, et je n'ai plus rien à me mettre !",
+			arrivee = "Escale à l'atelier ! Vous avez un moment pour moi ?",
+			merci = "Elle est superbe. Je l'emporterai à chaque escale.",
+			deception = "Bof… Elle ne tiendrait pas une journée en mer.",
 		},
 	},
 }

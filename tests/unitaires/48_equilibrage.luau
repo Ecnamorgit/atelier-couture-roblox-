@@ -14,7 +14,7 @@ local Deblocages = U.module("Deblocages")
 local Progression = U.module("Progression")
 
 local QUALITE = 0.8
-local ROBES = 90
+local ROBES = 160 -- (sous-projet 4 : les quatre dernières clientes arrivent aux prestiges 5 à 8)
 
 local CROQUIS = {}
 for _, c in ipairs(Catalogue.variantesDe("corsage")) do
@@ -29,6 +29,30 @@ for _, c in ipairs(Catalogue.variantesDe("corsage")) do
 	end
 end
 
+-- Toutes les robes simples (croquis × tissu), de la moins chère à la plus chère ; à coût égal, dans l'ordre du
+-- catalogue (croquis, puis tissu) : la première qui remplit la commande est la moins chère
+local CANDIDATES = {}
+for i, c in ipairs(CROQUIS) do
+	for j, t in ipairs(Catalogue.Tissus) do
+		table.insert(CANDIDATES, { croquis = c, tissu = t, cout = EtatAtelier.prix(t.id, c.dm), rang = i * 1000 + j })
+	end
+end
+table.sort(CANDIDATES, function(a, b)
+	return a.cout < b.cout or (a.cout == b.cout and a.rang < b.rang)
+end)
+
+-- Les styles d'une robe simple, calculés une fois pour toute la simulation (Notation.styles, gardés en mémoire)
+local stylesConnus = {}
+local function stylesDe(candidate, impose)
+	local cle = candidate.rang .. "/" .. (impose or "")
+	local styles = stylesConnus[cle]
+	if not styles then
+		styles = Notation.styles({ croquis = candidate.croquis.croquis, tissus = { [candidate.tissu.id] = 1 }, accessoires = impose and { { id = impose } } or {} })
+		stylesConnus[cle] = styles
+	end
+	return styles
+end
+
 -- La robe la moins chère qui remplit la commande avec ce qui est ouvert, ou nil
 local function choisir(etat)
 	local ouverts = Deblocages.ouverts(etat)
@@ -41,28 +65,23 @@ local function choisir(etat)
 	if impose and not ouverts.accessoires[impose] then
 		return nil
 	end
-	local accessoires = impose and { { id = impose } } or {}
-	local meilleur
-	for _, c in ipairs(CROQUIS) do
+	for _, candidate in ipairs(CANDIDATES) do
+		local c, t = candidate.croquis, candidate.tissu
 		local v = c.croquis
-		if ouverts.variantes[v.corsage] and ouverts.variantes[v.manches] and ouverts.variantes[v.col] and ouverts.variantes[v.jupe] then
-			for _, t in ipairs(Catalogue.Tissus) do
-				local cout = EtatAtelier.prix(t.id, c.dm) + (impose and Catalogue.accessoire(impose).prix or 0)
-				if ouverts.tissus[t.id] and (not meilleur or cout < meilleur.cout) then
-					local bilan = {
-						styles = Notation.styles({ croquis = v, tissus = { [t.id] = 1 }, accessoires = accessoires }),
-						qualite = QUALITE,
-						teinte = t.teinte,
-						accessoires = impose and { [impose] = 1 } or {},
-					}
-					if Notation.verifierExigences(etat.commande.exigences, bilan) then
-						meilleur = { croquis = v, pieces = c.pieces, dm = c.dm, tissu = t.id, cout = cout, impose = impose }
-					end
-				end
+		if ouverts.tissus[t.id] and ouverts.variantes[v.corsage] and ouverts.variantes[v.manches] and ouverts.variantes[v.col] and ouverts.variantes[v.jupe] then
+			local bilan = {
+				styles = stylesDe(candidate, impose),
+				qualite = QUALITE,
+				teinte = t.teinte,
+				accessoires = impose and { [impose] = 1 } or {},
+			}
+			if Notation.verifierExigences(etat.commande.exigences, bilan) then
+				local cout = candidate.cout + (impose and Catalogue.accessoire(impose).prix or 0)
+				return { croquis = v, pieces = c.pieces, dm = c.dm, tissu = t.id, cout = cout, impose = impose }
 			end
 		end
 	end
-	return meilleur
+	return nil
 end
 
 local robeSimple = EtatAtelier.prix("coton_blanc", Metrage.conseil(Patron.piecesDuCroquis({ corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" })))
@@ -171,7 +190,7 @@ print("Équilibrage : " .. bilan)
 U.verifier(p2[#p2] <= 3, "prestige 2 en trois robes au plus, dans chaque partie (" .. bilan .. ")")
 U.verifier(medianeP8 <= 70, "le prestige 8 (qui ouvre maintenant le tulle et deux décorations) est atteint vers la 70e robe au plus tard, en médiane (" .. bilan .. ")")
 U.verifier(medianeP5 >= 12 and medianeP5 <= 20 and p5[#p5] <= 25, "prestige 5 entre la 12e et la 20e robe en médiane, à la 25e au plus tard (" .. bilan .. ")")
-U.verifier(medianeTout >= 50 and medianeTout <= 80, "tout le catalogue ouvert entre la 50e et la 80e robe, en médiane (" .. bilan .. ")")
+U.verifier(medianeTout >= 100 and medianeTout <= 150, "tout le catalogue ouvert entre la 100e et la 150e robe, en médiane : l'amitié des quatre dernières clientes, arrivées aux prestiges 5 à 8, ouvre les dernières variantes (" .. bilan .. ")")
 U.verifier(medianeInvitees >= 10, "le courrier fait venir des clientes (" .. bilan .. ")")
 U.verifier(pauvres[1] >= robeSimple, "l'argent ne descend jamais sous le prix d'une robe simple (" .. bilan .. ")")
 local livreesEtVendues = true

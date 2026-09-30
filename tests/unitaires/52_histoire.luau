@@ -5,8 +5,18 @@ local Commandes = U.module("Commandes")
 local Deblocages = U.module("Deblocages")
 local Progression = U.module("Progression")
 
--- Le tableau : huit événements, deux à quatre robes chacun, des clientes connues, des répliques, un souvenir
-U.verifier(#Histoire.EVENEMENTS == 8, "huit événements")
+-- Le tableau : douze événements, deux à quatre robes chacun, des clientes connues, des répliques, un souvenir
+U.verifier(#Histoire.EVENEMENTS == 12, "douze événements")
+-- Sous-projet 4 : quatre événements de plus, aux prestiges 6 à 8, où jouent les quatre nouvelles clientes
+local joueuses = {}
+for rang = 9, #Histoire.EVENEMENTS do
+	local ev = Histoire.EVENEMENTS[rang]
+	U.verifier(ev.prestige >= 6, ev.id .. " : un événement de fin de partie (prestige 6 à 8)")
+	for _, c in ipairs(ev.commandes) do
+		joueuses[c.cliente] = true
+	end
+end
+U.verifier(joueuses.apolline and joueuses.josephine and joueuses.capucine and joueuses.maelle, "les quatre nouvelles clientes jouent dans les événements 9 à 12")
 local ids, faites = {}, {}
 local precedent = 0
 for rang, ev in ipairs(Histoire.EVENEMENTS) do
@@ -39,7 +49,7 @@ U.verifier(Histoire.titreEpilogue(Histoire.get("lanternes")) == "Le bal des lant
 local TUTOIEMENT = { " tu ", "Tu ", " toi", " ta ", " ton ", " tes ", " te ", " t'" }
 for _, ev in ipairs(Histoire.EVENEMENTS) do
 	for _, c in ipairs(ev.commandes) do
-		if c.cliente == "colette" or c.cliente == "helene" or c.cliente == "victoire" then
+		if c.cliente == "colette" or c.cliente == "helene" or c.cliente == "victoire" or c.cliente == "apolline" or c.cliente == "josephine" or c.cliente == "capucine" or c.cliente == "maelle" then
 			for cle, texte in pairs(c.repliques) do
 				for _, motif in ipairs(TUTOIEMENT) do
 					U.verifier(string.find(" " .. texte, motif, 1, true) == nil, c.id .. " (" .. cle .. ") : elle vouvoie, comme d'habitude (« " .. motif .. " »)")
@@ -68,7 +78,7 @@ etat.prestige = 20
 ev, ouvert = Histoire.enCours(etat)
 U.verifier(ouvert and Histoire.prochaine(etat).id == "kermesse_margot", "prestige 2 : la kermesse s'annonce")
 local tout = { prestige = 530, livraisons = 99, histoire = { faites = faites } }
-U.verifier(Histoire.enCours(tout) == nil and Histoire.prochaine(tout) == nil and Histoire.eus(tout) == 8, "tout a eu lieu : plus d'événement")
+U.verifier(Histoire.enCours(tout) == nil and Histoire.prochaine(tout) == nil and Histoire.eus(tout) == 12, "tout a eu lieu : plus d'événement")
 
 -- « Tout ouvert » (équilibrage) ne compte pas les souvenirs, qui viennent de l'histoire
 local progresTout = { prestige = 530, clientes = {} }

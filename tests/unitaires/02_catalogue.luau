@@ -117,7 +117,7 @@ for _, t in ipairs(Catalogue.Tissus) do
 end
 
 -- Accessoires
-U.verifier(#Catalogue.Accessoires == 31, "31 accessoires (dont les huit souvenirs du quartier et huit décorations de fin de partie)")
+U.verifier(#Catalogue.Accessoires == 39, "39 accessoires (dont les douze souvenirs du quartier et douze décorations nouvelles)")
 for _, a in ipairs(Catalogue.Accessoires) do
 	U.verifier(a.genre == "objet" or a.genre == "garniture", a.id .. " : genre connu")
 	U.verifier(a.prix > 0, a.id .. " : prix positif")

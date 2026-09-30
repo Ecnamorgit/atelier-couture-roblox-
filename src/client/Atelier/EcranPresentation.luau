@@ -168,8 +168,8 @@ return function(ctx)
 					Name = "Offrir_" .. c.id,
 					Text = ("%s · amitié +%d"):format(c.nom, Progression.gainCadeau(score)),
 					TextSize = 14,
-					Position = UDim2.fromOffset(0, 42 + n * 44),
-					Size = UDim2.new(1, -6, 0, 38),
+					Position = UDim2.fromOffset(0, 42 + n * 40), -- (dix clientes tiennent dans la fenêtre)
+					Size = UDim2.new(1, -6, 0, 36),
 					ZIndex = 21,
 					Parent = choix,
 				}, function()

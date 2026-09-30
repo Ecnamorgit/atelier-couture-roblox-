@@ -339,6 +339,14 @@ Catalogue.Accessoires = {
 	objet("couronne_fleurs", "Couronne de fleurs", 8, { romantique = 5, mignon = 1 },
 		{ forme = "fleur", taille = 0.7, couleur = { 250, 200, 215 }, reflet = 0 }),
 	garniture("dentelle_doree", "Dentelle dorée", 4, { elegant = 4, romantique = 1 }, { largeur = 0.3, couleur = { 220, 190, 110 }, transparence = 0.15 }),
+	-- Sous-projet 4 : ce qu'ouvre l'amitié des quatre nouvelles clientes (niveau 4)
+	objet("violette", "Violette", 3, { romantique = 3, chic = 1 },
+		{ forme = "fleur", taille = 0.45, couleur = { 140, 90, 190 }, reflet = 0 }),
+	objet("boucle_ecaille", "Boucle d'écaille", 4, { chic = 3, decontracte = 2 },
+		{ forme = "cylindre", taille = 0.45, couleur = { 130, 80, 40 }, reflet = 0.3 }),
+	garniture("dentelle_rouge", "Dentelle rouge", 3, { gothique = 3, romantique = 2 }, { largeur = 0.3, couleur = { 160, 20, 40 }, transparence = 0.15 }),
+	objet("coquillage", "Coquillage", 3, { decontracte = 3, mignon = 2 },
+		{ forme = "boule", taille = 0.35, couleur = { 250, 225, 210 }, reflet = 0.2 }),
 	-- Les souvenirs des événements du quartier (sous-projet 3) : chacun s'ouvre quand son événement a lieu
 	objet("lanterne_papier", "Lanterne de papier", 4, { romantique = 3, mignon = 2 },
 		{ forme = "boule", taille = 0.5, couleur = { 245, 150, 70 }, reflet = 0 }),
@@ -356,6 +364,14 @@ Catalogue.Accessoires = {
 		{ forme = "cylindre", taille = 0.45, couleur = { 214, 170, 60 }, reflet = 0.4 }),
 	objet("flocon_argent", "Flocon d'argent", 6, { elegant = 4, romantique = 1 },
 		{ forme = "croix", taille = 0.5, couleur = { 220, 225, 235 }, reflet = 0.5 }),
+	objet("marque_page", "Marque-page doré", 4, { chic = 3, elegant = 1 },
+		{ forme = "bloc", taille = 0.5, couleur = { 214, 170, 60 }, reflet = 0.3 }),
+	objet("masque_theatre", "Masque de théâtre", 5, { gothique = 2, chic = 2, elegant = 1 },
+		{ forme = "bloc", taille = 0.55, couleur = { 245, 240, 230 }, reflet = 0.2 }),
+	objet("alliance_or", "Alliance d'or", 6, { romantique = 3, elegant = 2 },
+		{ forme = "cylindre", taille = 0.35, couleur = { 230, 190, 80 }, reflet = 0.5 }),
+	objet("rosette_honneur", "Rosette d'honneur", 7, { elegant = 3, chic = 3 },
+		{ forme = "fleur", taille = 0.6, couleur = { 40, 70, 150 }, reflet = 0.2 }),
 }
 
 ---------------------------------------------------------------------------

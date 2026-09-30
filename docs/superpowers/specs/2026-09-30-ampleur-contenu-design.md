@@ -24,7 +24,7 @@ règles, avec un contenu original.
 ### Critères de réussite
 
 1. Chaque niveau de prestige de 2 à 8 ouvre quelque chose (tissus ou décorations).
-2. 41 tissus (16 de plus, en quatre matières nouvelles), 35 accessoires (12 de plus), 19 variantes (6 de plus).
+2. 41 tissus (16 de plus, en quatre matières nouvelles), 39 accessoires (12 de plus, et les 4 souvenirs des nouveaux événements), 19 variantes (6 de plus).
 3. Dix clientes (quatre de plus, arrivant aux prestiges 5 à 8), chacune avec ses goûts, ses mesures, sa tenue, ses
    répliques et deux déblocages d'amitié.
 4. Douze événements (quatre de plus, autour des nouvelles clientes), avec leurs souvenirs.
@@ -62,7 +62,8 @@ Six de plus, dans les enroulements existants (corsage, manche, col, jupe) :
 | jupe | crayon | devant et dos ajustés | prestige 7 |
 
 Les quatre variantes promises à l'amitié des nouvelles clientes s'ouvrent au prestige 8 tant que ces clientes
-n'existent pas (plan 8b) ; le plan 8c les rend à leur amitié.
+n'existent pas (plan 8b) ; le plan 8c les rend à leur amitié. Avec le bustier, manches et col se portent
+détachés, épaules nues : c'est voulu (relecture du plan 8b, vu dans Studio).
 
 ## 5. Les nouvelles clientes et leurs événements
 
@@ -83,7 +84,9 @@ appels : la simulation ne mesure pas le temps réel), la suite de tests sous une
 
 La simulation (vingt parties) est reprise avec le nouveau catalogue et les nouvelles clientes : prestige 2 en
 3 robes au plus, 5 vers la 19e robe, 8 atteint, et « tout ouvert » mesuré puis fixé en médiane ; les bornes sont
-revues au plan si le nouveau contenu les déplace, en disant pourquoi.
+revues au plan si le nouveau contenu les déplace, en disant pourquoi. Mesuré au plan 8c : prestige 8 vers la 57e
+robe, « tout ouvert » vers la 123e (médianes, parties simulées de 160 robes) : l'amitié des quatre dernières
+clientes ouvre les dernières variantes ; bornes 100 à 150.
 
 ## 8. Tests
 

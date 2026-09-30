@@ -103,17 +103,31 @@ local apresAmitie = { prestige = 0, clientes = { colette = { amitie = 7 } } }
 local n = Deblocages.nouveaux(avantAmitie, apresAmitie)
 U.verifier(#n == 1 and n[1].id == "jupe_ample" and n[1].nom == "Jupe ample froncée", "amitié de Colette au niveau 2 : la jupe ample froncée")
 
--- Tout ouvert : prestige 5 et amitié 4 avec les six clientes
+-- Tout ouvert : prestige 8 et amitié 4 avec les dix clientes
 local tout = { prestige = 530, clientes = {} }
 for _, c in ipairs(Clientes.LISTE) do
 	tout.clientes[c.id] = { amitie = 18 }
 end
-U.verifier(Deblocages.toutOuvert(tout), "prestige 8 et six amitiés au niveau 4 : tout est ouvert")
+U.verifier(Deblocages.toutOuvert(tout), "prestige 8 et dix amitiés au niveau 4 : tout est ouvert")
 tout.clientes.victoire.amitie = 17
 U.verifier(not Deblocages.toutOuvert(tout), "une amitié en retard : pas tout")
 U.verifier(not Deblocages.toutOuvert(depart), "au départ : pas tout")
--- Sous-projet 4 : les manches courtes au prestige 6, la jupe crayon au 7 ; les quatre variantes des nouvelles
--- clientes attendent le prestige 8 (le plan 8c les donnera à leur amitié)
-for id, niveau in pairs({ manches_courtes = 6, jupe_crayon = 7, corsage_cache_coeur = 8, corsage_bustier = 8, manches_trois_quarts = 8, col_marin = 8 }) do
+-- Sous-projet 4 : les manches courtes au prestige 6, la jupe crayon au 7 ; les quatre autres variantes et quatre
+-- décorations s'ouvrent à l'amitié des nouvelles clientes (niveaux 2 et 4), jamais par le prestige seul
+for id, niveau in pairs({ manches_courtes = 6, jupe_crayon = 7 }) do
 	U.verifier(Catalogue.variante(id) ~= nil and not Deblocages.ouvert(au(SEUILS_P[niveau] - 1), "variantes", id) and Deblocages.ouvert(au(SEUILS_P[niveau]), "variantes", id), id .. " : ouverte au prestige " .. niveau)
+end
+local AMITIE_NOUVELLES = {
+	apolline = { "corsage_cache_coeur", "violette" },
+	josephine = { "manches_trois_quarts", "boucle_ecaille" },
+	capucine = { "corsage_bustier", "dentelle_rouge" },
+	maelle = { "col_marin", "coquillage" },
+}
+for id, paire in pairs(AMITIE_NOUVELLES) do
+	local variante, accessoire = paire[1], paire[2]
+	local function amie(points)
+		return { prestige = 530, clientes = { [id] = { amitie = points } } }
+	end
+	U.verifier(not Deblocages.ouvert(amie(6), "variantes", variante) and Deblocages.ouvert(amie(7), "variantes", variante), variante .. " : ouverte par l'amitié de " .. id .. " (niveau 2), pas par le prestige")
+	U.verifier(Catalogue.accessoire(accessoire) ~= nil and not Deblocages.ouvert(amie(17), "accessoires", accessoire) and Deblocages.ouvert(amie(18), "accessoires", accessoire), accessoire .. " : ouvert par l'amitié de " .. id .. " (niveau 4)")
 end

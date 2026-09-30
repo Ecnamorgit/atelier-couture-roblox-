@@ -12,7 +12,7 @@ local Commandes = {}
 local NOMS_TAILLES = { "S", "M", "L" }
 Commandes.ESSAIS = 30 -- tirages avant le repli
 
--- Toutes les combinaisons de variantes du carnet (3 × 3 × 3 × 4 = 108)
+-- Toutes les combinaisons de variantes du carnet (5 × 5 × 4 × 5 = 500)
 local function croquisPossibles()
 	local out = {}
 	for _, c in ipairs(Catalogue.variantesDe("corsage")) do
