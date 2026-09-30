@@ -666,6 +666,7 @@ function EtatAtelier:livrer(rng)
 	-- Une robe d'histoire livrée : faite ; la dernière de son événement le fait avoir lieu (épilogue, souvenir,
 	-- prestige en plus)
 	local evenement
+	local histoireFaite = self.commande.histoire
 	if self.commande.histoire then
 		self.histoire.faites[self.commande.histoire] = true
 		local _, ev = Histoire.commande(self.commande.histoire)
@@ -689,13 +690,13 @@ function EtatAtelier:livrer(rng)
 	end
 	terminer(self)
 	local nouveaux = Deblocages.nouveaux(avant, self)
-	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige, nouveaux = nouveaux, lettre = courrier(self, rng), evenement = evenement }
+	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige, nouveaux = nouveaux, lettre = courrier(self, rng), evenement = evenement, histoireFaite = histoireFaite }
 end
 
 -- Robes libres : le prestige et les amitiés avant la vente ou le cadeau (pour dire ce qui s'ouvre), le prestige
 -- gagné, la robe gardée en vitrine
 local function progres(self)
-	local avant = { prestige = self.prestige, clientes = {} }
+	local avant = { prestige = self.prestige, clientes = {}, histoire = { faites = table.clone(self.histoire.faites) } }
 	for id, f in pairs(self.clientes) do
 		avant.clientes[id] = { amitie = f.amitie }
 	end

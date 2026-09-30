@@ -712,6 +712,7 @@ etatJeu.clientes.ines.amitie = 25
 -- La palette ne montre que des rangées entières (une rangée coupée attirerait les clics à côté)
 local palette = contenuD.Palette
 verifier(palette.Size.Y.Offset % 44 == 0, "palette : rangées entières")
+verifier(palette:FindFirstChild("Deco_lanterne_papier") == nil and palette:FindFirstChild("Deco_fleur_oranger") == nil and palette:FindFirstChild("Deco_perle") ~= nil, "les souvenirs fermés ne sont pas dans la palette (ils ne dévoilent pas l'histoire)")
 -- Point de la robe (monde) à la place (u, v) d'une pièce
 local function point3D(id, copie, u, v)
 	local b = PolygoneModule.boite(Catalogue.piece(id).contour)
@@ -1064,6 +1065,9 @@ verifier(titre() == "Aiguille & Dentelle" and fenetre.Contenu.Epilogue.Visible a
 verifier(texte(Histoire.get("lanternes").epilogue) ~= nil and laColette.Head.Bulle.Texte.Text == def.repliques.merci, "l'épilogue ; Colette raconte la suite")
 verifierTailles("épilogue")
 cliquer("FermerEpilogue")
+local suite = fenetre.Contenu.Suite
+verifier(suite.Visible and suite.Interlocutrice.Text == "Colette Marchand" and suite.Replique.Text == def.repliques.merci, "sous l'épilogue : la suite de l'histoire de Colette, lisible")
+cliquer("FermerSuite")
 verifier(not fenetre.Contenu.Epilogue.Visible and texte("Événement : La kermesse du square — robes livrées 0 / 2") ~= nil, "l'événement suivant s'annonce")
 cliquer("OuvrirCarnetAdresses")
 verifier(texte("Le bal des lanternes — souvenir : Lanterne de papier") ~= nil, "le carnet d'adresses garde les souvenirs du quartier")

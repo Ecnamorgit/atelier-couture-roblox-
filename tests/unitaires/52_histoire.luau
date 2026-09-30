@@ -35,6 +35,19 @@ for rang, ev in ipairs(Histoire.EVENEMENTS) do
 	end
 end
 U.verifier(Histoire.commande("inconnue") == nil and Histoire.get("inconnu") == nil, "identifiant inconnu : rien")
+U.verifier(Histoire.titreEpilogue(Histoire.get("lanternes")) == "Le bal des lanternes a eu lieu !" and Histoire.titreEpilogue(Histoire.get("regates")) == "Les régates du lac ont eu lieu !", "l'épilogue s'accorde : « a eu lieu », « ont eu lieu »")
+local TUTOIEMENT = { " tu ", "Tu ", " toi", " ta ", " ton ", " tes ", " te ", " t'" }
+for _, ev in ipairs(Histoire.EVENEMENTS) do
+	for _, c in ipairs(ev.commandes) do
+		if c.cliente == "colette" or c.cliente == "helene" or c.cliente == "victoire" then
+			for cle, texte in pairs(c.repliques) do
+				for _, motif in ipairs(TUTOIEMENT) do
+					U.verifier(string.find(" " .. texte, motif, 1, true) == nil, c.id .. " (" .. cle .. ") : elle vouvoie, comme d'habitude (« " .. motif .. " »)")
+				end
+			end
+		end
+	end
+end
 
 -- La progression : le premier événement après trois livraisons ; dans l'ordre ; le suivant à son prestige
 local etat = { prestige = 0, livraisons = 0, histoire = { faites = {} } }
@@ -46,7 +59,7 @@ local suivante = Histoire.prochaine(etat)
 U.verifier(ouvert and suivante.id == "lanternes_colette", "trois livraisons : il s'annonce, Colette d'abord")
 etat.histoire.faites.lanternes_colette = true
 U.verifier(Histoire.prochaine(etat).id == "lanternes_margot" and select(1, Histoire.avancee(etat, "lanternes")) == 1, "puis Margot ; une robe sur deux")
-U.verifier(not Deblocages.ouvert(etat, "accessoires", "lanterne_papier") and Deblocages.raison("accessoires", "lanterne_papier") == "Souvenir : Le bal des lanternes", "souvenir fermé tant que l'événement n'a pas eu lieu")
+U.verifier(not Deblocages.ouvert(etat, "accessoires", "lanterne_papier") and Deblocages.raison("accessoires", "lanterne_papier") == "Souvenir d'un événement du quartier", "souvenir fermé tant que l'événement n'a pas eu lieu (sans dévoiler lequel)")
 etat.histoire.faites.lanternes_margot = true
 U.verifier(Histoire.aEuLieu(etat, "lanternes") and Histoire.eus(etat) == 1 and Deblocages.ouvert(etat, "accessoires", "lanterne_papier"), "les deux robes livrées : le bal a lieu, la lanterne s'ouvre")
 ev, ouvert = Histoire.enCours(etat)

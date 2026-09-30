@@ -102,7 +102,7 @@ function Deblocages.raison(genre, id)
 	if c.prestige then
 		return ("Prestige %d"):format(c.prestige)
 	elseif c.evenement then
-		return ("Souvenir : %s"):format(Histoire.get(c.evenement).nom)
+		return "Souvenir d'un événement du quartier" -- (sans dire lequel : l'histoire n'est pas dévoilée)
 	end
 	return ("Amitié %s : %d"):format(deCliente(c.cliente), c.amitie)
 end

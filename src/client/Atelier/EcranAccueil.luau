@@ -186,11 +186,22 @@ return function(ctx)
 			conversation.Visible = true
 		end)
 	end
+	-- Une robe d'histoire livrée : la suite de l'histoire de sa cliente (sa réplique « merci »), dans un panneau (la
+	-- bulle ne la montre que le temps de son départ) ; sous l'épilogue quand l'événement a lieu
+	local faite = r and action == "livrer" and r.histoireFaite and Histoire.commande(r.histoireFaite)
+	if faite then
+		local suite = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Suite", Text = "", AutoButtonColor = false, BackgroundColor3 = C.panneau, Size = UDim2.fromScale(1, 1), ZIndex = 21, Parent = ctx.contenu }), 10)
+		UiKit.texte({ Name = "Interlocutrice", Text = Clientes.get(faite.cliente).nom, Font = Enum.Font.GothamBold, TextSize = 18, Size = UDim2.new(1, -130, 0, 34), ZIndex = 22, Parent = suite })
+		UiKit.texte({ Name = "Replique", Text = faite.repliques.merci, TextSize = 18, Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 90), ZIndex = 22, Parent = suite })
+		UiKit.boutonDoux({ Name = "FermerSuite", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(110, 34), ZIndex = 22, Parent = suite }, function()
+			suite.Visible = false
+		end)
+	end
 	-- Un événement vient d'avoir lieu : son épilogue et son souvenir, par-dessus l'accueil
 	local eu = r and action == "livrer" and r.evenement
 	if eu then
 		local epilogue = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Epilogue", Text = "", AutoButtonColor = false, BackgroundColor3 = C.panneau, Size = UDim2.fromScale(1, 1), ZIndex = 22, Parent = ctx.contenu }), 10)
-		UiKit.texte({ Name = "TitreEpilogue", Text = ("%s a eu lieu !"):format(eu.nom), Font = Enum.Font.GothamBold, TextSize = 20, TextColor3 = C.accent, Size = UDim2.new(1, -130, 0, 34), ZIndex = 23, Parent = epilogue })
+		UiKit.texte({ Name = "TitreEpilogue", Text = Histoire.titreEpilogue(Histoire.get(eu.id)), Font = Enum.Font.GothamBold, TextSize = 20, TextColor3 = C.accent, Size = UDim2.new(1, -130, 0, 34), ZIndex = 23, Parent = epilogue })
 		UiKit.texte({ Name = "TexteEpilogue", Text = eu.epilogue, TextSize = 18, Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 90), ZIndex = 23, Parent = epilogue })
 		local souvenir = Catalogue.accessoire(eu.souvenir)
 		UiKit.texte({ Name = "Souvenir", Text = ("Souvenir : %s (une nouvelle décoration). Prestige : +%d."):format(souvenir and souvenir.nom or eu.souvenir, Histoire.PRESTIGE_EVENEMENT), TextSize = 16, Position = UDim2.fromOffset(0, 144), Size = UDim2.new(1, 0, 0, 44), ZIndex = 23, Parent = epilogue })

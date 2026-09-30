@@ -79,6 +79,7 @@ Histoire.EVENEMENTS = {
 	{
 		id = "regates",
 		nom = "Les régates du lac",
+		pluriel = true, -- « ont eu lieu »
 		prestige = 3,
 		souvenir = "ancre_doree",
 		epilogue = "Le bateau de Colette a fini deuxième, sous les applaudissements ; sur la rive, Hélène tenait le chronomètre comme une reine.",
@@ -124,7 +125,7 @@ Histoire.EVENEMENTS = {
 			commande("mariage_colette", "colette", { min("romantique", 30), teinte("rose") },
 				"Je suis la témoin de Margot ! Il me faut une robe qui ne vole pas la vedette… mais presque.",
 				"Rose, romantique. Assortie aux fleurs de la cérémonie.",
-				"J'ai attrapé le bouquet ! Tu sais ce que ça veut dire…"),
+				"J'ai attrapé le bouquet ! Vous savez ce que ça veut dire…"),
 			commande("mariage_victoire", "victoire", { min("elegant", 40) },
 				"Margot m'a demandé de faire le discours. Je la connais depuis qu'elle est haute comme trois pommes.",
 				"Élégante, sobre. C'est son jour, pas le mien.",
@@ -161,8 +162,8 @@ Histoire.EVENEMENTS = {
 		commandes = {
 			commande("bal_colette", "colette", { min("romantique", 45) },
 				"Le grand bal d'hiver ! Il va me demander quelque chose ce soir-là, je le sens.",
-				"La robe la plus romantique que tu aies jamais faite.",
-				"Il m'a demandée en mariage sous le lustre. J'ai dit oui ! Tu feras ma robe, hein ?"),
+				"La robe la plus romantique que vous ayez jamais faite.",
+				"Il m'a demandée en mariage sous le lustre. J'ai dit oui ! Vous ferez ma robe, n'est-ce pas ?"),
 			commande("bal_helene", "helene", { min("elegant", 45) },
 				"J'ouvre le bal avec un solo. Mon retour sur scène, le vrai.",
 				"Élégante, légère. Une robe de danseuse.",
@@ -172,9 +173,9 @@ Histoire.EVENEMENTS = {
 				"Noire comme la nuit d'hiver, avec de l'éclat.",
 				"Pour une fois, personne n'a eu peur. Ils ont souri. C'est encore mieux."),
 			commande("bal_victoire", "victoire", { min("elegant", 45), teinte("blanc") },
-				"J'organise le grand bal d'hiver. Je voudrais être à la hauteur du quartier que tu as habillé.",
+				"J'organise le grand bal d'hiver. Je voudrais être à la hauteur du quartier que vous avez habillé.",
 				"Blanche, élégante, digne d'une première neige.",
-				"C'était le plus beau bal que le quartier ait connu. Et c'est grâce à toi."),
+				"C'était le plus beau bal que le quartier ait connu. Et c'est grâce à vous."),
 		},
 	},
 }
@@ -249,6 +250,11 @@ function Histoire.prochaine(etat)
 		end
 	end
 	return nil
+end
+
+-- « Le bal des lanternes a eu lieu ! », « Les régates du lac ont eu lieu ! »
+function Histoire.titreEpilogue(ev)
+	return ("%s %s eu lieu !"):format(ev.nom, if ev.pluriel then "ont" else "a")
 end
 
 -- Nombre d'événements qui ont eu lieu

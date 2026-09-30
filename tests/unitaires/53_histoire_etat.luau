@@ -54,6 +54,20 @@ for _, n in ipairs(r.nouveaux) do
 	ouvre = ouvre or n.id == "lanterne_papier"
 end
 U.verifier(ouvre and Deblocages.ouvert(e, "accessoires", "lanterne_papier"), "le souvenir s'ouvre, et c'est annoncé")
+U.verifier(r.histoireFaite == "lanternes_margot", "la réponse dit quelle robe d'histoire est faite (pour sa réplique)")
+assert(e:nouvelleRobeLibre("M").ok)
+robePrete(e)
+local vendue = e:vendre()
+U.verifier(vendue.ok and #vendue.nouveaux == 0, "une robe libre vendue après le bal : rien de « nouveau »")
+e.clientes.margot.vues = 1
+assert(e:nouvelleRobeLibre("S").ok)
+robePrete(e)
+local offerte = e:offrir("margot")
+local souvenirs = 0
+for _, n in ipairs(offerte.nouveaux) do
+	souvenirs += if n.id == "lanterne_papier" then 1 else 0
+end
+U.verifier(offerte.ok and souvenirs == 0, "une robe libre offerte après le bal : la lanterne n'est pas « nouvelle »")
 e.prestige = 19
 U.verifier(not e:commandeHistoire().ok, "la kermesse attend le prestige 2")
 
