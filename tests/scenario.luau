@@ -1162,6 +1162,7 @@ end
 e.etape = "photo"
 requireModule(scriptClient.Session).courante:actualiser()
 local laColette = scene.Cliente
+e.prestige = 259 -- (juste sous le prestige 6 : la livraison le fait passer, l'annonce s'allonge)
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Aiguille & Dentelle" and fenetre.Contenu.Epilogue.Visible and texte("Le bal des lanternes a eu lieu !") ~= nil and texte("Souvenir : Lanterne de papier") ~= nil, "la dernière robe livrée : le bal a lieu, épilogue et souvenir")
@@ -1169,6 +1170,12 @@ verifier(texte(Histoire.get("lanternes").epilogue) ~= nil and laColette.Head.Bul
 verifierTailles("épilogue")
 local inviter3 = boutonNomme("Inviter_3")
 verifier(fenetre.Contenu.Courrier.Text == "Courrier (boîte pleine) :" and inviter3.Position.Y.Offset + inviter3.Size.Y.Offset <= 466, "boîte pleine : c'est dit, et les trois lettres tiennent dans la fenêtre")
+do -- Le passage au prestige 6 allonge l'annonce (« Nouveau : » sur deux lignes) : sa hauteur compte les lignes
+	-- repliées, et l'introduction reste dessous
+	local annonce, intro = fenetre.Contenu.Annonce, fenetre.Contenu.Intro
+	verifier(string.find(annonce.Text, "Nouveau : Manches courtes", 1, true) ~= nil and annonce.Size.Y.Offset == 24 * requireModule(scriptClient.UiKit).lignes(annonce.Text, fenetre.Size.X.Offset + fenetre.Contenu.Size.X.Offset, 18) + 2 and intro.Position.Y.Offset >= annonce.Size.Y.Offset + 10, "annonce longue (prestige 6) : sa hauteur compte les lignes repliées, l'introduction reste dessous")
+end
+e.prestige = 530 -- (tout reste ouvert pour la suite)
 cliquer("FermerEpilogue")
 local suite = fenetre.Contenu.Suite
 verifier(suite.Visible and suite.Interlocutrice.Text == "Colette Marchand" and suite.Replique.Text == def.repliques.merci, "sous l'épilogue : la suite de l'histoire de Colette, lisible")
