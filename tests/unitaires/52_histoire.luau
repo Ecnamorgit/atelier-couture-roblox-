@@ -50,6 +50,23 @@ for rang, ev in ipairs(Histoire.EVENEMENTS) do
 	end
 end
 U.verifier(Histoire.commande("inconnue") == nil and Histoire.get("inconnu") == nil, "identifiant inconnu : rien")
+-- (sous-projet 7) À partir de la kermesse, chaque robe qui n'a pas déjà trois exigences demande l'occasion de son
+-- événement : la soirée au bal d'hiver et à la première, la journée à la kermesse et aux mariages
+local sansOccasion, occasionsDe = {}, {}
+for rang, ev in ipairs(Histoire.EVENEMENTS) do
+	for _, c in ipairs(ev.commandes) do
+		local o
+		for _, e in ipairs(c.exigences) do
+			o = o or e.occasion
+		end
+		occasionsDe[ev.id] = occasionsDe[ev.id] or o
+		if rang >= 2 and not o and #c.exigences < 3 then
+			table.insert(sansOccasion, c.id)
+		end
+	end
+end
+U.verifier(#sansOccasion == 0, "à partir de la kermesse, chaque robe demande l'occasion de son événement (sans : " .. table.concat(sansOccasion, ", ") .. ")")
+U.verifier(occasionsDe.bal_hiver == "soiree" and occasionsDe.premiere == "soiree" and occasionsDe.kermesse == "journee" and occasionsDe.noces_colette == "journee" and occasionsDe.lanternes == nil, "le bal d'hiver et la première : la soirée ; la kermesse et les mariages : la journée")
 -- Le récit tient debout : au bal des lanternes, Margot tient son stand de limonade (elle ne danse pas) ; le bateau
 -- des régates n'est pas celui de Colette (on l'y emmène) ; au bal d'hiver, la neige tombe dehors, pas dans la salle ;
 -- Margot ne répète pas « tout le monde » dans la même phrase
