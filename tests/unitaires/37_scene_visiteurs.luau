@@ -41,7 +41,7 @@ U.verifier(visible(visiteuse) and visible(passant), "caméra du joueur : tout le
 scene:regarder(true)
 U.verifier(efface(visiteuse), "caméra du poste : une visiteuse dans la boutique est effacée (elle cacherait la robe et entrerait dans la photo)")
 U.verifier(visible(passant), "un passant dans la rue reste visible")
-U.verifier(visible(monAvatar), "l'avatar du joueur est laissé à Roblox (ses caméras règlent sa transparence)")
+U.verifier(efface(monAvatar), "caméra du poste : l'avatar du joueur est effacé lui aussi (les caméras de Roblox ne l'effacent pas quand la caméra est fixe : il cachait la robe et entrait dans la photo)")
 
 -- Allées et venues pendant la caméra du poste
 placer(visiteuse, Vector3.new(0, 3, 15))
@@ -50,6 +50,6 @@ M.avancer(0.5)
 U.verifier(visible(visiteuse) and efface(passant), "on suit les allées et venues : la visiteuse sortie réapparaît, le passant entré est effacé")
 
 scene:regarder(false)
-U.verifier(visible(passant), "caméra rendue au joueur : tout le monde est visible de nouveau")
+U.verifier(visible(passant) and visible(monAvatar), "caméra rendue au joueur : tout le monde est visible de nouveau, lui compris")
 scene:detruire()
 rawget(Players, "__props").LocalPlayer = ancienLocal
