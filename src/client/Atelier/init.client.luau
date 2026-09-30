@@ -86,10 +86,21 @@ end
 -- Mise à l'échelle sur les petits écrans (suit la caméra et la taille de la fenêtre du jeu)
 local echelle = UiKit.creer("UIScale", { Parent = fenetre })
 local connexionCamera
+local enPanneau = false
+-- L'encadré de dialogue se cale à gauche de la fenêtre (au centre, ou en panneau à droite)
+local function calerDialogue()
+	local camera = workspace.CurrentCamera
+	local ecran = camera and camera.ViewportSize or Vector2.new(1280, 720)
+	local e = echelle.Scale
+	local largeur = (if enPanneau then UiKit.LARGEUR_PANNEAU else UiKit.LARGEUR) * e
+	local bord = if enPanneau then ecran.X - 16 - largeur else (ecran.X - largeur) / 2
+	dialogue:caler(bord, math.max(10, (ecran.Y - UiKit.HAUTEUR * e) / 2))
+end
 local function ajuster()
 	local camera = workspace.CurrentCamera
 	echelle.Scale = UiKit.echelle(camera and camera.ViewportSize or Vector2.new(1280, 720))
 	dialogue:echelle(echelle.Scale)
+	calerDialogue()
 end
 local function suivreCamera()
 	if connexionCamera then
@@ -239,8 +250,10 @@ end)
 Sons.boucle("musique", true)
 
 -- Fenêtre au centre, ou panneau à droite (titre et argent sur deux lignes)
-local function disposer(enPanneau)
-	if enPanneau then
+local function disposer(panneau)
+	enPanneau = panneau
+	calerDialogue()
+	if panneau then
 		fenetre.AnchorPoint = Vector2.new(1, 0.5)
 		fenetre.Position = UDim2.new(1, -16, 0.5, 0)
 		fenetre.Size = UDim2.fromOffset(UiKit.LARGEUR_PANNEAU, UiKit.HAUTEUR)

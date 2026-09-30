@@ -386,7 +386,7 @@ verifierTailles("carnet")
 verifier(texte("Colette (taille M) veut") ~= nil, "le carnet dit qui commande, et sa taille")
 verifier(M.services.Workspace.AtelierLocal:FindFirstChild("Cliente") == clienteMesuree and clienteMesuree.Parent ~= nil, "mesures validées : la même cliente reste là (pas reconstruite)")
 verifier(clienteMesuree.Head.Bulle.Texte.Text == requireModule(scriptClient.Scene).PAROLES.carnet, "première visite, au carnet : elle explique ce qu'elle veut (pas « Me revoilà ! »)")
-verifier(gui.Atelier.Dialogue.Visible and gui.Atelier.Dialogue.Texte.Text == requireModule(scriptClient.Scene).PAROLES.carnet, "une nouvelle parole rouvre l'encadré")
+verifier(gui.Atelier.Dialogue.Texte.Text == requireModule(scriptClient.Scene).PAROLES.carnet and not gui.Atelier.Dialogue.Visible, "la nouvelle parole est passée dans l'encadré ; par-dessus la fenêtre centrée, lue, elle s'est effacée")
 verifier(texte("Exigence1") ~= nil and texte("Exigence1").Text ~= "", "les exigences sont affichées")
 local ligneMetrage = fenetre.Contenu.Droite:FindFirstChild("Metrage")
 verifier(ligneMetrage ~= nil and string.find(ligneMetrage.Text, "Choisis les tissus", 1, true) == 1, "sans tissu : le métrage attend les tissus, dans la colonne de droite")
@@ -1037,6 +1037,12 @@ do -- Son avis : une étoile
 	local etoiles = gui.Atelier.Dialogue.Etoiles
 	local OR = requireModule(scriptClient.Dialogue).OR
 	verifier(gui.Atelier.Dialogue.Visible and gui.Atelier.Dialogue.Texte.Text == Clientes.get("colette").repliques.deception and etoiles.Visible and etoiles.Etoile1.TextColor3 == OR and etoiles.Etoile2.TextColor3 ~= OR, "robe refusée : sa déception dans l'encadré, une étoile")
+	do -- (la fenêtre en panneau commence à 16 px du bord droit de l'écran)
+		local e = fenetre.UIScale.Scale
+		local bordFenetre = workspace.CurrentCamera.ViewportSize.X - 16 - requireModule(scriptClient.UiKit).LARGEUR_PANNEAU * e
+		local dialogue = gui.Atelier.Dialogue
+		verifier(dialogue.Position.X.Offset >= 16 and dialogue.Position.X.Offset + requireModule(scriptClient.Dialogue).LARGEUR * e <= bordFenetre - 16 + 1e-6, "fenêtre en panneau à droite : l'encadré à sa gauche, sur la scène")
+	end
 end
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_echec", "robe refusée : un son déçu")
 verifierTailles("refus")
@@ -1152,6 +1158,7 @@ verifier(fenetre.Contenu:FindFirstChild("Livrer") == nil, "une robe libre ne se 
 do -- À la vente : le rang de la couturière
 	local e = serveur:atelier(joueur).etat
 	verifier(fenetre.Contenu.Rang.Text == "Ton rang : " .. requireModule(dossier.Progression).texteRang(e.livraisons + e.ventes), "à la vente : le rang (" .. fenetre.Contenu.Rang.Text .. ")")
+	verifier(fenetre.Contenu.Rang.Size.Y.Offset >= 2 * 19 and fenetre.Contenu.Rang.TextYAlignment == Enum.TextYAlignment.Top, "le rang tient sur deux lignes sans déborder sur le prix")
 end
 cliquer("Offrir")
 verifier(boutonNomme("Offrir_colette") ~= nil and fenetre.Contenu.ChoixCliente:FindFirstChild("Offrir_ines") == nil, "offrir : seulement aux clientes déjà venues")

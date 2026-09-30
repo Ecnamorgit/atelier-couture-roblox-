@@ -49,3 +49,24 @@ U.verifier(not cadre.Visible, "plus rien à dire : l'encadré se cache")
 -- La même échelle que la fenêtre (petits écrans)
 d:echelle(0.6)
 U.verifier(cadre:FindFirstChild("UIScale").Scale == 0.6, "l'encadré se réduit comme la fenêtre")
+
+-- À gauche de la fenêtre quand la place existe (spec) ; sinon en haut à gauche, par-dessus la fenêtre, et il
+-- s'efface seul après quelques secondes
+d:echelle(1)
+d:caler(800, 120) -- le bord gauche de la fenêtre à x = 800, son haut à y = 120 : la place existe
+d:dire("Colette", "Bonjour !")
+U.verifier(cadre.Position.X.Offset >= 16 and cadre.Position.X.Offset + Dialogue.LARGEUR <= 800 - 16 + 1e-6 and cadre.Position.Y.Offset == 120, "à gauche de la fenêtre, à la hauteur de son haut")
+M.avancer(Dialogue.DUREE_PAR_DESSUS + 1)
+U.verifier(cadre.Visible, "à côté de la fenêtre : il reste")
+d:caler(190, 80) -- fenêtre centrée sur un écran de 1280 px : pas la place
+U.verifier(cadre.Position.X.Offset == 16 and cadre.Position.Y.Offset == 10, "pas la place : en haut à gauche")
+d:dire("Colette", "Me revoilà !")
+M.avancer(Dialogue.DUREE_PAR_DESSUS - 0.5)
+U.verifier(cadre.Visible, "par-dessus la fenêtre : il se lit quelques secondes")
+M.avancer(1)
+U.verifier(not cadre.Visible, "puis il s'efface seul, pour ne pas cacher la fenêtre")
+d:dire("Colette", "Voyons voir…")
+U.verifier(cadre.Visible, "une nouvelle parole le remontre")
+d:echelle(0.5)
+d:caler(230, 40) -- réduit de moitié, il tient à gauche d'une fenêtre qui commence à x = 230
+U.verifier(cadre.Position.X.Offset >= 16 and cadre.Position.X.Offset + Dialogue.LARGEUR * 0.5 <= 230 - 16 + 1e-6, "réduit comme la fenêtre, il tient à sa gauche")

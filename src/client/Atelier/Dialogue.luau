@@ -1,6 +1,7 @@
 -- Dialogue (sous-projet 5) : l'encadré où se lit ce que dit la cliente tant que la fenêtre de l'atelier est ouverte
--- (sa bulle, au-dessus de sa tête, reste pour la rue). En haut à gauche de l'écran, juste sous les boutons de
--- Roblox : son prénom, ses mots, et son avis en étoiles quand elle en donne un. Un appui le referme jusqu'à sa
+-- (sa bulle, au-dessus de sa tête, reste pour la rue) : son prénom, ses mots, et son avis en étoiles quand elle en
+-- donne un. À gauche de la fenêtre quand la place existe ; sinon en haut à gauche de l'écran, sous les boutons de
+-- Roblox, par-dessus la fenêtre : il s'efface alors seul après quelques secondes. Un appui le referme jusqu'à sa
 -- prochaine parole.
 local Dialogue = {}
 Dialogue.__index = Dialogue
@@ -9,13 +10,14 @@ Dialogue.LARGEUR = 360
 Dialogue.TAILLE_TEXTE = 16
 Dialogue.OR = Color3.fromRGB(232, 176, 46)
 Dialogue.ETEINTE = Color3.fromRGB(222, 208, 212)
+Dialogue.DUREE_PAR_DESSUS = 6 -- secondes de lecture quand il passe par-dessus la fenêtre
 local MARGE = 14
 local HAUT_TEXTE = 30 -- sous le prénom
 local HAUTEUR_ETOILES = 28
 
 function Dialogue.nouveau(parent, UiKit)
 	local C = UiKit.COULEURS
-	local self = setmetatable({ UiKit = UiKit, montre = true, parole = nil, referme = false }, Dialogue)
+	local self = setmetatable({ UiKit = UiKit, montre = true, parole = nil, referme = false, parDessus = true, paroles = 0 }, Dialogue)
 	-- Un bouton sans texte, pas un cadre : dans Roblox, un cadre laisse passer l'appui aux boutons dessous
 	self.cadre = UiKit.arrondir(UiKit.creer("TextButton", {
 		Name = "Dialogue",
@@ -46,6 +48,14 @@ end
 -- La cliente dit ce texte (nil : plus rien à dire) ; etoiles : son avis (1 à 5), ou nil
 function Dialogue:dire(nom, texte, etoiles)
 	self.parole, self.referme = texte, false
+	self.paroles += 1
+	local numero = self.paroles
+	task.delay(Dialogue.DUREE_PAR_DESSUS, function()
+		if self.paroles == numero and self.parDessus then
+			self.referme = true -- par-dessus la fenêtre : lu, il s'efface
+			self:maj()
+		end
+	end)
 	if texte then
 		local hauteurTexte = self.UiKit.lignes(texte, Dialogue.LARGEUR - 2 * MARGE, Dialogue.TAILLE_TEXTE) * (Dialogue.TAILLE_TEXTE + 4)
 		self.nom.Text = nom or ""
@@ -70,6 +80,18 @@ end
 -- Même échelle que la fenêtre (petits écrans)
 function Dialogue:echelle(e)
 	self.mise.Scale = e
+	if self.bord then
+		self:caler(self.bord, self.haut)
+	end
+end
+
+-- La fenêtre a son bord gauche en x = bord et son haut en y = haut (pixels de l'écran) : l'encadré se met à sa
+-- gauche s'il y tient, sinon en haut à gauche de l'écran (par-dessus la fenêtre)
+function Dialogue:caler(bord, haut)
+	self.bord, self.haut = bord, haut
+	local largeur = Dialogue.LARGEUR * self.mise.Scale
+	self.parDessus = bord - 2 * 16 < largeur
+	self.cadre.Position = if self.parDessus then UDim2.fromOffset(16, 10) else UDim2.fromOffset(bord - 16 - largeur, haut)
 end
 
 function Dialogue:maj()

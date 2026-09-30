@@ -144,6 +144,55 @@ U.verifier(U.commander(etat, Random.new(8)).ok, "commande suivante prête")
 scene:synchroniser(etat, nil)
 U.verifier(compterClientes() == 1, "la cliente suivante entre normalement")
 
+-- Sous-projet 5 : l'encadré de dialogue (scene.surParole), cliente par cliente, même sans avatar
+do
+	local paroles = {}
+	scene.surParole = function(nom, texte, etoiles)
+		table.insert(paroles, { nom = nom, texte = texte, etoiles = etoiles })
+	end
+	local function derniere()
+		return paroles[#paroles] or {}
+	end
+	local function prenom()
+		return Clientes.get(etat.commande.cliente).nom:match("^(%S+)")
+	end
+	U.verifier(renoncer(), "elle renonce")
+	M.avancer(Scene.DUREE_ADIEU + 0.5)
+	U.verifier(#paroles > 0 and derniere().texte == nil, "partie : l'encadré se vide")
+	-- Une synchronisation pendant la construction de son avatar : sa parole porte déjà son prénom
+	U.commander(etat, Random.new(9))
+	local pendant
+	M.pendantAvatar = function()
+		scene:synchroniser(etat, nil)
+		pendant = derniere()
+	end
+	scene:synchroniser(etat, nil)
+	U.verifier(pendant ~= nil and pendant.nom == prenom(), "pendant la construction de son avatar, sa parole porte déjà son prénom (" .. tostring(pendant and pendant.nom) .. ")")
+	U.verifier(renoncer(), "elle renonce")
+	M.avancer(Scene.DUREE_ADIEU + 0.5)
+	-- Avatar impossible (panne de Roblox) : elle parle quand même dans l'encadré, dit adieu, et l'encadré se vide
+	M.echecAvatar = true
+	U.commander(etat, Random.new(10))
+	etat.commande.cliente, etat.etape = "helene", "carnet"
+	etat.clientes.helene = nil
+	scene:synchroniser(etat, nil)
+	U.verifier(scene.cliente == nil and derniere().nom == "Hélène" and derniere().texte == Scene.PAROLES.carnet, "sans avatar : elle parle dans l'encadré, à son prénom")
+	-- Une autre commande la remplace aussitôt, d'une cliente sans avatar elle non plus, qui dit la même phrase :
+	-- l'encadré prend son prénom
+	local suivante = table.clone(etat.commande)
+	suivante.numero, suivante.cliente = (suivante.numero or 0) + 1000, "ines"
+	etat.commande, etat.clientes.ines = suivante, nil
+	scene:synchroniser(etat, nil)
+	U.verifier(derniere().nom == "Inès" and derniere().texte == Scene.PAROLES.carnet, "une autre cliente, la même phrase : son prénom à elle (" .. tostring(derniere().nom) .. ")")
+	U.verifier(renoncer() and derniere().texte == Scene.PAROLES.abandon, "sans avatar : son adieu")
+	M.avancer(Scene.DUREE_ADIEU + 0.5)
+	U.verifier(derniere().texte == nil, "sans avatar : l'encadré se vide quand elle part")
+	M.echecAvatar = false
+	scene.surParole = nil
+	U.verifier(U.commander(etat, Random.new(12)).ok, "commande suivante prête")
+	scene:synchroniser(etat, nil)
+end
+
 -- La vue qui tourne autour du mannequin (décorations) passe près d'elle : elle s'efface pour ne pas
 -- boucher la vue (comme l'avatar du joueur quand la caméra s'en approche)
 local function effacee()

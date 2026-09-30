@@ -170,8 +170,11 @@ function Scene:suivreCliente(etat, derniere)
 	-- (mesures prises…), et la cliente ne doit pas être reconstruite pour autant
 	local cle = commande and (commande.numero or commande)
 	if commande and self.clienteCommande ~= cle then
-		-- Notée avant la construction, qui attend Roblox : une synchronisation pendant ce temps ne la refait pas
+		-- Notée avant la construction, qui attend Roblox : une synchronisation pendant ce temps ne la refait pas, et
+		-- sa parole porte déjà son prénom
 		self.clienteCommande = cle
+		self.clienteId = commande.cliente
+		self.clienteHistoire = commande.histoire
 		if self.cliente then
 			self.cliente:Destroy()
 			self.cliente = nil
@@ -189,12 +192,12 @@ function Scene:suivreCliente(etat, derniere)
 			return
 		end
 		self.cliente = modele
-		self.clienteId = commande.cliente
-		self.clienteHistoire = commande.histoire
 	end
 	if commande then
 		self:parler(self.cliente, replique(etat), if etat.etape == "refus" then Progression.etoiles(false, 0) else nil)
-	elseif self.cliente then
+	elseif self.clienteCommande then
+		-- La commande vient de finir : elle remercie ou regrette, puis s'en va (sans avatar, faute de Roblox, elle
+		-- le dit quand même dans l'encadré)
 		local reussie = derniere and derniere.action == "livrer" and derniere.reponse.reussie
 		local fiche = self.clienteId and Clientes.get(self.clienteId)
 		local histoire = self.clienteHistoire and Histoire.commande(self.clienteHistoire)
@@ -203,13 +206,17 @@ function Scene:suivreCliente(etat, derniere)
 		self:parler(self.cliente, reussie and merci or Scene.PAROLES.abandon, avis)
 		local partante = self.cliente
 		self.partante, self.cliente, self.clienteCommande = partante, nil, nil
+		self.adieux = (self.adieux or 0) + 1
+		local adieu = self.adieux
 		task.delay(Scene.DUREE_ADIEU, function()
-			partante:Destroy()
+			if partante then
+				partante:Destroy()
+			end
 			if self.partante == partante then
 				self.partante = nil
-				if not self.cliente then
-					self:taire() -- elle est partie : l'encadré se vide (sauf si la suivante parle déjà)
-				end
+			end
+			if self.adieux == adieu and not self.clienteCommande then
+				self:taire() -- elle est partie : l'encadré se vide (sauf si la suivante parle déjà)
 			end
 		end)
 	else
@@ -219,12 +226,13 @@ end
 
 -- Ce que dit la cliente (modele) : sa bulle, pour la rue (cachée tant que la fenêtre de l'atelier est ouverte), et
 -- l'encadré de dialogue de l'interface, surParole(prénom, texte, étoiles ou nil), prévenu quand elle dit autre chose
--- (la scène se synchronise à chaque réponse du serveur : un encadré refermé ne se rouvre pas pour la même parole)
+-- (la scène se synchronise à chaque réponse du serveur : un encadré refermé ne se rouvre pas pour la même parole de
+-- la même commande ; la commande, pas l'avatar, qui peut manquer)
 function Scene:parler(modele, texte, etoiles)
 	Cliente.dire(modele, texte)
 	self:majBulle(modele)
-	if texte ~= self.paroleDite or modele ~= self.parleuse then
-		self.paroleDite, self.parleuse = texte, modele
+	if texte ~= self.paroleDite or self.clienteCommande ~= self.parleuse then
+		self.paroleDite, self.parleuse = texte, self.clienteCommande
 		local fiche = self.clienteId and Clientes.get(self.clienteId)
 		if self.surParole then
 			self.surParole(if fiche then fiche.nom:match("^(%S+)") else "La cliente", texte, etoiles)
