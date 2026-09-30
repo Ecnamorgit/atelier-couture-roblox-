@@ -57,4 +57,53 @@ function Progression.gainCadeau(score)
 	return if score >= 80 then 4 elseif score >= 60 then 3 elseif score >= 30 then 2 else 1
 end
 
+-- Sous-projet 5 : l'avis de la cliente en étoiles, les titres de la réputation, le rang de la couturière. Aucune
+-- règle n'en dépend : c'est ce que la livraison disait déjà, montré comme dans les jeux de couture.
+-- Étoiles (1 à 5) : robe refusée, une ; acceptée, deux, et une de plus à chaque palier de qualité (80 % est aussi
+-- le palier du point d'amitié de plus)
+Progression.PALIERS_ETOILES = { 0.6, Progression.QUALITE_BONUS, 0.9 }
+function Progression.etoiles(reussie, qualite)
+	if not reussie then
+		return 1
+	end
+	local n = 2
+	for _, palier in ipairs(Progression.PALIERS_ETOILES) do
+		if qualite >= palier - 1e-9 then -- (à l'arrondi près)
+			n += 1
+		end
+	end
+	return n
+end
+
+-- Titres de la réputation, un par niveau de prestige (1 à 8)
+Progression.TITRES_REPUTATION = { "Inconnue", "Remarquée", "Appréciée", "Renommée", "Réputée", "Célèbre", "Illustre", "Légendaire" }
+function Progression.titreReputation(niveauPrestige)
+	return Progression.TITRES_REPUTATION[math.clamp(niveauPrestige, 1, #Progression.TITRES_REPUTATION)]
+end
+
+-- Rang de la couturière selon ses robes livrées ou vendues : le rang atteint, et le suivant (nil au plus haut)
+Progression.RANGS = {
+	{ robes = 0, nom = "Débutante" },
+	{ robes = 5, nom = "Apprentie" },
+	{ robes = 15, nom = "Couturière" },
+	{ robes = 30, nom = "Première main" },
+	{ robes = 60, nom = "Maîtresse couturière" },
+}
+function Progression.rang(robes)
+	local atteint, suivant = Progression.RANGS[1], Progression.RANGS[2]
+	for i, r in ipairs(Progression.RANGS) do
+		if robes >= r.robes then
+			atteint, suivant = r, Progression.RANGS[i + 1]
+		end
+	end
+	return atteint, suivant
+end
+
+-- « Apprentie — 7 robes (Couturière à 15) » ; au plus haut, sans le rang suivant
+function Progression.texteRang(robes)
+	local rang, suivant = Progression.rang(robes)
+	local texte = ("%s — %d robe%s"):format(rang.nom, robes, if robes > 1 then "s" else "")
+	return if suivant then ("%s (%s à %d)"):format(texte, suivant.nom, suivant.robes) else texte
+end
+
 return Progression

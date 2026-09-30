@@ -12,6 +12,8 @@ local Session = require(script:WaitForChild("Session"))
 local Scene = require(script:WaitForChild("Scene"))
 local Vignettes = require(script:WaitForChild("Vignettes"))
 local Sons = require(script:WaitForChild("Sons"))
+local Dialogue = require(script:WaitForChild("Dialogue"))
+local Confettis = require(script:WaitForChild("Confettis"))
 
 local ECRANS = {
 	accueil = require(script:WaitForChild("EcranAccueil")),
@@ -75,13 +77,30 @@ local fenetre = UiKit.arrondir(UiKit.creer("Frame", {
 	BackgroundColor3 = C.fond,
 	Parent = gui,
 }), 14)
+-- Ce que dit la cliente, fenêtre ouverte : l'encadré de dialogue, en haut à gauche (sa bulle est pour la rue)
+local dialogue = Dialogue.nouveau(gui, UiKit)
+scene.surParole = function(nom, texte, etoiles)
+	dialogue:dire(nom, texte, etoiles)
+end
 
 -- Mise à l'échelle sur les petits écrans (suit la caméra et la taille de la fenêtre du jeu)
 local echelle = UiKit.creer("UIScale", { Parent = fenetre })
 local connexionCamera
+local enPanneau = false
+-- L'encadré de dialogue se cale à gauche de la fenêtre (au centre, ou en panneau à droite)
+local function calerDialogue()
+	local camera = workspace.CurrentCamera
+	local ecran = camera and camera.ViewportSize or Vector2.new(1280, 720)
+	local e = echelle.Scale
+	local largeur = (if enPanneau then UiKit.LARGEUR_PANNEAU else UiKit.LARGEUR) * e
+	local bord = if enPanneau then ecran.X - 16 - largeur else (ecran.X - largeur) / 2
+	dialogue:caler(bord, math.max(10, (ecran.Y - UiKit.HAUTEUR * e) / 2))
+end
 local function ajuster()
 	local camera = workspace.CurrentCamera
 	echelle.Scale = UiKit.echelle(camera and camera.ViewportSize or Vector2.new(1280, 720))
+	dialogue:echelle(echelle.Scale)
+	calerDialogue()
 end
 local function suivreCamera()
 	if connexionCamera then
@@ -196,6 +215,7 @@ local boutonAtelier = UiKit.bouton({
 end)
 fenetre:GetPropertyChangedSignal("Visible"):Connect(function()
 	boutonAtelier.Visible = not fenetre.Visible
+	dialogue:montrer(fenetre.Visible)
 	scene:ouvrir(fenetre.Visible, session.etat)
 end)
 
@@ -206,7 +226,11 @@ UiKit.surClic = function()
 end
 local SONS_ACTIONS = { nouvelleCommande = "clochette", acheter = "achat", couper = "couper", epingler = "epingler", abandonner = "echec", vendre = "achat", offrir = "reussite", inviter = "clochette", commandeHistoire = "clochette" }
 session:surAction(function(nom, reponse)
-	if nom == "livrer" then
+	if nom == "rendreCouture" and session.etat.etape == "decorations" then
+		-- La dernière pièce cousue : la robe est terminée, une pluie de confettis et un petit son de fête
+		Confettis.lancer(gui)
+		Sons.jouer("fete")
+	elseif nom == "livrer" then
 		Sons.jouer(if reponse.reussie then "reussite" else "echec")
 	elseif SONS_ACTIONS[nom] then
 		Sons.jouer(SONS_ACTIONS[nom])
@@ -226,8 +250,10 @@ end)
 Sons.boucle("musique", true)
 
 -- Fenêtre au centre, ou panneau à droite (titre et argent sur deux lignes)
-local function disposer(enPanneau)
-	if enPanneau then
+local function disposer(panneau)
+	enPanneau = panneau
+	calerDialogue()
+	if panneau then
 		fenetre.AnchorPoint = Vector2.new(1, 0.5)
 		fenetre.Position = UDim2.new(1, -16, 0.5, 0)
 		fenetre.Size = UDim2.fromOffset(UiKit.LARGEUR_PANNEAU, UiKit.HAUTEUR)

@@ -207,8 +207,21 @@ verifierTailles("mesures")
 local clienteMesuree = M.services.Workspace.AtelierLocal:FindFirstChild("Cliente")
 verifier(clienteMesuree ~= nil and clienteMesuree.Head.Nom.Texte.Text == "Colette Marchand", "Colette en personne, son nom au-dessus de la tête")
 verifier(clienteMesuree.Head.Bulle.Texte.Text == Clientes.get("colette").repliques.presentation, "elle se présente")
+do -- Sous-projet 5 : fenêtre ouverte, elle parle dans l'encadré de dialogue, à son nom ; sa bulle est pour la rue
+	local dialogue = gui.Atelier:FindFirstChild("Dialogue")
+	verifier(dialogue ~= nil and dialogue.Visible and dialogue.Nom.Text == "Colette" and dialogue.Texte.Text == Clientes.get("colette").repliques.presentation and not clienteMesuree.Head.Bulle.Enabled, "fenêtre ouverte : elle se présente dans l'encadré, à son nom, pas dans sa bulle")
+	cliquer("Fermer")
+	verifier(not dialogue.Visible and clienteMesuree.Head.Bulle.Enabled, "fenêtre fermée : sa bulle, pas d'encadré")
+	cliquer("OuvrirAtelier")
+	verifier(dialogue.Visible and not clienteMesuree.Head.Bulle.Enabled, "fenêtre rouverte : de nouveau l'encadré")
+	dialogue.Activated:Fire()
+	verifier(not dialogue.Visible, "un appui referme l'encadré")
+end
+serveur:atelier(joueur).etat.argent += 1 -- (la réponse au refus emporte un état changé : la scène se resynchronise)
 cliquer("ValiderMesures")
+serveur:atelier(joueur).etat.argent -= 1
 verifier(titre() == "Les mesures" and fenetre.Message.Visible and fenetre.Message.Text == "Mesure invalide : règle chaque ruban au bord de la silhouette.", "rubans pas réglés : mesures refusées, message")
+verifier(not gui.Atelier.Dialogue.Visible, "la même parole, après une réponse du serveur : l'encadré reste refermé")
 -- Au doigt : on glisse la poignée du ruban de la poitrine jusqu'au bord de la silhouette ; un second doigt ne
 -- tire pas le ruban, et le doigt levé ne le tire plus
 local silhouetteM = fenetre.Contenu.Silhouette
@@ -373,6 +386,7 @@ verifierTailles("carnet")
 verifier(texte("Colette (taille M) veut") ~= nil, "le carnet dit qui commande, et sa taille")
 verifier(M.services.Workspace.AtelierLocal:FindFirstChild("Cliente") == clienteMesuree and clienteMesuree.Parent ~= nil, "mesures validées : la même cliente reste là (pas reconstruite)")
 verifier(clienteMesuree.Head.Bulle.Texte.Text == requireModule(scriptClient.Scene).PAROLES.carnet, "première visite, au carnet : elle explique ce qu'elle veut (pas « Me revoilà ! »)")
+verifier(gui.Atelier.Dialogue.Texte.Text == requireModule(scriptClient.Scene).PAROLES.carnet and not gui.Atelier.Dialogue.Visible, "la nouvelle parole est passée dans l'encadré ; par-dessus la fenêtre centrée, lue, elle s'est effacée")
 verifier(texte("Exigence1") ~= nil and texte("Exigence1").Text ~= "", "les exigences sont affichées")
 local ligneMetrage = fenetre.Contenu.Droite:FindFirstChild("Metrage")
 verifier(ligneMetrage ~= nil and string.find(ligneMetrage.Text, "Choisis les tissus", 1, true) == 1, "sans tissu : le métrage attend les tissus, dans la colonne de droite")
@@ -796,6 +810,7 @@ for k = 3, 6 do
 	coudre(30)
 	verifier(boutonNomme("PieceSuivante").Text == (k == 6 and "Finir la couture" or "Pièce suivante"), "bouton de fin de pièce " .. k)
 	cliquer("PieceSuivante")
+	verifier(k == 6 or gui.Atelier:FindFirstChild("Confettis") == nil, "pièce " .. k .. " cousue, la robe pas finie : pas encore de confettis")
 end
 
 ---------------------------------------------------------------------------
@@ -804,6 +819,16 @@ end
 verifier(ratee ~= nil and ratee < 20, "la couture ratée est mal notée : " .. tostring(ratee))
 verifier(titre() == "6. Décorations", "robe cousue : les décorations")
 verifier(fenetre.AnchorPoint.X == 1 and #robe:GetChildren() == 8, "panneau à droite, la robe cousue sur le mannequin")
+do -- Sous-projet 5 : la robe terminée, une pluie de confettis par-dessus la fenêtre et un petit son de fête
+	local confettis = gui.Atelier:FindFirstChild("Confettis")
+	verifier(confettis ~= nil and #confettis:GetChildren() >= 40 and confettis.ZIndex > gui.Atelier.Dialogue.ZIndex and table.find(M.sonsJoues, "Atelier_fete") ~= nil, "robe terminée : des confettis, un son de fête")
+	local premier = confettis:GetChildren()[1]
+	local hauteurAvant = premier.Position.Y.Scale
+	M.avancer(0.5)
+	verifier(premier.Position.Y.Scale > hauteurAvant + 0.1, "les confettis tombent")
+	M.avancer(3)
+	verifier(gui.Atelier:FindFirstChild("Confettis") == nil, "puis ils disparaissent")
+end
 verifierTailles("décorations")
 local SessionModule = requireModule(scriptClient.Session)
 local ScenePoste = requireModule(scriptClient.Scene)
@@ -963,7 +988,7 @@ M.surCapture = nil
 verifier(pendant ~= nil and pendant.interface == false and pendant.vue == origineBoutique * ScenePoste.CAMERA_PHOTO and pendant.bulle == false, "photo prise sans l'interface ni la bulle, vue centrée sur la robe")
 verifier(table.find(M.sonsJoues, "Atelier_photo") ~= nil and M.sonsJoues[#M.sonsJoues] == "Atelier_photo", "déclic de l'appareil photo")
 verifier(pendant.champ == ScenePoste.CHAMP_PHOTO and ScenePoste.CHAMP_PHOTO < 70, "champ resserré sur la robe pendant la prise")
-verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA and laCliente.Head.Bulle.Enabled and camera.FieldOfView == 70, "après la photo : interface, vue, champ et bulle rétablis")
+verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA and not laCliente.Head.Bulle.Enabled and camera.FieldOfView == 70, "après la photo : interface, vue et champ rétablis ; la bulle reste cachée (fenêtre ouverte : l'encadré parle)")
 local apercu = fenetre.Contenu:FindFirstChild("Apercu")
 verifier(apercu ~= nil and apercu.Visible and apercu.Image.Image == "rbxtemp://capture/" .. M.captures, "aperçu de la photo")
 -- Dans Roblox, un simple cadre (même Active) laisse passer l'appui aux boutons cachés dessous (Livrer…) ;
@@ -1008,6 +1033,17 @@ livrer.Activated:Fire() -- second appui d'un double clic (moins de 0,4 s) : igno
 verifier(titre() == "7. Photo et livraison", "un double clic trop rapide ne livre pas")
 cliquer("Livrer")
 verifier(titre() == "La cliente refuse la robe" and texte("Avec : Croix d'argent") ~= nil, "sans la croix d'argent : robe refusée, exigence ratée affichée")
+do -- Son avis : une étoile
+	local etoiles = gui.Atelier.Dialogue.Etoiles
+	local OR = requireModule(scriptClient.Dialogue).OR
+	verifier(gui.Atelier.Dialogue.Visible and gui.Atelier.Dialogue.Texte.Text == Clientes.get("colette").repliques.deception and etoiles.Visible and etoiles.Etoile1.TextColor3 == OR and etoiles.Etoile2.TextColor3 ~= OR, "robe refusée : sa déception dans l'encadré, une étoile")
+	do -- (la fenêtre en panneau commence à 16 px du bord droit de l'écran)
+		local e = fenetre.UIScale.Scale
+		local bordFenetre = workspace.CurrentCamera.ViewportSize.X - 16 - requireModule(scriptClient.UiKit).LARGEUR_PANNEAU * e
+		local dialogue = gui.Atelier.Dialogue
+		verifier(dialogue.Position.X.Offset >= 16 and dialogue.Position.X.Offset + requireModule(scriptClient.Dialogue).LARGEUR * e <= bordFenetre - 16 + 1e-6, "fenêtre en panneau à droite : l'encadré à sa gauche, sur la scène")
+	end
+end
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_echec", "robe refusée : un son déçu")
 verifierTailles("refus")
 cliquer("Retoucher")
@@ -1032,10 +1068,15 @@ cliquer("Livrer")
 verifier(titre() == "Aiguille & Dentelle" and argent() > avantLivraison, "robe acceptée : payée")
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_reussite", "robe acceptée : une petite fanfare")
 verifier(texte("Colette est ravie") ~= nil, "l'accueil annonce la paie")
+do -- Sous-projet 5 : son avis en étoiles, dans l'annonce
+	local qualite = requireModule(scriptClient.Session).courante.derniere.reponse.bilan.qualite
+	local n = requireModule(dossier.Progression).etoiles(true, qualite)
+	verifier(texte("Colette est ravie ! " .. string.rep("★", n) .. string.rep("☆", 5 - n) .. " +") ~= nil, "l'annonce donne son avis : " .. n .. " étoiles sur 5")
+end
 verifier(texte("Amitié de Colette : +") ~= nil and texte("Prestige : +") ~= nil, "l'accueil annonce l'amitié et le prestige gagnés")
 verifier(texte("Acompte de ") ~= nil and texte("(niveau 3 !)") ~= nil and texte("Nouveau : les satins (4), Dentelle noire.") ~= nil, "l'accueil rappelle l'acompte, le niveau de prestige atteint et ce qui vient de s'ouvrir")
 local prestigeJoueur = serveur:atelier(joueur).etat.prestige
-verifier(fenetre.Contenu.Prestige.Text == ("Prestige 3 — %d / 100"):format(prestigeJoueur), "jauge de prestige : « Prestige 3 — " .. prestigeJoueur .. " / 100 »")
+verifier(fenetre.Contenu.Prestige.Text == ("Réputation : Appréciée (prestige 3) — %d / 100"):format(prestigeJoueur), "jauge de prestige : « Réputation : Appréciée (prestige 3) — " .. prestigeJoueur .. " / 100 »")
 verifier(math.abs(fenetre.Contenu.JaugePrestige.Rempli.Size.X.Scale - (prestigeJoueur - 50) / 50) < 1e-6, "la jauge se remplit vers le niveau suivant")
 verifierTailles("accueil")
 serveur:atelier(joueur).etat.prestige = 530 -- (tout reste ouvert pour la suite)
@@ -1047,6 +1088,10 @@ verifier(scene:FindFirstChild("Lettre") ~= nil, "une lettre dépasse de la boît
 -- Le carnet d'adresses : les clientes déjà venues, leur amitié, ce que le prochain niveau ouvrira
 cliquer("OuvrirCarnetAdresses")
 verifier(texte("Colette Marchand — amitié niveau 5") ~= nil and fenetre.Contenu.CarnetAdresses:FindFirstChild("Adresse_margot") == nil, "carnet d'adresses : Colette, pas encore Margot")
+do -- Le rang de la couturière, en tête du carnet d'adresses
+	local e = requireModule(scriptClient.Session).courante.etat
+	verifier(fenetre.Contenu.CarnetAdresses.TitreAdresses.Text == "Carnet d'adresses — " .. requireModule(dossier.Progression).texteRang(e.livraisons + e.ventes), "carnet d'adresses : le rang de la couturière (" .. fenetre.Contenu.CarnetAdresses.TitreAdresses.Text .. ")")
+end
 cliquer("FermerCarnetAdresses")
 verifier(not fenetre.Contenu.CarnetAdresses.Visible, "carnet d'adresses refermé")
 verifier(imageAvant ~= nil and Vignettes.piece(idVignette, tissuVignette, placeVignette, 256) ~= imageAvant, "commande finie : les images des pièces découpées sont oubliées (mémoire)")
@@ -1055,8 +1100,18 @@ verifier(maVitrine:FindFirstChild("Exposition") ~= nil, "le client construit la 
 verifier(maVitrine:GetAttribute("Recette") == requireModule(dossier.Recette).encoder(serveur:atelier(joueur).etat.robes[1]), "la robe livrée part dans la vitrine de la boutique, sur la rue")
 verifier(#robe:GetChildren() == 0 and #decorations:GetChildren() == 0 and camera.CameraType == Enum.CameraType.Custom, "atelier libéré, caméra rendue au joueur")
 verifier(laCliente.Parent ~= nil and laCliente.Head.Bulle.Texte.Text == Clientes.get("colette").repliques.merci, "Colette remercie")
+do -- Son avis en étoiles, dans l'encadré : celles de la qualité de la robe
+	local dialogue = gui.Atelier.Dialogue
+	local qualite = requireModule(scriptClient.Session).courante.derniere.reponse.bilan.qualite
+	local n = requireModule(dossier.Progression).etoiles(true, qualite)
+	local OR, dorees = requireModule(scriptClient.Dialogue).OR, 0
+	for k = 1, 5 do
+		dorees += if dialogue.Etoiles["Etoile" .. k].TextColor3 == OR then 1 else 0
+	end
+	verifier(dialogue.Visible and dialogue.Texte.Text == Clientes.get("colette").repliques.merci and dialogue.Etoiles.Visible and dorees == n and n >= 2, ("Colette remercie dans l'encadré, avec son avis : %d étoiles (qualité %d %%)"):format(dorees, math.floor(qualite * 100 + 0.5)))
+end
 M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
-verifier(laCliente.Parent == nil, "puis elle s'en va")
+verifier(laCliente.Parent == nil and not gui.Atelier.Dialogue.Visible, "puis elle s'en va, et l'encadré se vide")
 
 ---------------------------------------------------------------------------
 -- Robes libres (après deux commandes livrées) : une taille, pas de cliente ; à la photo, vendre ou offrir
@@ -1100,14 +1155,24 @@ robeLibreALaPhoto("coton_blanc")
 local prixLibre = serveur:atelier(joueur).etat:prixVente()
 verifier(fenetre.Contenu.PrixVente.Text == ("Prix de vente : %d po"):format(prixLibre) and boutonNomme("Vendre").Text == ("Vendre (%d po)"):format(prixLibre), "à la photo : le prix de vente, « Vendre (" .. prixLibre .. " po) »")
 verifier(fenetre.Contenu:FindFirstChild("Livrer") == nil, "une robe libre ne se livre pas")
+do -- À la vente : le rang de la couturière
+	local e = serveur:atelier(joueur).etat
+	verifier(fenetre.Contenu.Rang.Text == "Ton rang : " .. requireModule(dossier.Progression).texteRang(e.livraisons + e.ventes), "à la vente : le rang (" .. fenetre.Contenu.Rang.Text .. ")")
+	verifier(fenetre.Contenu.Rang.Size.Y.Offset >= 2 * 19 and fenetre.Contenu.Rang.TextYAlignment == Enum.TextYAlignment.Top, "le rang tient sur deux lignes sans déborder sur le prix")
+end
 cliquer("Offrir")
 verifier(boutonNomme("Offrir_colette") ~= nil and fenetre.Contenu.ChoixCliente:FindFirstChild("Offrir_ines") == nil, "offrir : seulement aux clientes déjà venues")
 cliquer("FermerChoixCliente")
 verifier(not fenetre.Contenu.ChoixCliente.Visible, "annuler : le choix se ferme")
 local avantVente = argent()
+-- (quatorze robes déjà livrées : celle-ci est la quinzième, la couturière change de rang)
+local livraisonsVraies = serveur:atelier(joueur).etat.livraisons
+serveur:atelier(joueur).etat.livraisons = 14
 cliquer("Vendre")
 cliquer("Vendre")
 verifier(titre() == "Aiguille & Dentelle" and argent() == avantVente + prixLibre and texte(("Robe vendue ! +%d pièces d'or"):format(prixLibre)) ~= nil, "robe vendue : le prix dans la caisse, annoncé")
+verifier(texte("Nouveau rang : Couturière !") ~= nil, "la quinzième robe : « Nouveau rang : Couturière ! »")
+serveur:atelier(joueur).etat.livraisons = livraisonsVraies
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_achat" and serveur:atelier(joueur).etat.ventes == 1, "vendue : la caisse sonne")
 M.avancer(1)
 verifier(maVitrine:GetAttribute("Recette") == requireModule(dossier.Recette).encoder(serveur:atelier(joueur).etat.robes[1]), "la robe vendue part en vitrine")

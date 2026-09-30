@@ -15,6 +15,7 @@ local ConstructeurRobe = require(Couture:WaitForChild("ConstructeurRobe"))
 local Boutique = require(Couture:WaitForChild("Boutique"))
 local Clientes = require(Couture:WaitForChild("Clientes"))
 local Histoire = require(Couture:WaitForChild("Histoire"))
+local Progression = require(Couture:WaitForChild("Progression"))
 local Lighting = game:GetService("Lighting")
 local Cliente = require(script.Parent:WaitForChild("Cliente"))
 
@@ -169,8 +170,11 @@ function Scene:suivreCliente(etat, derniere)
 	-- (mesures prises…), et la cliente ne doit pas être reconstruite pour autant
 	local cle = commande and (commande.numero or commande)
 	if commande and self.clienteCommande ~= cle then
-		-- Notée avant la construction, qui attend Roblox : une synchronisation pendant ce temps ne la refait pas
+		-- Notée avant la construction, qui attend Roblox : une synchronisation pendant ce temps ne la refait pas, et
+		-- sa parole porte déjà son prénom
 		self.clienteCommande = cle
+		self.clienteId = commande.cliente
+		self.clienteHistoire = commande.histoire
 		if self.cliente then
 			self.cliente:Destroy()
 			self.cliente = nil
@@ -188,27 +192,67 @@ function Scene:suivreCliente(etat, derniere)
 			return
 		end
 		self.cliente = modele
-		self.clienteId = commande.cliente
-		self.clienteHistoire = commande.histoire
 	end
 	if commande then
-		Cliente.dire(self.cliente, replique(etat))
-	elseif self.cliente then
+		self:parler(self.cliente, replique(etat), if etat.etape == "refus" then Progression.etoiles(false, 0) else nil)
+	elseif self.clienteCommande then
+		-- La commande vient de finir : elle remercie ou regrette, puis s'en va (sans avatar, faute de Roblox, elle
+		-- le dit quand même dans l'encadré)
 		local reussie = derniere and derniere.action == "livrer" and derniere.reponse.reussie
 		local fiche = self.clienteId and Clientes.get(self.clienteId)
 		local histoire = self.clienteHistoire and Histoire.commande(self.clienteHistoire)
 		local merci = histoire and histoire.repliques.merci or fiche and fiche.repliques.merci or Scene.PAROLES.merci
-		Cliente.dire(self.cliente, reussie and merci or Scene.PAROLES.abandon)
+		local avis = if reussie then Progression.etoiles(true, derniere.reponse.bilan.qualite) else nil
+		self:parler(self.cliente, reussie and merci or Scene.PAROLES.abandon, avis)
 		local partante = self.cliente
 		self.partante, self.cliente, self.clienteCommande = partante, nil, nil
+		self.adieux = (self.adieux or 0) + 1
+		local adieu = self.adieux
 		task.delay(Scene.DUREE_ADIEU, function()
-			partante:Destroy()
+			if partante then
+				partante:Destroy()
+			end
 			if self.partante == partante then
 				self.partante = nil
+			end
+			if self.adieux == adieu and not self.clienteCommande then
+				self:taire() -- elle est partie : l'encadré se vide (sauf si la suivante parle déjà)
 			end
 		end)
 	else
 		self.clienteCommande = nil -- pas de commande, personne (ou avatar encore en construction)
+	end
+end
+
+-- Ce que dit la cliente (modele) : sa bulle, pour la rue (cachée tant que la fenêtre de l'atelier est ouverte), et
+-- l'encadré de dialogue de l'interface, surParole(prénom, texte, étoiles ou nil), prévenu quand elle dit autre chose
+-- (la scène se synchronise à chaque réponse du serveur : un encadré refermé ne se rouvre pas pour la même parole de
+-- la même commande ; la commande, pas l'avatar, qui peut manquer)
+function Scene:parler(modele, texte, etoiles)
+	Cliente.dire(modele, texte)
+	self:majBulle(modele)
+	if texte ~= self.paroleDite or self.clienteCommande ~= self.parleuse then
+		self.paroleDite, self.parleuse = texte, self.clienteCommande
+		local fiche = self.clienteId and Clientes.get(self.clienteId)
+		if self.surParole then
+			self.surParole(if fiche then fiche.nom:match("^(%S+)") else "La cliente", texte, etoiles)
+		end
+	end
+end
+
+-- Plus personne ne parle : l'encadré se vide
+function Scene:taire()
+	self.paroleDite, self.parleuse = nil, nil
+	if self.surParole then
+		self.surParole(nil, nil)
+	end
+end
+
+-- La bulle ne se voit que fenêtre fermée (l'encadré parle sinon), et jamais sur la photo
+function Scene:majBulle(modele)
+	local bulle = modele and modele:FindFirstChild("Head") and modele.Head:FindFirstChild("Bulle")
+	if bulle then
+		bulle.Enabled = not self.ouverte and not self.enPhoto
 	end
 end
 
@@ -251,10 +295,8 @@ end
 -- Cadrage de la prise de vue (actif) : vue centrée sur la robe, bulle de la cliente cachée ;
 -- sinon retour à la vue du poste
 function Scene:cadrerPhoto(actif)
-	local bulle = self.cliente and self.cliente:FindFirstChild("Head") and self.cliente.Head:FindFirstChild("Bulle")
-	if bulle then
-		bulle.Enabled = not actif
-	end
+	self.enPhoto = actif
+	self:majBulle(self.cliente)
 	local camera = Workspace.CurrentCamera
 	if actif and camera then
 		self.champOrigine = self.champOrigine or camera.FieldOfView
@@ -481,6 +523,8 @@ end
 -- Fenêtre de l'atelier fermée : la caméra revient au joueur ; rouverte : elle repart au poste
 function Scene:ouvrir(ouverte, etat)
 	self.ouverte = ouverte
+	self:majBulle(self.cliente)
+	self:majBulle(self.partante)
 	self:regarder(ouverte and Scene.POSTES[etat.etape] == true)
 end
 

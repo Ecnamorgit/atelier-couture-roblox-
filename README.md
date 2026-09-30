@@ -12,7 +12,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 `docs/superpowers/specs/2026-09-30-fidelite-dressmaker-design.md` pour la fidélité à la présentation de
 *Dressmaker* ; plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 5 en cours, plan 11 : le carnet de croquis dessiné)
+## État actuel (sous-projet 5 en cours, plans 11 et 12 : le carnet dessiné ; paroles, avis et réputation)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -25,7 +25,9 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    reviennent : Colette, Margot et Salomé aux trois premières commandes ; Hélène, Inès et Victoire quand le
    prestige de l'atelier atteint 2, 3 puis 4 ; Apolline, Joséphine, Capucine et Maëlle aux prestiges 5 à 8 ;
    ensuite, celle qu'on n'a pas vue depuis le plus longtemps. Chacune
-   parle par une bulle, avec ses propres mots (présentation, arrivée, merci, déception). En passant commande,
+   parle avec ses propres mots (présentation, arrivée, merci, déception) : fenêtre de l'atelier ouverte, dans un
+   encadré à son prénom, en haut à gauche de l'écran (un appui le referme jusqu'à sa prochaine parole) ;
+   fenêtre fermée, dans une bulle au-dessus de sa tête. En passant commande,
    elle verse un **acompte** (un quart de la base d'une robe simple), déduit de la paie ; gardé si on abandonne.
    **Mesures** : à sa première visite, on la mesure. Sa silhouette est dessinée à ses vraies mesures ; on règle
    trois rubans (poitrine, taille, hanches) jusqu'au bord de la silhouette, en glissant ou avec − et + (0,1 dm
@@ -53,7 +55,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    dans le tissu exactement tel qu'il a été découpé.
 6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé
    pendant que le tissu tire ; vitesse tortue, normale ou lapin, découd-vite, assistance (note plafonnée à 85 %).
-   Une pièce finie n'est rendue qu'avec « Pièce suivante » : la dernière couture se défait encore.
+   Une pièce finie n'est rendue qu'avec « Pièce suivante » : la dernière couture se défait encore. La dernière
+   pièce cousue, la robe est terminée : une pluie de confettis et un petit son de fête.
 7. **Décorations** : 30 objets (boutons, nœuds, papillon, fleurs, broches, perles, étoile, croix, couronne,
    violette, boucle, coquillage, et les douze souvenirs du quartier une fois leur événement passé) et 9 garnitures
    (dentelles, rubans, galons). On touche la robe pour poser, on tourne (Q/E), agrandit, supprime, annule ; une garniture
@@ -64,10 +67,16 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    la robe (styles, qualité, couleur dominante, accessoires). Acceptée : paie = base × (0,5 + qualité), et la
    robe part en vitrine ; la cliente remercie et s'en va. Refusée : les exigences ratées s'affichent (avec le
    score actuel pour les styles) ; on retouche les décorations ou on abandonne.
+   **Avis en étoiles** : refusée, une étoile ; acceptée, deux, plus une à 60, 80 et 90 % de qualité (dans
+   l'encadré de la cliente et l'annonce de l'accueil) ; rien n'en dépend.
    **Amitié et prestige** : une robe acceptée vaut +2 d'amitié avec la cliente (+1 de plus à 80 % de qualité),
    un abandon −1 ; niveaux 0 à 5 (seuils 3, 7, 12, 18, 25). Elle rapporte aussi du prestige à l'atelier
-   (paie / 10) ; niveaux 1 à 8. L'accueil annonce ce qui a été gagné, et montre la jauge de prestige
-   (« Prestige 3 — 62 / 100 »). Un abandon ne fait jamais perdre un niveau d'amitié.
+   (paie / 10) ; niveaux 1 à 8. L'accueil annonce ce qui a été gagné, et montre la jauge de prestige avec le
+   titre de la réputation (« Réputation : Appréciée (prestige 3) — 62 / 100 » ; Inconnue, Remarquée, Appréciée,
+   Renommée, Réputée, Célèbre, Illustre, Légendaire). Un abandon ne fait jamais perdre un niveau d'amitié.
+   **Rang** de la couturière, selon les robes livrées ou vendues : Débutante, Apprentie (5), Couturière (15),
+   Première main (30), Maîtresse couturière (60) ; en tête du carnet d'adresses et à la vente, annoncé quand il
+   monte (« Nouveau rang : Couturière ! »).
    **Déblocages** : au départ, cotons, lins et toile de jute, huit variantes et six accessoires. Le prestige ouvre les laines (2),
    les satins (3), les velours (4), les soies (5), le crêpe et l'organza (6), le brocart (7) et le tulle (8) ; le
    ruban noir (2), la dentelle noire (3) et deux décorations par niveau du 5 au 8 ; les manches courtes (6) et la
@@ -101,9 +110,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    avec une tenue imposée. Toutes les robes livrées, l'événement a lieu : son épilogue, un souvenir (une des douze
    décorations nouvelles) et 15 de prestige ; le carnet d'adresses garde les souvenirs. Les commandes ordinaires
    continuent à côté.
-10. La suite : la fin du sous-projet 5 (paroles des clientes dans un encadré, avis en étoiles, réputation,
-   confettis, gazette du quartier, affiche des nouveautés, chat de l'atelier) ; porter la robe sur son avatar et
-   les défilés entre joueurs restent à décider.
+10. La suite : la fin du sous-projet 5 (gazette du quartier, affiche des nouveautés, chat de l'atelier) ;
+   porter la robe sur son avatar et les défilés entre joueurs restent à décider.
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
@@ -117,7 +125,8 @@ client. Si la partie n'est pas encore arrivée au bout d'une minute, le joueur e
 
 **Sons** : une musique d'ambiance, un petit clic à chaque bouton, la clochette, la caisse, les ciseaux, la
 machine à coudre (tant qu'on coud, au rythme de la vitesse), le tissu qu'on découd, les décorations, le
-déclic de la photo et la réaction de la cliente. Tout vient de la bibliothèque libre de Roblox (sons de
+déclic de la photo, la fête de la robe terminée et la réaction de la cliente. Tout vient de la bibliothèque
+libre de Roblox (sons de
 l'interface de Roblox, Pro Sound Effects, APM Music) ; le bouton « Son », dans la barre de titre de la
 fenêtre, coupe tout.
 
@@ -149,7 +158,7 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Catalogue` | Pièces, variantes, tissus, accessoires, constantes |
   | `Coupon`, `Metrage` | Rouleau de découpe (pli, chevauchements) et métrage conseillé |
   | `Notation`, `Commandes` | Droit-fil, couture, qualité, styles, exigences, paie, ajustement aux mesures ; commandes réalisables, d'après les goûts de la cliente |
-  | `Clientes`, `Progression` | Les dix clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux |
+  | `Clientes`, `Progression` | Les dix clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux ; avis en étoiles, titres de la réputation, rang de la couturière |
   | `Deblocages` | Ce qui est fermé au départ et ce qui l'ouvre (prestige, amitié, événement) ; ce qu'une livraison vient d'ouvrir ; ce que l'amitié d'une cliente ouvrira ensuite |
   | `Histoire` | Les douze événements du quartier : leurs robes, tenues, répliques, épilogues et souvenirs ; l'événement en cours et sa prochaine robe |
   | `Croquis`, `Pixels` | Dessin de face de chaque modèle (formes des parties, plis, mannequin) ; motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron, croquis colorié du carnet |
@@ -179,7 +188,8 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   renvoie, acceptée ou refusée ; elle signale l'attente à l'interface et redemande l'état après une réponse
   perdue. `TableDecoupe` et `MachineCoudre` sont la logique pure de la table
   de découpe, de la machine à coudre et de l'éditeur de décorations (`Decorateur`) ; `Cliente` construit
-  l'avatar de la cliente et sa bulle ; `Scene` tient, dans la boutique du joueur, la cliente, le mannequin,
+  l'avatar de la cliente et sa bulle ; `Dialogue`, l'encadré où elle parle fenêtre ouverte ; `Confettis`, la
+  pluie de la robe terminée ; `Scene` tient, dans la boutique du joueur, la cliente, le mannequin,
   la robe épinglée, l'aperçu des décorations, les réglages de la photo et la caméra du poste ; `Sons` joue
   les bruits et la musique ; un module `Ecran…` par étape (`EcranMesures` : la silhouette et les rubans).
 
