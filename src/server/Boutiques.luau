@@ -162,12 +162,21 @@ local function construire(indice, joueur, parent)
 	local ROUX, ROUX_FONCE = rgb(222, 132, 62), rgb(186, 96, 40)
 	bloc(chat, repere, "Coussin", Vector3.new(0, 0.2, 0), Vector3.new(2.4, 0.4, 2.4), rgb(176, 64, 96), { decor = true })
 	local corps = bloc(chat, repere, "Corps", Vector3.new(0, 0.95, 0.15), Vector3.new(1.5, 1.5, 1.5), ROUX, { forme = Enum.PartType.Ball, decor = true })
+	bloc(chat, repere, "Arriere", Vector3.new(0.25, 0.75, 0.55), Vector3.new(1.2, 1.2, 1.2), ROUX, { forme = Enum.PartType.Ball, decor = true })
 	bloc(chat, repere, "Tete", Vector3.new(-0.1, 0.9, -0.75), Vector3.new(0.95, 0.95, 0.95), ROUX, { forme = Enum.PartType.Ball, decor = true })
 	for k, x in ipairs({ -0.35, 0.15 }) do
-		bloc(chat, repere, "Oreille" .. k, Vector3.new(x, 1.42, -0.75), Vector3.new(0.12, 0.32, 0.28), ROUX_FONCE, { forme = Enum.PartType.Wedge, decor = true })
+		-- un coin tourné d'un quart de tour : son triangle se voit de face
+		local oreille = bloc(chat, repere, "Oreille" .. k, Vector3.new(x, 1.42, -0.8), Vector3.new(0.1, 0.34, 0.3), ROUX_FONCE, { forme = Enum.PartType.Wedge, decor = true })
+		oreille.CFrame = oreille.CFrame * CFrame.Angles(0, math.rad(if k == 1 then 90 else -90), 0)
 	end
-	local queue = bloc(chat, repere, "Queue", Vector3.new(0.5, 0.55, -0.6), Vector3.new(1.3, 0.25, 0.25), ROUX_FONCE, { forme = Enum.PartType.Cylinder, decor = true })
-	queue.CFrame = queue.CFrame * CFrame.Angles(0, math.rad(35), 0) -- enroulée devant elle
+	for k, dx in ipairs({ -0.17, 0.17 }) do -- les yeux fermés : il dort
+		bloc(chat, repere, "Oeil" .. k, Vector3.new(-0.1 + dx, 0.97, -1.2), Vector3.new(0.16, 0.035, 0.03), rgb(70, 40, 30), { decor = true })
+	end
+	bloc(chat, repere, "Nez", Vector3.new(-0.1, 0.86, -1.22), Vector3.new(0.09, 0.09, 0.09), rgb(230, 130, 150), { forme = Enum.PartType.Ball, decor = true })
+	-- la queue le long de son flanc, sur le coussin : sa base (le bout −X, autour duquel elle remue) contre
+	-- l'arrière-train, le bout vers l'avant
+	local queue = bloc(chat, repere, "Queue", Vector3.new(0.75, 0.42, -0.12), Vector3.new(1.35, 0.24, 0.24), ROUX_FONCE, { forme = Enum.PartType.Cylinder, decor = true })
+	queue.CFrame = queue.CFrame * CFrame.Angles(0, math.rad(95), 0)
 	local invite = Instance.new("ProximityPrompt")
 	invite.Name = "Caresser"
 	invite.ActionText = "Caresser"

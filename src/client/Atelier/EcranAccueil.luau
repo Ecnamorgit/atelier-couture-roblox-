@@ -235,6 +235,7 @@ return function(ctx)
 			local carte = UiKit.arrondir(UiKit.creer("Frame", { Name = "Nouveau_" .. n.id, BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.new(colonne * 0.25, 8, 0, 92 + ligneCarte * 152), Size = UDim2.new(0.25, -16, 0, 142), ZIndex = 21, Parent = affiche }), 8)
 			local tissu = n.genre == "tissus" and Catalogue.tissu(n.id)
 			local image = UiKit.arrondir(UiKit.creer("ImageLabel", { Name = "Image", BackgroundColor3 = if tissu then UiKit.couleur(tissu.motif.couleurs[1]) else C.secondaire, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(64, 64), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 10), Size = UDim2.fromOffset(76, 76), ZIndex = 22, Parent = carte }), 8)
+			UiKit.creer("UIStroke", { Color = Color3.fromRGB(226, 208, 196), Thickness = 1, Parent = image }) -- (un tissu blanc sur la carte blanche)
 			local motif = tissu and Vignettes.motif(n.id)
 			if motif then
 				image.ImageContent = motif
@@ -276,6 +277,9 @@ return function(ctx)
 		UiKit.texte({ Name = "Colonne1", Text = colonne1, Font = Enum.Font.Merriweather, TextSize = 20, TextColor3 = ENCRE, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(24, 146), Size = UDim2.new(0.5, -40, 0, 170), ZIndex = 23, Parent = epilogue })
 		UiKit.creer("Frame", { Name = "Separation", BackgroundColor3 = ENCRE, BorderSizePixel = 0, Position = UDim2.new(0.5, -1, 0, 146), Size = UDim2.fromOffset(1, 160), ZIndex = 23, Parent = epilogue })
 		UiKit.texte({ Name = "Colonne2", Text = colonne2, Font = Enum.Font.Merriweather, TextSize = 20, TextColor3 = ENCRE, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.new(0.5, 16, 0, 146), Size = UDim2.new(0.5, -40, 0, 170), ZIndex = 23, Parent = epilogue })
+		-- En bas de la une, les nouvelles de l'atelier : sa réputation et le rang de la couturière
+		UiKit.texte({ Name = "Nouvelles", Text = ("À l'atelier : réputation %s ; rang : %s."):format(Progression.titreReputation(Progression.niveauPrestige(etat.prestige)):lower(), Progression.texteRang(etat.livraisons + etat.ventes)), Font = Enum.Font.Merriweather, TextSize = 16, TextColor3 = ENCRE, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.new(0, 16, 1, -92), Size = UDim2.new(1, -32, 0, 36), ZIndex = 23, Parent = epilogue })
+		UiKit.creer("Frame", { Name = "FiletBas", BackgroundColor3 = ENCRE, BorderSizePixel = 0, Position = UDim2.new(0, 16, 1, -100), Size = UDim2.new(1, -32, 0, 1), ZIndex = 23, Parent = epilogue })
 		local souvenir = Catalogue.accessoire(eu.souvenir)
 		UiKit.texte({ Name = "Souvenir", Text = ("Souvenir : %s (une nouvelle décoration). Prestige : +%d."):format(souvenir and souvenir.nom or eu.souvenir, Histoire.PRESTIGE_EVENEMENT), Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = C.accent, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.new(0, 16, 1, -54), Size = UDim2.new(1, -32, 0, 24), ZIndex = 23, Parent = epilogue })
 		UiKit.boutonDoux({ Name = "FermerEpilogue", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(100, 32), ZIndex = 24, Parent = epilogue }, fermerPanneau(epilogue))

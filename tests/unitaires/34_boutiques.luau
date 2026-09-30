@@ -53,6 +53,26 @@ for _, n in ipairs({ 3, 6 }) do -- Sous-projet 5 : le chat de l'atelier (des deu
 	local corps = chat and chat:FindFirstChild("Corps")
 	local invite = corps and corps:FindFirstChild("Caresser")
 	U.verifier(chat ~= nil and chat:FindFirstChild("Coussin") ~= nil and chat:FindFirstChild("Tete") ~= nil and chat:FindFirstChild("Queue") ~= nil, "boutique " .. n .. " : un chat sur son coussin, un corps, une tête, une queue")
+	-- (vu dans Studio) un chat qui dort : les yeux fermés, un nez, un arrière-train ; les oreilles, deux triangles vus
+	-- de face (un coin tourné d'un quart de tour)
+	local regard = (Boutique.emplacement(n) * Boutique.CHAT).LookVector
+	local deFace = true
+	for k = 1, 2 do
+		local oreille = chat:FindFirstChild("Oreille" .. k)
+		deFace = deFace and oreille ~= nil and math.abs(oreille.CFrame.RightVector:Dot(regard)) > 0.99 -- (le triangle a pour normale son X)
+	end
+	U.verifier(chat:FindFirstChild("Oeil1") ~= nil and chat:FindFirstChild("Oeil2") ~= nil and chat:FindFirstChild("Nez") ~= nil and chat:FindFirstChild("Arriere") ~= nil and deFace, "boutique " .. n .. " : les yeux fermés, le nez, l'arrière-train, les oreilles de face")
+	-- la queue part de l'arrière-train, et son bout, au repos comme en remuant, n'entre ni dans le corps ni dans la tête
+	local queue, arriere = chat.Queue, chat.Arriere
+	local base = (queue.CFrame * CFrame.new(-queue.Size.X / 2, 0, 0)).Position
+	local horsDuCorps = true
+	for _, angle in ipairs({ 0, 0.35, -0.35 }) do
+		local bout = (queue.CFrame * CFrame.new(-queue.Size.X / 2, 0, 0) * CFrame.Angles(0, angle, 0) * CFrame.new(queue.Size.X, 0, 0)).Position
+		for _, nom in ipairs({ "Corps", "Tete" }) do
+			horsDuCorps = horsDuCorps and (bout - chat[nom].CFrame.Position).Magnitude > chat[nom].Size.X / 2
+		end
+	end
+	U.verifier((base - arriere.CFrame.Position).Magnitude <= arriere.Size.X / 2 + queue.Size.Y and horsDuCorps, "boutique " .. n .. " : la queue part de l'arrière-train, son bout ne rentre ni dans le corps ni dans la tête")
 	U.verifier(invite ~= nil and invite:IsA("ProximityPrompt") and invite.ActionText == "Caresser" and invite.KeyboardKeyCode == Enum.KeyCode.F and invite.HoldDuration == 0 and invite.MaxActivationDistance <= 7, "boutique " .. n .. " : « Caresser », touche F (E sonne la clochette), sans appui long, de près (pas à travers le mur du voisin)")
 	local p = Boutique.emplacement(n):PointToObjectSpace(chat.Coussin.CFrame.Position)
 	local demi = chat.Coussin.Size.X / 2

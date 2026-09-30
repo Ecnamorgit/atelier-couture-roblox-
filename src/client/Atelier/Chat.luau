@@ -64,7 +64,7 @@ function Chat.caresser(chat, Sons)
 			return
 		end
 		if queue then
-			queue.CFrame = base * CFrame.Angles(0, math.sin(ecoule * 9) * 0.45, 0) * CFrame.new(queue.Size.X / 2, 0, 0)
+			queue.CFrame = base * CFrame.Angles(0, math.sin(ecoule * 9) * 0.35, 0) * CFrame.new(queue.Size.X / 2, 0, 0)
 		end
 		for _, m in ipairs(morceaux) do
 			local t = math.clamp((ecoule / Chat.DUREE) * 1.6 - m.depart, 0, 1)

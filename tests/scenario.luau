@@ -1087,7 +1087,7 @@ do -- Sous-projet 5 : l'affiche des nouveautés, une carte par nouveauté (l'éc
 			echantillons += if c.Image.ImageContent ~= nil and c.Image.ImageContent.statique then 1 else 0
 		end
 	end
-	verifier(affiche ~= nil and affiche.Visible and affiche.TitreAffiche.Text == "Nouveautés à l'atelier !" and cartes == 5 and echantillons == 4 and affiche.Nouveau_dentelle_noire.Nom.Text == "Dentelle noire", "l'affiche des nouveautés : cinq cartes, l'échantillon des quatre satins (" .. cartes .. ", " .. echantillons .. ")")
+	verifier(affiche ~= nil and affiche.Visible and affiche.TitreAffiche.Text == "Nouveautés à l'atelier !" and cartes == 5 and echantillons == 4 and affiche.Nouveau_dentelle_noire.Nom.Text == "Dentelle noire" and affiche.Nouveau_dentelle_noire.Image:FindFirstChild("UIStroke") ~= nil, "l'affiche des nouveautés : cinq cartes, l'échantillon des quatre satins, un liseré autour (" .. cartes .. ", " .. echantillons .. ")")
 	M.services.UserInputService.InputBegan:Fire({ KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }, false)
 	verifier(titre() == "Aiguille & Dentelle", "E ne sonne pas la clochette tant que l'affiche est ouverte")
 	cliquer("FermerAffiche")
@@ -1355,6 +1355,11 @@ do -- Sous-projet 5 : l'épilogue est la une de la gazette du quartier
 	local une = fenetre.Contenu.Epilogue
 	local e1, e2 = Histoire.enColonnes(Histoire.get("lanternes").epilogue)
 	verifier(une.UIStroke.ApplyStrokeMode == Enum.ApplyStrokeMode.Border and fenetre.Contenu.Affiche.UIStroke.ApplyStrokeMode == Enum.ApplyStrokeMode.Border, "le filet de la gazette et le cadre de l'affiche entourent le panneau (pas son texte vide)")
+	do -- En bas de la une, les nouvelles de l'atelier : sa réputation et le rang de la couturière
+		local P, etatNouvelles = requireModule(dossier.Progression), requireModule(scriptClient.Session).courante.etat
+		local nouvelles = une:FindFirstChild("Nouvelles")
+		verifier(nouvelles ~= nil and une:FindFirstChild("FiletBas") ~= nil and string.find(nouvelles.Text:lower(), P.titreReputation(P.niveauPrestige(etatNouvelles.prestige)):lower(), 1, true) ~= nil and string.find(nouvelles.Text, P.texteRang(etatNouvelles.livraisons + etatNouvelles.ventes), 1, true) ~= nil, "la une : un filet, puis les nouvelles de l'atelier (" .. tostring(nouvelles and nouvelles.Text) .. ")")
+	end
 	verifier(une.Journal.Text == Histoire.GAZETTE and string.match(une.Date.Text, "^N° 1 — Jour %d+ de l'atelier") ~= nil and une.Colonne1.Text == e1 and une.Colonne2.Text == e2 and une.Colonne2.Position.X.Scale == 0.5, "la une de la gazette : le journal, le numéro et le jour, l'épilogue en deux colonnes")
 	verifier(laColette.Head.Bulle.Texte.Text == def.repliques.merci, "Colette raconte la suite")
 	-- (le prestige 6 ouvre plus de huit nouveautés : huit cartes, et le reste en une ligne)
