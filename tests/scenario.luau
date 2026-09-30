@@ -1059,6 +1059,12 @@ e.lettres = { lettre, table.clone(lettre), table.clone(lettre) }
 local def = Histoire.commande("lanternes_colette")
 cliquer("CommandeHistoire")
 local conversation = fenetre.Contenu.Conversation
+-- Pendant la conversation, E ne sonne pas la clochette ; « Accepter » n'est pas sous « Suivant » (un double clic
+-- n'accepte pas la commande)
+M.services.UserInputService.InputBegan:Fire({ KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }, false)
+verifier(e.etape == "accueil" and conversation.Visible, "pendant la conversation, E ne sonne pas la clochette")
+local suivantC, accepterC = conversation.SuivantConversation, conversation.AccepterCommande
+verifier(accepterC.Position.X.Offset >= suivantC.Position.X.Offset + suivantC.Size.X.Offset, "« Accepter la commande » n'est pas sous « Suivant »")
 verifier(conversation.Visible and conversation.Interlocutrice.Text == "Colette Marchand" and conversation.Replique.Text == def.repliques.demande, "une conversation : Colette dit pourquoi elle a besoin d'une robe")
 cliquer("SuivantConversation")
 verifier(conversation.Replique.Text == def.repliques.detail and boutonNomme("AccepterCommande") ~= nil, "« Suivant » : ce qu'elle voudrait ; puis « Accepter la commande »")

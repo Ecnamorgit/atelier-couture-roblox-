@@ -181,7 +181,8 @@ return function(ctx)
 			suivant.Visible = false
 			accepter.Visible = true
 		end)
-		accepter = UiKit.bouton({ Name = "AccepterCommande", Text = "Accepter la commande", Visible = false, Position = UDim2.fromOffset(0, 150), Size = UDim2.fromOffset(260, 44), ZIndex = 21, Parent = conversation }, function()
+		-- (à droite de « Suivant » : un double clic sur « Suivant » n'accepte pas la commande)
+		accepter = UiKit.bouton({ Name = "AccepterCommande", Text = "Accepter la commande", Visible = false, Position = UDim2.fromOffset(220, 150), Size = UDim2.fromOffset(260, 44), ZIndex = 21, Parent = conversation }, function()
 			conversation.Visible = false
 			accueillie(ctx.session:commandeHistoire())
 		end)
@@ -275,9 +276,19 @@ return function(ctx)
 			carnet.Visible = true
 		end)
 	end
-	-- E, fenêtre ouverte (pas pendant la saisie dans le chat) : sonner la clochette
+	-- E, fenêtre ouverte (pas pendant la saisie dans le chat, ni quand un panneau est ouvert par-dessus l'accueil :
+	-- conversation, épilogue, suite de l'histoire, carnet d'adresses) : sonner la clochette
+	local function panneauOuvert()
+		for _, nom in ipairs({ "Conversation", "Epilogue", "Suite", "CarnetAdresses" }) do
+			local p = ctx.contenu:FindFirstChild(nom)
+			if p and p.Visible then
+				return true
+			end
+		end
+		return false
+	end
 	local connexion = UserInputService.InputBegan:Connect(function(input, traite)
-		if not traite and input.KeyCode == Enum.KeyCode.E and ctx.fenetre.Visible then
+		if not traite and input.KeyCode == Enum.KeyCode.E and ctx.fenetre.Visible and not panneauOuvert() then
 			sonner()
 		end
 	end)

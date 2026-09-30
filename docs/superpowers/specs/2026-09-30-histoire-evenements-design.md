@@ -1,4 +1,4 @@
-# Atelier de couture — Sous-projet 3 : l'histoire et les événements du quartier
+# Aiguille & Dentelle — Sous-projet 3 : l'histoire et les événements du quartier
 
 - Date : 30 septembre 2026
 - Statut : écrite, relue et validée par l'agent, en autonomie (règles du commanditaire du 29 septembre 2026 : « ressembler le plus possible au jeu existant sur Steam », specs validées seul)
