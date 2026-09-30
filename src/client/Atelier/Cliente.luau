@@ -151,7 +151,10 @@ function Cliente.dire(modele, texte)
 	local bulle = Instance.new("BillboardGui")
 	bulle.Name = "Bulle"
 	bulle.Size = UDim2.fromOffset(240, 60)
-	bulle.StudsOffset = Vector3.new(0, 2.2, 0)
+	-- Le bord bas de la bulle est calé juste au-dessus de la tête (SizeOffset la remonte de sa moitié), à toute
+	-- distance : de près, à la caméra du poste, elle ne monte plus sous les boutons de Roblox en haut de l'écran
+	bulle.StudsOffset = Vector3.new(0, 0.9, 0)
+	bulle.SizeOffset = Vector2.new(0, 0.5)
 	bulle.AlwaysOnTop = true
 	local cadre = Instance.new("TextLabel")
 	cadre.Name = "Texte"
