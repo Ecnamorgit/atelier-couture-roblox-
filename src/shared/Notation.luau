@@ -330,12 +330,23 @@ function Notation.verifierExigences(exigences, bilan)
 	return #ratees == 0, ratees
 end
 
-function Notation.base(nbPieces, nbExigences)
-	return 20 + 10 * nbPieces + 15 * nbExigences
+-- Sous-projet 7 : le poids des pièces d'une robe (une petite pièce ajoutée, volant ou basque, pèse 0,5 ; les autres 1).
+-- pieces : identifiants, ou pièces d'une recette ({ id = … })
+function Notation.poids(pieces)
+	local total = 0
+	for _, p in ipairs(pieces) do
+		total += Catalogue.piece(if type(p) == "table" then p.id else p).poids or 1
+	end
+	return total
 end
 
-function Notation.paie(nbPieces, nbExigences, qualite)
-	return math.floor(Notation.base(nbPieces, nbExigences) * (0.5 + qualite) + 0.5)
+-- poids : le poids des pièces de la robe (Notation.poids ; leur nombre, pour une robe sans petites pièces)
+function Notation.base(poids, nbExigences)
+	return 20 + 10 * poids + 15 * nbExigences
+end
+
+function Notation.paie(poids, nbExigences, qualite)
+	return math.floor(Notation.base(poids, nbExigences) * (0.5 + qualite) + 0.5)
 end
 
 return Notation

@@ -797,7 +797,7 @@ function EtatAtelier:livrer(rng)
 			self.mercerie[ev.souvenir] = math.min((self.mercerie[ev.souvenir] or 0) + EtatAtelier.SOUVENIRS_OFFERTS, EtatAtelier.MERCERIE_MAX_UNITES)
 		end
 	end
-	local paie = Notation.paie(#recette.pieces, #self.commande.exigences, bilan.qualite)
+	local paie = Notation.paie(Notation.poids(recette.pieces), #self.commande.exigences, bilan.qualite)
 	local acompte = self.commande.acompte or 0
 	local verse = math.max(0, paie - acompte) -- l'acompte est déjà dans la caisse
 	self.argent += verse
@@ -841,7 +841,7 @@ end
 -- prestige (6 % par niveau au-delà du premier)
 function EtatAtelier:prixVente()
 	local recette = self:recette()
-	local base = (self.commande.matieres or 0) + EtatAtelier.prixDecorations(recette.pieces, self.accessoires) + EtatAtelier.MAIN_OEUVRE * #recette.pieces
+	local base = (self.commande.matieres or 0) + EtatAtelier.prixDecorations(recette.pieces, self.accessoires) + EtatAtelier.MAIN_OEUVRE * Notation.poids(recette.pieces)
 	local bonus = Progression.bonusVente(Progression.niveauPrestige(self.prestige))
 	return math.round(base * (0.5 + self:bilan().qualite) * (1 + bonus))
 end
@@ -858,7 +858,7 @@ function EtatAtelier:vendre(rng)
 	self.argent += prix
 	self.ventes += 1
 	local bonus = Progression.bonusVente(Progression.niveauPrestige(self.prestige))
-	local mainOeuvre = math.round(EtatAtelier.MAIN_OEUVRE * #recette.pieces * (0.5 + bilan.qualite) * (1 + bonus))
+	local mainOeuvre = math.round(EtatAtelier.MAIN_OEUVRE * Notation.poids(recette.pieces) * (0.5 + bilan.qualite) * (1 + bonus))
 	local prestige = gagnerPrestige(self, Progression.prestigeVente(mainOeuvre))
 	garderRobe(self, recette)
 	terminer(self)

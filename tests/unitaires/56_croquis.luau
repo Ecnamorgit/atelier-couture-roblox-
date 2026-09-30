@@ -12,7 +12,10 @@ for _, v in ipairs(Catalogue.Variantes) do
 	for _, polygone in ipairs(forme and forme.parties or {}) do
 		local b = Polygone.boite(polygone)
 		dedans = dedans and b.minX >= 0 and b.maxX <= Croquis.LARGEUR and b.minY >= 0 and b.maxY <= Croquis.HAUTEUR
-		if v.famille == "jupe" then
+		if polygone.pieces then
+			-- (sous-projet 7) une couche qui porte ses pièces, sous la taille : une basque en part, un volant plus bas
+			U.verifier(b.minY >= Croquis.TAILLE - 1e-9, v.id .. " : sa couche est sous la taille")
+		elseif v.famille == "jupe" then
 			U.verifier(U.proche(b.minY, Croquis.TAILLE), v.id .. " : la jupe part de la taille")
 		elseif v.famille == "corsage" then
 			U.verifier(U.proche(b.maxY, Croquis.TAILLE), v.id .. " : le corsage finit à la taille")

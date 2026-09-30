@@ -191,6 +191,12 @@ Catalogue.Variantes = {
 		pieces = { "jupe_evasee_devant", "jupe_evasee_dos" }, style = { elegant = 10, gothique = 4, decontracte = -4 } },
 	{ id = "jupe_crayon", famille = "jupe", nom = "Crayon",
 		pieces = { "jupe_crayon_devant", "jupe_crayon_dos" }, style = { chic = 8, elegant = 4, decontracte = -2 } },
+	-- Sous-projet 7 : des couches. (Une variante ne change jamais de pièces : les robes gardées et les recettes des
+	-- vitrines resteraient invalides ; on en ajoute de nouvelles.)
+	{ id = "corsage_basque", famille = "corsage", nom = "À basque",
+		pieces = { "corsage_droit_devant", "corsage_droit_dos", "basque_devant", "basque_dos" }, style = { elegant = 6, chic = 6, romantique = 2 } },
+	{ id = "jupe_volant", famille = "jupe", nom = "À volant",
+		pieces = { "jupe_droite_devant", "jupe_droite_dos", "volant_devant", "volant_dos" }, style = { romantique = 8, mignon = 6 } },
 }
 
 ---------------------------------------------------------------------------

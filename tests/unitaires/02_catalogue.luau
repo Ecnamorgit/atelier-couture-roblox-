@@ -51,7 +51,7 @@ for _, v in ipairs(Catalogue.variantesDe("corsage")) do
 	local h2 = Polygone.boite(Catalogue.piece(v.pieces[2]).contour).maxY
 	U.verifier(U.proche(h1, h2), v.id .. " : devant et dos de même hauteur")
 end
--- Chaque robe possible compte 4 à 6 pièces à poser
+-- Chaque robe possible compte 4 à 10 pièces à poser (sous-projet 7 : le corsage à basque et la jupe à volant en ont quatre)
 local minimum, maximum = math.huge, 0
 for _, c in ipairs(Catalogue.variantesDe("corsage")) do
 	for _, m in ipairs(Catalogue.variantesDe("manches")) do
@@ -63,13 +63,13 @@ for _, c in ipairs(Catalogue.variantesDe("corsage")) do
 		end
 	end
 end
-U.verifier(minimum == 4 and maximum == 6, ("4 à 6 pièces par robe (obtenu %d à %d)"):format(minimum, maximum))
+U.verifier(minimum == 4 and maximum == 10, ("4 à 10 pièces par robe (obtenu %d à %d)"):format(minimum, maximum))
 -- Sous-projet 4 : dix-neuf variantes (cinq corsages, cinq manches, quatre cols, cinq jupes : 500 croquis)
 local parFamille = {}
 for _, v in ipairs(Catalogue.Variantes) do
 	parFamille[v.famille] = (parFamille[v.famille] or 0) + 1
 end
-U.verifier(#Catalogue.Variantes == 19 and parFamille.corsage == 5 and parFamille.manches == 5 and parFamille.col == 4 and parFamille.jupe == 5, "19 variantes : cinq corsages, cinq manches, quatre cols, cinq jupes")
+U.verifier(#Catalogue.Variantes == 21 and parFamille.corsage == 6 and parFamille.manches == 5 and parFamille.col == 4 and parFamille.jupe == 6, "21 variantes : six corsages, cinq manches, quatre cols, six jupes")
 for _, id in ipairs({ "corsage_cache_coeur", "corsage_bustier", "manches_courtes", "manches_trois_quarts", "col_marin", "jupe_crayon" }) do
 	local v = Catalogue.variante(id)
 	local points = 0

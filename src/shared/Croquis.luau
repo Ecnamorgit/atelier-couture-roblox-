@@ -20,6 +20,13 @@ local function P(liste)
 	return points
 end
 
+-- Sous-projet 7 : une partie qui porte ses pièces (un volant, une basque) prend leur tissu, et la toucher choisit le
+-- tissu de ces pièces seulement ; sans pièces, une partie prend le tissu de la première pièce de la variante
+local function avecPieces(pieces, polygone)
+	polygone.pieces = pieces
+	return polygone
+end
+
 -- FORMES[idVariante] = { parties = { polygone, ... }, symetrique = bool, details = { { a, b }, ... } }
 -- (details : traits de crayon sur la pièce, plis ou croisé ; repris en miroir si la forme est symétrique)
 local FORMES = {
@@ -56,6 +63,26 @@ local FORMES = {
 	},
 	jupe_evasee = { parties = { P({ 39, 42, 61, 42, 66, 60, 81, 124, 19, 124, 34, 60 }) } },
 	jupe_crayon = { parties = { P({ 39, 42, 61, 42, 63, 52, 61, 84, 39, 84, 37, 52 }) } },
+	-- Sous-projet 7 : des couches, dessinées par-dessus (un volant sous la jupe droite, une basque sous le corsage droit)
+	corsage_basque = {
+		parties = {
+			P({ 34, 17, 41, 17, 42, 22, 58, 22, 59, 17, 66, 17, 67, 24, 65, 32, 61, 42, 39, 42, 35, 32, 33, 24 }),
+			avecPieces({ "basque_devant", "basque_dos" }, P({ 39, 42, 61, 42, 67, 50, 33, 50 })),
+		},
+	},
+	jupe_volant = {
+		parties = {
+			P({ 39, 42, 61, 42, 64, 82, 36, 82 }),
+			avecPieces({ "volant_devant", "volant_dos" }, P({ 36, 75, 64, 75, 69, 86, 31, 86 })),
+		},
+		details = { -- les fronces du volant
+			{ { x = 40, y = 77 }, { x = 37, y = 85 } },
+			{ { x = 45, y = 77 }, { x = 44, y = 85 } },
+			{ { x = 50, y = 77 }, { x = 50, y = 85 } },
+			{ { x = 55, y = 77 }, { x = 56, y = 85 } },
+			{ { x = 60, y = 77 }, { x = 63, y = 85 } },
+		},
+	},
 }
 Croquis.FORMES = FORMES
 
@@ -83,16 +110,17 @@ local function miroirSegment(s)
 end
 
 -- Parties à dessiner pour un croquis { corsage, manches, col, jupe }, dans l'ordre de dessin :
--- { { famille, polygone } } (une manche ou un rabat de col symétrique donne deux parties)
+-- { { famille, polygone, pieces? } } (une manche ou un rabat de col symétrique donne deux parties ; pieces : celles
+-- d'une partie qui porte les siennes)
 function Croquis.parties(croquis)
 	local out = {}
 	for _, famille in ipairs(Croquis.ORDRE) do
 		local forme = FORMES[croquis[famille]]
 		assert(forme, "forme de croquis inconnue : " .. tostring(croquis[famille]))
 		for _, polygone in ipairs(forme.parties) do
-			table.insert(out, { famille = famille, polygone = polygone })
+			table.insert(out, { famille = famille, polygone = polygone, pieces = polygone.pieces })
 			if forme.symetrique then
-				table.insert(out, { famille = famille, polygone = Polygone.miroir(polygone, Croquis.LARGEUR / 2) })
+				table.insert(out, { famille = famille, polygone = Polygone.miroir(polygone, Croquis.LARGEUR / 2), pieces = polygone.pieces })
 			end
 		end
 	end
@@ -116,12 +144,14 @@ function Croquis.details(croquis)
 	return out
 end
 
--- La famille dessinée sous le point (x, y) du dessin (la plus haute dans l'ordre de dessin), ou nil
+-- La famille dessinée sous le point (x, y) du dessin (la plus haute dans l'ordre de dessin), ou nil ; et les pièces de
+-- cette partie : les siennes (un volant), sinon celles de la variante
 function Croquis.partieA(croquis, x, y)
 	local parties = Croquis.parties(croquis)
 	for i = #parties, 1, -1 do
 		if Polygone.contient(parties[i].polygone, x, y) then
-			return parties[i].famille
+			local p = parties[i]
+			return p.famille, p.pieces or Catalogue.variante(croquis[p.famille]).pieces
 		end
 	end
 	return nil
