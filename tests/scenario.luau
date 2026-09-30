@@ -1332,7 +1332,12 @@ e.prestige = 259 -- (juste sous le prestige 6 : la livraison le fait passer, l'a
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Aiguille & Dentelle" and fenetre.Contenu.Epilogue.Visible and texte("Le bal des lanternes a eu lieu !") ~= nil and texte("Souvenir : Lanterne de papier") ~= nil, "la dernière robe livrée : le bal a lieu, épilogue et souvenir")
-verifier(texte(Histoire.get("lanternes").epilogue) ~= nil and laColette.Head.Bulle.Texte.Text == def.repliques.merci, "l'épilogue ; Colette raconte la suite")
+do -- Sous-projet 5 : l'épilogue est la une de la gazette du quartier
+	local une = fenetre.Contenu.Epilogue
+	local e1, e2 = Histoire.enColonnes(Histoire.get("lanternes").epilogue)
+	verifier(une.Journal.Text == Histoire.GAZETTE and string.match(une.Date.Text, "^N° 1 — Jour %d+ de l'atelier") ~= nil and une.Colonne1.Text == e1 and une.Colonne2.Text == e2 and une.Colonne2.Position.X.Scale == 0.5, "la une de la gazette : le journal, le numéro et le jour, l'épilogue en deux colonnes")
+	verifier(laColette.Head.Bulle.Texte.Text == def.repliques.merci, "Colette raconte la suite")
+end
 verifierTailles("épilogue")
 local inviter3 = boutonNomme("Inviter_3")
 verifier(fenetre.Contenu.Courrier.Text == "Courrier (boîte pleine) :" and inviter3.Position.Y.Offset + inviter3.Size.Y.Offset <= 466, "boîte pleine : c'est dit, et les trois lettres tiennent dans la fenêtre")

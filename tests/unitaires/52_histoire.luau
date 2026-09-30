@@ -66,6 +66,22 @@ end
 U.verifier(string.find(Histoire.get("lanternes").epilogue, "limonade", 1, true) ~= nil and string.find(Histoire.get("lanternes").epilogue, "Margot ont dansé", 1, true) == nil, "bal des lanternes : Margot tient son stand de limonade")
 U.verifier(string.find(Histoire.get("regates").epilogue, "bateau de Colette", 1, true) == nil, "régates : le bateau n'est pas celui de Colette")
 U.verifier(string.find(Histoire.get("bal_hiver").epilogue, "Dehors", 1, true) ~= nil, "bal d'hiver : la neige tombe dehors")
+
+-- Sous-projet 5 : la gazette du quartier donne l'épilogue en deux colonnes, coupé à la fin de la phrase la plus
+-- proche du milieu (à défaut, à l'espace le plus proche)
+local a, b = Histoire.enColonnes("Un. Deux trois quatre. Cinq six. Sept huit neuf dix.")
+U.verifier(a == "Un. Deux trois quatre." and b == "Cinq six. Sept huit neuf dix.", "coupé à la fin de la phrase la plus proche du milieu")
+a, b = Histoire.enColonnes("Une très longue première phrase qui prend presque toute la place du texte. Fin.")
+U.verifier(math.abs(#a - #b) <= 8 and a .. " " .. b == "Une très longue première phrase qui prend presque toute la place du texte. Fin.", "une fin de phrase trop loin du milieu : coupé à l'espace le plus proche")
+a, b = Histoire.enColonnes("une seule phrase sans point final assez longue")
+U.verifier(a .. " " .. b == "une seule phrase sans point final assez longue" and math.abs(#a - #b) <= 8, "sans phrase : coupé à l'espace le plus proche du milieu")
+a, b = Histoire.enColonnes("Court")
+U.verifier(a == "Court" and b == "", "un mot : une seule colonne")
+for _, ev in ipairs(Histoire.EVENEMENTS) do
+	a, b = Histoire.enColonnes(ev.epilogue)
+	U.verifier(a ~= "" and b ~= "" and a .. " " .. b == ev.epilogue and #a <= 0.75 * #ev.epilogue and #b <= 0.75 * #ev.epilogue, ev.id .. " : l'épilogue en deux colonnes équilibrées (" .. #a .. " et " .. #b .. ")")
+end
+U.verifier(Histoire.GAZETTE == "La Gazette du Dé", "le journal du quartier")
 U.verifier(nombre(Histoire.commande("lanternes_margot").repliques.merci:lower(), "tout le monde") <= 1, "Margot ne répète pas « tout le monde »")
 U.verifier(Histoire.titreEpilogue(Histoire.get("lanternes")) == "Le bal des lanternes a eu lieu !" and Histoire.titreEpilogue(Histoire.get("regates")) == "Les régates du lac ont eu lieu !", "l'épilogue s'accorde : « a eu lieu », « ont eu lieu »")
 local TUTOIEMENT = { " tu ", "Tu ", " toi", " ta ", " ton ", " tes ", " te ", " t'" }

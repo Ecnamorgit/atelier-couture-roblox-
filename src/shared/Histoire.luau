@@ -346,6 +346,35 @@ function Histoire.titreEpilogue(ev)
 	return ("%s %s eu lieu !"):format(ev.nom, if ev.pluriel then "ont" else "a")
 end
 
+-- Sous-projet 5 : quand un événement a lieu, son épilogue fait la une du journal du quartier, en deux colonnes
+Histoire.GAZETTE = "La Gazette du Dé"
+
+-- Le texte en deux colonnes : coupé à la fin de la phrase la plus proche du milieu, si elle n'en est pas à plus
+-- d'un cinquième du texte (sinon, à l'espace le plus proche du milieu) ; renvoie les deux morceaux (le second est
+-- vide pour un seul mot)
+function Histoire.enColonnes(texte)
+	local milieu, coupe = #texte / 2, nil
+	local function essayer(p)
+		if not coupe or math.abs(p - milieu) < math.abs(coupe - milieu) then
+			coupe = p
+		end
+	end
+	for p in texte:gmatch("[%.!?]() ") do
+		if math.abs(p - milieu) <= #texte / 5 then
+			essayer(p)
+		end
+	end
+	if not coupe then
+		for p in texte:gmatch("() ") do
+			essayer(p)
+		end
+	end
+	if not coupe then
+		return texte, ""
+	end
+	return texte:sub(1, coupe - 1), texte:sub(coupe + 1)
+end
+
 -- Nombre d'événements qui ont eu lieu
 function Histoire.eus(progres)
 	local n = 0

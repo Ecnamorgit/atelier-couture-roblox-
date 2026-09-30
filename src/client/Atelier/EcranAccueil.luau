@@ -216,15 +216,27 @@ return function(ctx)
 			suite.Visible = false
 		end)
 	end
-	-- Un événement vient d'avoir lieu : son épilogue et son souvenir, par-dessus l'accueil
+	-- Un événement vient d'avoir lieu : la une de la gazette du quartier, par-dessus l'accueil (le journal, son numéro
+	-- et le jour de l'atelier, le titre, l'épilogue en deux colonnes, le souvenir gagné)
 	local eu = r and action == "livrer" and r.evenement
 	if eu then
-		local epilogue = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Epilogue", Text = "", AutoButtonColor = false, BackgroundColor3 = C.panneau, Size = UDim2.fromScale(1, 1), ZIndex = 22, Parent = ctx.contenu }), 10)
-		UiKit.texte({ Name = "TitreEpilogue", Text = Histoire.titreEpilogue(Histoire.get(eu.id)), Font = Enum.Font.GothamBold, TextSize = 20, TextColor3 = C.accent, Size = UDim2.new(1, -130, 0, 34), ZIndex = 23, Parent = epilogue })
-		UiKit.texte({ Name = "TexteEpilogue", Text = eu.epilogue, TextSize = 18, Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 90), ZIndex = 23, Parent = epilogue })
+		local ev = Histoire.get(eu.id)
+		local PAPIER, ENCRE = Color3.fromRGB(244, 238, 222), Color3.fromRGB(44, 36, 32)
+		local epilogue = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Epilogue", Text = "", AutoButtonColor = false, BackgroundColor3 = PAPIER, Size = UDim2.fromScale(1, 1), ZIndex = 22, Parent = ctx.contenu }), 4)
+		UiKit.creer("UIStroke", { Color = ENCRE, Thickness = 2, Parent = epilogue })
+		UiKit.texte({ Name = "Journal", Text = Histoire.GAZETTE, Font = Enum.Font.Garamond, TextSize = 42, TextColor3 = ENCRE, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 8), Size = UDim2.new(1, 0, 0, 46), ZIndex = 23, Parent = epilogue })
+		UiKit.texte({ Name = "Date", Text = ("N° %d — Jour %d de l'atelier — Édition du quartier"):format(ev.rang, etat.livraisons + etat.ventes), Font = Enum.Font.Garamond, TextSize = 16, TextColor3 = ENCRE, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 56), Size = UDim2.new(1, 0, 0, 20), ZIndex = 23, Parent = epilogue })
+		for k, y in ipairs({ 80, 84 }) do -- le double filet sous le titre du journal
+			UiKit.creer("Frame", { Name = "Filet" .. k, BackgroundColor3 = ENCRE, BorderSizePixel = 0, Position = UDim2.new(0, 16, 0, y), Size = UDim2.new(1, -32, 0, k), ZIndex = 23, Parent = epilogue })
+		end
+		UiKit.texte({ Name = "TitreEpilogue", Text = Histoire.titreEpilogue(ev), Font = Enum.Font.Merriweather, TextSize = 26, TextColor3 = ENCRE, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(16, 96), Size = UDim2.new(1, -32, 0, 36), ZIndex = 23, Parent = epilogue })
+		local colonne1, colonne2 = Histoire.enColonnes(eu.epilogue)
+		UiKit.texte({ Name = "Colonne1", Text = colonne1, Font = Enum.Font.Merriweather, TextSize = 16, TextColor3 = ENCRE, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(24, 146), Size = UDim2.new(0.5, -40, 0, 170), ZIndex = 23, Parent = epilogue })
+		UiKit.creer("Frame", { Name = "Separation", BackgroundColor3 = ENCRE, BorderSizePixel = 0, Position = UDim2.new(0.5, -1, 0, 146), Size = UDim2.fromOffset(1, 160), ZIndex = 23, Parent = epilogue })
+		UiKit.texte({ Name = "Colonne2", Text = colonne2, Font = Enum.Font.Merriweather, TextSize = 16, TextColor3 = ENCRE, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.new(0.5, 16, 0, 146), Size = UDim2.new(0.5, -40, 0, 170), ZIndex = 23, Parent = epilogue })
 		local souvenir = Catalogue.accessoire(eu.souvenir)
-		UiKit.texte({ Name = "Souvenir", Text = ("Souvenir : %s (une nouvelle décoration). Prestige : +%d."):format(souvenir and souvenir.nom or eu.souvenir, Histoire.PRESTIGE_EVENEMENT), TextSize = 16, Position = UDim2.fromOffset(0, 144), Size = UDim2.new(1, 0, 0, 44), ZIndex = 23, Parent = epilogue })
-		UiKit.boutonDoux({ Name = "FermerEpilogue", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(110, 34), ZIndex = 23, Parent = epilogue }, function()
+		UiKit.texte({ Name = "Souvenir", Text = ("Souvenir : %s (une nouvelle décoration). Prestige : +%d."):format(souvenir and souvenir.nom or eu.souvenir, Histoire.PRESTIGE_EVENEMENT), Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = C.accent, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.new(0, 16, 1, -54), Size = UDim2.new(1, -32, 0, 24), ZIndex = 23, Parent = epilogue })
+		UiKit.boutonDoux({ Name = "FermerEpilogue", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(100, 32), ZIndex = 24, Parent = epilogue }, function()
 			epilogue.Visible = false
 		end)
 	end
