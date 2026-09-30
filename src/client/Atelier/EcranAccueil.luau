@@ -187,7 +187,8 @@ return function(ctx)
 				Parent = carnet,
 			})
 		end
-		UiKit.boutonDoux({ Name = "OuvrirCarnetAdresses", Text = "Carnet d'adresses", Position = UDim2.fromOffset(492, ligne), Size = UDim2.fromOffset(220, 50), Parent = ctx.contenu }, function()
+		-- (à droite du choix de la taille d'une robe libre, qui s'étend jusqu'à x = 576)
+		UiKit.boutonDoux({ Name = "OuvrirCarnetAdresses", Text = "Carnet d'adresses", Position = UDim2.fromOffset(592, ligne), Size = UDim2.fromOffset(220, 50), Parent = ctx.contenu }, function()
 			carnet.Visible = true
 		end)
 	end
