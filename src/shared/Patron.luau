@@ -129,14 +129,15 @@ local function manche(e, u, v, hauteur, m)
 end
 
 -- Col, moitié droite (+X) : du milieu devant (u = 0) au milieu dos (u = 1)
-local function col(e, u, v, hauteur, _m)
+local function col(e, u, v, hauteur, m)
 	local phi = -math.pi / 2 + u * math.pi
 	local rayon, y
 	if e.forme == "claudine" then
 		rayon, y = RAYON_COU + v * hauteur * 0.9, HAUTEUR_COU - v * hauteur * 0.35
 	elseif e.forme == "marin" then
-		-- À plat sur les épaules comme le Claudine, mais il retombe de plus en plus vers le milieu du dos
-		rayon, y = RAYON_COU + v * hauteur * 0.8, HAUTEUR_COU - v * hauteur * (0.3 + 0.6 * u)
+		-- À plat sur les épaules comme le Claudine, mais il retombe de plus en plus vers le milieu du dos ; il s'élargit
+		-- avec la poitrine (taille M : 8,8 dm) pour rester hors du buste
+		rayon, y = RAYON_COU + v * hauteur * 0.8 * m.poitrine / 8.8, HAUTEUR_COU - v * hauteur * (0.3 + 0.6 * u)
 	else
 		-- v = 1 (bord bas, cousu) à l'encolure : le haut du patron reste en haut, l'imprimé n'est pas inversé
 		rayon, y = RAYON_COU + 0.05, HAUTEUR_COU + (1 - v) * hauteur

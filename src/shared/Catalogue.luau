@@ -129,11 +129,12 @@ Catalogue.Pieces = {
 		enroulement = { type = "jupe", cote = "devant", evasement = 0.45, fronces = 0 } },
 	jupe_evasee_dos = { nom = "Jupe évasée dos", contour = EVASEE, coutures = { 1, 2, 4 }, biais = true,
 		enroulement = { type = "jupe", cote = "dos", evasement = 0.45, fronces = 0 } },
-	-- Jupe crayon : un évasement négatif la resserre sous les hanches (elle reste hors des jambes)
+	-- Jupe crayon : un évasement négatif la resserre sous les hanches (elle reste hors des jambes, même pour les
+	-- hanches les plus fines qu'accepte une recette)
 	jupe_crayon_devant = { nom = "Jupe crayon devant", contour = CRAYON, coutures = { 1, 2, 4 },
-		enroulement = { type = "jupe", cote = "devant", evasement = -0.04, fronces = 0 } },
+		enroulement = { type = "jupe", cote = "devant", evasement = -0.025, fronces = 0 } },
 	jupe_crayon_dos = { nom = "Jupe crayon dos", contour = CRAYON, coutures = { 1, 2, 4 },
-		enroulement = { type = "jupe", cote = "dos", evasement = -0.04, fronces = 0 } },
+		enroulement = { type = "jupe", cote = "dos", evasement = -0.025, fronces = 0 } },
 }
 
 ---------------------------------------------------------------------------

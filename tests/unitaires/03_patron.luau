@@ -88,8 +88,20 @@ for _, taille in pairs(Catalogue.TAILLES) do
 	end
 end
 
--- La jupe passe hors des jambes (cylindres de 0,6 dm de rayon à ±0,55 dm) sous la ligne des hanches
-for _, taille in pairs(Catalogue.TAILLES) do
+-- La jupe passe hors des jambes (cylindres de 0,6 dm de rayon à ±0,55 dm) sous la ligne des hanches, pour les
+-- tailles du catalogue et les silhouettes extrêmes acceptées par Recette.valider
+local Recette = U.module("Recette")
+local silhouettes = table.clone(Catalogue.TAILLES)
+for _, P in ipairs({ Recette.POITRINE[1], Recette.POITRINE[2] }) do
+	for _, T in ipairs({ Recette.TAILLE[1], Recette.TAILLE[2] }) do
+		for _, H in ipairs({ Recette.HANCHES[1], Recette.HANCHES[2] }) do
+			if T <= P and T <= H then
+				silhouettes[("P%g-T%g-H%g"):format(P, T, H)] = { poitrine = P, taille = T, hanches = H }
+			end
+		end
+	end
+end
+for _, taille in pairs(silhouettes) do
 	for _, j in ipairs(Catalogue.variantesDe("jupe")) do
 		for _, id in ipairs(j.pieces) do
 			local def = Catalogue.piece(id)
@@ -129,7 +141,7 @@ end
 local crayonHanches = Patron.point("jupe_crayon_devant", "unique", 2.5, 1.8, M)
 local crayonOurlet = Patron.point("jupe_crayon_devant", "unique", 2.5, 6, M)
 local droiteOurlet = Patron.point("jupe_droite_devant", "unique", 2.5, 6, M)
-U.verifier(horizontale(crayonOurlet) < horizontale(crayonHanches) - 0.1 and horizontale(crayonOurlet) < horizontale(droiteOurlet), "jupe crayon : resserrée à l'ourlet, plus que la jupe droite")
+U.verifier(horizontale(crayonOurlet) < horizontale(crayonHanches) - 0.05 and horizontale(crayonOurlet) < horizontale(droiteOurlet), "jupe crayon : resserrée à l'ourlet, plus que la jupe droite")
 local hautBustier = Patron.point("corsage_bustier_devant", "unique", 1.2, 0, M)
 U.verifier(hautBustier.Y < 3.5 and Patron.point("corsage_droit_devant", "unique", 1.2, 0, M).Y > 4, "bustier : il s'arrête sous les épaules")
 
