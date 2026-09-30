@@ -39,6 +39,8 @@ function Chat.caresser(chat, Sons)
 		c.Name = "Coeur" .. k
 		c.BackgroundTransparency = 1
 		c.Text = "♥"
+		c.Font = Enum.Font.GothamBold
+		c.TextTransparency = 1 -- (invisible jusqu'à ce qu'il monte)
 		c.TextColor3 = ROSE
 		c.TextSize = rng:NextInteger(18, 28)
 		c.Size = UDim2.fromOffset(30, 30)
@@ -62,7 +64,7 @@ function Chat.caresser(chat, Sons)
 			return
 		end
 		if queue then
-			queue.CFrame = base * CFrame.Angles(0, math.sin(ecoule * 9) * 0.45, 0) * CFrame.new(queue.Size.X / 2, 0, 0)
+			queue.CFrame = base * CFrame.Angles(0, math.sin(ecoule * 9) * 0.35, 0) * CFrame.new(queue.Size.X / 2, 0, 0)
 		end
 		for _, m in ipairs(morceaux) do
 			local t = math.clamp((ecoule / Chat.DUREE) * 1.6 - m.depart, 0, 1)

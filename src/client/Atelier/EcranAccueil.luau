@@ -48,7 +48,7 @@ return function(ctx)
 			fiche and fiche.nom:match("^(%S+)") or "La cliente",
 			UiKit.etoiles(Progression.etoiles(true, r.bilan.qualite)),
 			r.verse or r.paie,
-			math.floor(r.bilan.qualite * 100 + 0.5)
+			UiKit.pourcent(r.bilan.qualite)
 		)
 		if r.acompte and r.acompte > 0 then
 			table.insert(suite, ("Acompte de %d déjà reçu"):format(r.acompte))
@@ -56,7 +56,7 @@ return function(ctx)
 		table.insert(suite, ligneAmitie(r.amitie))
 		table.insert(suite, nouveauRang(ctx.session.etat))
 	elseif action == "vendre" then
-		annonce = ("Robe vendue ! +%d pièces d'or (qualité %d %%). Elle part en vitrine."):format(r.prix, math.floor(r.bilan.qualite * 100 + 0.5))
+		annonce = ("Robe vendue ! +%d pièces d'or (qualité %d %%). Elle part en vitrine."):format(r.prix, UiKit.pourcent(r.bilan.qualite))
 		table.insert(suite, nouveauRang(ctx.session.etat))
 	elseif action == "offrir" then
 		local fiche = Clientes.get(r.cliente)
@@ -206,6 +206,18 @@ return function(ctx)
 			conversation.Visible = true
 		end)
 	end
+	-- La gazette, la suite de l'histoire et l'affiche s'empilent, leurs « Fermer » au même coin : le second appui
+	-- d'un double clic sur celui du dessus ne ferme pas aussi le panneau de dessous
+	local panneauFerme = -math.huge
+	local function fermerPanneau(panneau)
+		return function()
+			if os.clock() - panneauFerme < UiKit.DELAI_NOUVEAU then
+				return
+			end
+			panneauFerme = os.clock()
+			panneau.Visible = false
+		end
+	end
 	-- Des nouveautés viennent de s'ouvrir : l'affiche « Nouveautés à l'atelier ! », une carte par nouveauté (huit au
 	-- plus), avec l'échantillon de chaque tissu ; sous la gazette et la suite de l'histoire, s'il y en a
 	local nouveaux = r and (action == "livrer" or action == "vendre" or action == "offrir") and r.nouveaux
@@ -223,6 +235,7 @@ return function(ctx)
 			local carte = UiKit.arrondir(UiKit.creer("Frame", { Name = "Nouveau_" .. n.id, BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.new(colonne * 0.25, 8, 0, 92 + ligneCarte * 152), Size = UDim2.new(0.25, -16, 0, 142), ZIndex = 21, Parent = affiche }), 8)
 			local tissu = n.genre == "tissus" and Catalogue.tissu(n.id)
 			local image = UiKit.arrondir(UiKit.creer("ImageLabel", { Name = "Image", BackgroundColor3 = if tissu then UiKit.couleur(tissu.motif.couleurs[1]) else C.secondaire, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(64, 64), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 10), Size = UDim2.fromOffset(76, 76), ZIndex = 22, Parent = carte }), 8)
+			UiKit.creer("UIStroke", { Color = Color3.fromRGB(226, 208, 196), Thickness = 1, Parent = image }) -- (un tissu blanc sur la carte blanche)
 			local motif = tissu and Vignettes.motif(n.id)
 			if motif then
 				image.ImageContent = motif
@@ -235,20 +248,16 @@ return function(ctx)
 		if #nouveaux > CARTES then
 			UiKit.texte({ Name = "EtEncore", Text = ("Et encore %d autres nouveautés."):format(#nouveaux - CARTES), Font = Enum.Font.GothamBold, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.new(0, 0, 1, -34), Size = UDim2.new(1, 0, 0, 24), ZIndex = 21, Parent = affiche })
 		end
-		UiKit.boutonDoux({ Name = "FermerAffiche", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(100, 32), ZIndex = 22, Parent = affiche }, function()
-			affiche.Visible = false
-		end)
+		UiKit.boutonDoux({ Name = "FermerAffiche", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(100, 32), ZIndex = 22, Parent = affiche }, fermerPanneau(affiche))
 	end
-	-- Une robe d'histoire livrée : la suite de l'histoire de sa cliente (sa réplique « merci »), dans un panneau (la
-	-- bulle ne la montre que le temps de son départ) ; sous l'épilogue quand l'événement a lieu
+	-- Une robe d'histoire livrée : la suite de l'histoire de sa cliente (sa réplique « merci »), dans un panneau
+	-- (l'encadré de dialogue ne la montre que le temps de son départ) ; sous l'épilogue quand l'événement a lieu
 	local faite = r and action == "livrer" and r.histoireFaite and Histoire.commande(r.histoireFaite)
 	if faite then
 		local suite = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Suite", Text = "", AutoButtonColor = false, BackgroundColor3 = C.panneau, Size = UDim2.fromScale(1, 1), ZIndex = 21, Parent = ctx.contenu }), 10)
 		UiKit.texte({ Name = "Interlocutrice", Text = Clientes.get(faite.cliente).nom, Font = Enum.Font.GothamBold, TextSize = 18, Size = UDim2.new(1, -130, 0, 34), ZIndex = 22, Parent = suite })
 		UiKit.texte({ Name = "Replique", Text = faite.repliques.merci, TextSize = 18, Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 90), ZIndex = 22, Parent = suite })
-		UiKit.boutonDoux({ Name = "FermerSuite", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(110, 34), ZIndex = 22, Parent = suite }, function()
-			suite.Visible = false
-		end)
+		UiKit.boutonDoux({ Name = "FermerSuite", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(110, 34), ZIndex = 22, Parent = suite }, fermerPanneau(suite))
 	end
 	-- Un événement vient d'avoir lieu : la une de la gazette du quartier, par-dessus l'accueil (le journal, son numéro
 	-- et le jour de l'atelier, le titre, l'épilogue en deux colonnes, le souvenir gagné)
@@ -268,11 +277,12 @@ return function(ctx)
 		UiKit.texte({ Name = "Colonne1", Text = colonne1, Font = Enum.Font.Merriweather, TextSize = 20, TextColor3 = ENCRE, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(24, 146), Size = UDim2.new(0.5, -40, 0, 170), ZIndex = 23, Parent = epilogue })
 		UiKit.creer("Frame", { Name = "Separation", BackgroundColor3 = ENCRE, BorderSizePixel = 0, Position = UDim2.new(0.5, -1, 0, 146), Size = UDim2.fromOffset(1, 160), ZIndex = 23, Parent = epilogue })
 		UiKit.texte({ Name = "Colonne2", Text = colonne2, Font = Enum.Font.Merriweather, TextSize = 20, TextColor3 = ENCRE, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.new(0.5, 16, 0, 146), Size = UDim2.new(0.5, -40, 0, 170), ZIndex = 23, Parent = epilogue })
+		-- En bas de la une, les nouvelles de l'atelier : sa réputation et le rang de la couturière
+		UiKit.texte({ Name = "Nouvelles", Text = ("À l'atelier : réputation %s ; rang : %s."):format(Progression.titreReputation(Progression.niveauPrestige(etat.prestige)):lower(), Progression.texteRang(etat.livraisons + etat.ventes)), Font = Enum.Font.Merriweather, TextSize = 16, TextColor3 = ENCRE, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.new(0, 16, 1, -92), Size = UDim2.new(1, -32, 0, 36), ZIndex = 23, Parent = epilogue })
+		UiKit.creer("Frame", { Name = "FiletBas", BackgroundColor3 = ENCRE, BorderSizePixel = 0, Position = UDim2.new(0, 16, 1, -100), Size = UDim2.new(1, -32, 0, 1), ZIndex = 23, Parent = epilogue })
 		local souvenir = Catalogue.accessoire(eu.souvenir)
 		UiKit.texte({ Name = "Souvenir", Text = ("Souvenir : %s (une nouvelle décoration). Prestige : +%d."):format(souvenir and souvenir.nom or eu.souvenir, Histoire.PRESTIGE_EVENEMENT), Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = C.accent, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.new(0, 16, 1, -54), Size = UDim2.new(1, -32, 0, 24), ZIndex = 23, Parent = epilogue })
-		UiKit.boutonDoux({ Name = "FermerEpilogue", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(100, 32), ZIndex = 24, Parent = epilogue }, function()
-			epilogue.Visible = false
-		end)
+		UiKit.boutonDoux({ Name = "FermerEpilogue", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 8), Size = UDim2.fromOffset(100, 32), ZIndex = 24, Parent = epilogue }, fermerPanneau(epilogue))
 	end
 	-- Le courrier : chaque lettre annonce la première exigence de la commande ; « Inviter » fait venir la cliente
 	if etat.livraisons >= EtatAtelier.COURRIER_APRES then

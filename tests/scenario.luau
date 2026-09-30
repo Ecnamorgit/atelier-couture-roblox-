@@ -318,13 +318,13 @@ do
 	cliquer("Suivant_jupe")
 	verifier(page.Modele_jupe.Text == "Droite" and dessin.ImageContent == dessinAvant, "un dessin arrivé en retard ne remplace pas le dernier demandé")
 	VignettesCarnet.croquis = peindre
-	-- Mémoire des images pleine : un mot à la place du dessin (pas l'ancien), le carnet marche quand même
-	VignettesCarnet.croquis = function()
-		return nil
-	end
+	-- Mémoire des images pleine (Roblox refuse une image de plus) : un mot à la place du dessin (pas l'ancien), le
+	-- carnet marche quand même
+	local budgetImages = M.budget.images
+	M.budget.images = 0
 	cliquer("Suivant_col")
 	verifier(dessin.SansDessin.Visible and dessin.ImageTransparency == 1 and page.Modele_col.Text ~= colAvant, "mémoire des images pleine : un mot à la place du dessin, les modèles se choisissent quand même")
-	VignettesCarnet.croquis = peindre
+	M.budget.images = budgetImages
 	cliquer("Precedent_col")
 	verifier(not dessin.SansDessin.Visible and dessin.ImageTransparency == 0 and page.Modele_col.Text == colAvant, "le dessin revient")
 	-- Déblocages : au départ, ce qui est fermé est grisé, avec ce qu'il faut pour l'ouvrir ; son patron ne se trace pas
@@ -1063,11 +1063,14 @@ local imageAvant = Vignettes.piece(idVignette, tissuVignette, placeVignette, 256
 -- lettre arrive
 serveur:atelier(joueur).etat.prestige = 45
 serveur:atelier(joueur).etat.livraisons = 5
+serveur:atelier(joueur).etat.ventes = 24 -- (vingt-neuf robes en tout : celle-ci, la trentième, fait monter le rang)
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Aiguille & Dentelle" and argent() > avantLivraison, "robe acceptée : payée")
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_reussite", "robe acceptée : une petite fanfare")
 verifier(texte("Colette est ravie") ~= nil, "l'accueil annonce la paie")
+verifier(texte("Nouveau rang : Première main !") ~= nil, "la trentième robe livrée : « Nouveau rang : Première main ! »")
+serveur:atelier(joueur).etat.ventes = 0
 do -- Sous-projet 5 : son avis en étoiles, dans l'annonce
 	local qualite = requireModule(scriptClient.Session).courante.derniere.reponse.bilan.qualite
 	local n = requireModule(dossier.Progression).etoiles(true, qualite)
@@ -1084,7 +1087,7 @@ do -- Sous-projet 5 : l'affiche des nouveautés, une carte par nouveauté (l'éc
 			echantillons += if c.Image.ImageContent ~= nil and c.Image.ImageContent.statique then 1 else 0
 		end
 	end
-	verifier(affiche ~= nil and affiche.Visible and affiche.TitreAffiche.Text == "Nouveautés à l'atelier !" and cartes == 5 and echantillons == 4 and affiche.Nouveau_dentelle_noire.Nom.Text == "Dentelle noire", "l'affiche des nouveautés : cinq cartes, l'échantillon des quatre satins (" .. cartes .. ", " .. echantillons .. ")")
+	verifier(affiche ~= nil and affiche.Visible and affiche.TitreAffiche.Text == "Nouveautés à l'atelier !" and cartes == 5 and echantillons == 4 and affiche.Nouveau_dentelle_noire.Nom.Text == "Dentelle noire" and affiche.Nouveau_dentelle_noire.Image:FindFirstChild("UIStroke") ~= nil, "l'affiche des nouveautés : cinq cartes, l'échantillon des quatre satins, un liseré autour (" .. cartes .. ", " .. echantillons .. ")")
 	M.services.UserInputService.InputBegan:Fire({ KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }, false)
 	verifier(titre() == "Aiguille & Dentelle", "E ne sonne pas la clochette tant que l'affiche est ouverte")
 	cliquer("FermerAffiche")
@@ -1123,7 +1126,7 @@ do -- Son avis en étoiles, dans l'encadré : celles de la qualité de la robe
 	for k = 1, 5 do
 		dorees += if dialogue.Etoiles["Etoile" .. k].TextColor3 == OR then 1 else 0
 	end
-	verifier(dialogue.Visible and dialogue.Texte.Text == Clientes.get("colette").repliques.merci and dialogue.Etoiles.Visible and dorees == n and n >= 2, ("Colette remercie dans l'encadré, avec son avis : %d étoiles (qualité %d %%)"):format(dorees, math.floor(qualite * 100 + 0.5)))
+	verifier(dialogue.Visible and dialogue.Texte.Text == Clientes.get("colette").repliques.merci and dialogue.Etoiles.Visible and dorees == n and n >= 2, ("Colette remercie dans l'encadré, avec son avis : %d étoiles (qualité %d %%)"):format(dorees, requireModule(scriptClient.UiKit).pourcent(qualite)))
 end
 M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
 verifier(laCliente.Parent == nil and not gui.Atelier.Dialogue.Visible, "puis elle s'en va, et l'encadré se vide")
@@ -1352,6 +1355,11 @@ do -- Sous-projet 5 : l'épilogue est la une de la gazette du quartier
 	local une = fenetre.Contenu.Epilogue
 	local e1, e2 = Histoire.enColonnes(Histoire.get("lanternes").epilogue)
 	verifier(une.UIStroke.ApplyStrokeMode == Enum.ApplyStrokeMode.Border and fenetre.Contenu.Affiche.UIStroke.ApplyStrokeMode == Enum.ApplyStrokeMode.Border, "le filet de la gazette et le cadre de l'affiche entourent le panneau (pas son texte vide)")
+	do -- En bas de la une, les nouvelles de l'atelier : sa réputation et le rang de la couturière
+		local P, etatNouvelles = requireModule(dossier.Progression), requireModule(scriptClient.Session).courante.etat
+		local nouvelles = une:FindFirstChild("Nouvelles")
+		verifier(nouvelles ~= nil and une:FindFirstChild("FiletBas") ~= nil and string.find(nouvelles.Text:lower(), P.titreReputation(P.niveauPrestige(etatNouvelles.prestige)):lower(), 1, true) ~= nil and string.find(nouvelles.Text, P.texteRang(etatNouvelles.livraisons + etatNouvelles.ventes), 1, true) ~= nil, "la une : un filet, puis les nouvelles de l'atelier (" .. tostring(nouvelles and nouvelles.Text) .. ")")
+	end
 	verifier(une.Journal.Text == Histoire.GAZETTE and string.match(une.Date.Text, "^N° 1 — Jour %d+ de l'atelier") ~= nil and une.Colonne1.Text == e1 and une.Colonne2.Text == e2 and une.Colonne2.Position.X.Scale == 0.5, "la une de la gazette : le journal, le numéro et le jour, l'épilogue en deux colonnes")
 	verifier(laColette.Head.Bulle.Texte.Text == def.repliques.merci, "Colette raconte la suite")
 	-- (le prestige 6 ouvre plus de huit nouveautés : huit cartes, et le reste en une ligne)
@@ -1373,6 +1381,7 @@ do -- Le passage au prestige 6 allonge l'annonce (« Nouveau : » sur deux ligne
 end
 e.prestige = 530 -- (tout reste ouvert pour la suite)
 cliquer("FermerEpilogue")
+boutonNomme("FermerSuite").Activated:Fire() -- second appui d'un double clic : il tombe sur le « Fermer » de dessous
 local suite = fenetre.Contenu.Suite
 verifier(suite.Visible and suite.Interlocutrice.Text == "Colette Marchand" and suite.Replique.Text == def.repliques.merci, "sous l'épilogue : la suite de l'histoire de Colette, lisible")
 cliquer("FermerSuite")
@@ -1396,6 +1405,8 @@ do -- Sous-projet 5 : le chat de l'atelier ; une caresse le fait ronronner, remu
 	local repos = queue.CFrame
 	M.services.ProximityPromptService.PromptTriggered:Fire(chat.Corps.Caresser, joueur)
 	verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_ronron" and chat.Tete:FindFirstChild("Coeurs") ~= nil, "caresser le chat : il ronronne, des cœurs montent")
+	local coeur = chat.Tete.Coeurs:FindFirstChild("Coeur1")
+	verifier(coeur ~= nil and coeur.Font == Enum.Font.GothamBold and coeur.TextTransparency == 1, "les cœurs, dans la police du jeu, invisibles avant de monter")
 	M.avancer(0.2)
 	verifier(queue.CFrame ~= repos, "il remue la queue")
 	M.services.ProximityPromptService.PromptTriggered:Fire(chat.Corps.Caresser, joueur)

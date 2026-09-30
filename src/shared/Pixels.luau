@@ -292,24 +292,28 @@ function Pixels.croquis(croquis, tissus, largeur, hauteur)
 		end
 	end
 	-- Traits : plis et croisé sur la robe (crayon fin), mannequin esquissé là où la robe ne passe pas
-	local function tracer(segment, couleur, surLaRobe)
+	-- famille : le trait ne passe que sur cette partie de la robe (nil : que hors de la robe, le mannequin)
+	local function tracer(segment, couleur, famille)
 		local a, b = segment[1], segment[2]
 		local pas = math.max(1, math.ceil(math.sqrt(((b.x - a.x) * ex) ^ 2 + ((b.y - a.y) * ey) ^ 2) * 2))
 		for t = 0, pas do
 			local i = math.floor((a.x + (b.x - a.x) * t / pas) * ex)
 			local j = math.floor((a.y + (b.y - a.y) * t / pas) * ey)
-			if i >= 0 and j >= 0 and i < largeur and j < hauteur and (etiquette(i, j) > 0) == surLaRobe then
-				buffer.writeu32(buf, (j * largeur + i) * 4, couleur)
+			if i >= 0 and j >= 0 and i < largeur and j < hauteur then
+				local k = etiquette(i, j)
+				if (famille == nil and k == 0) or (famille ~= nil and k > 0 and parties[k].famille == famille) then
+					buffer.writeu32(buf, (j * largeur + i) * 4, couleur)
+				end
 			end
 		end
 	end
 	local fin = empaqueter(CRAYON_FIN[1], CRAYON_FIN[2], CRAYON_FIN[3])
 	for _, s in ipairs(Croquis.details(croquis)) do
-		tracer(s, fin, true)
+		tracer(s, fin, s.famille)
 	end
 	local esquisse = empaqueterAlpha(ESQUISSE[1], ESQUISSE[2], ESQUISSE[3], ESQUISSE[4])
 	for _, s in ipairs(Croquis.MANNEQUIN) do
-		tracer(s, esquisse, false)
+		tracer(s, esquisse, nil)
 	end
 	return buf, largeur, hauteur
 end

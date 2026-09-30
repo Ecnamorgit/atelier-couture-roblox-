@@ -20,6 +20,23 @@ do -- Les étoiles suivent l'amitié : quatre étoiles ou plus, c'est le point d
 	U.verifier(accordes == 101, "quatre étoiles et plus : exactement quand la robe vaut un point d'amitié de plus")
 end
 
+-- La qualité affichée ne contredit jamais les étoiles ni le jugement : arrondie vers le bas (79,9 % : « 79 % »)
+do
+	local UiKit = U.module("UiKit")
+	U.verifier(UiKit.pourcent(0.7999) == 79 and UiKit.pourcent(0.8 - 1e-12) == 80 and UiKit.pourcent(1) == 100 and UiKit.pourcent(0) == 0, "le pourcentage affiché, arrondi vers le bas (à l'arrondi près)")
+	-- (la même marge que les étoiles : juste sous 80 % de plus que 1e-9, trois étoiles et « 79 % » ; de moins, quatre et « 80 % »)
+	U.verifier(UiKit.pourcent(0.8 - 5e-9) == 79 and Progression.etoiles(true, 0.8 - 5e-9) == 3 and UiKit.pourcent(0.8 - 5e-10) == 80 and Progression.etoiles(true, 0.8 - 5e-10) == 4, "la même marge d'arrondi que les étoiles")
+	local accords = 0
+	for q = 0, 10000 do
+		local qualite = q / 10000
+		local n, affiche = Progression.etoiles(true, qualite), UiKit.pourcent(qualite)
+		if (n >= 3) == (affiche >= 60) and (n >= 4) == (affiche >= 80) and (n >= 5) == (affiche >= 90) then
+			accords += 1
+		end
+	end
+	U.verifier(accords == 10001, "les étoiles et le pourcentage affiché sont toujours d'accord (" .. accords .. ")")
+end
+
 -- Réputation : un titre par niveau de prestige (1 à 8), tous différents
 U.verifier(#Progression.TITRES_REPUTATION == #Progression.SEUILS_PRESTIGE, "un titre par niveau de prestige")
 U.verifier(Progression.titreReputation(1) == "Inconnue" and Progression.titreReputation(3) == "Appréciée" and Progression.titreReputation(8) == "Légendaire", "Inconnue au début, Légendaire au plus haut")

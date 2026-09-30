@@ -12,7 +12,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 `docs/superpowers/specs/2026-09-30-fidelite-dressmaker-design.md` pour la fidélité à la présentation de
 *Dressmaker* ; plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 5 terminé côté code, plans 11 à 13 : la fidélité à la présentation de *Dressmaker*)
+## État actuel (sous-projet 5 terminé côté code, plans 11 à 14 : la fidélité à la présentation de *Dressmaker*)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -131,8 +131,8 @@ client. Si la partie n'est pas encore arrivée au bout d'une minute, le joueur e
 machine à coudre (tant qu'on coud, au rythme de la vitesse), le tissu qu'on découd, les décorations, le
 déclic de la photo, la fête de la robe terminée, la réaction de la cliente et le ronron du chat. Tout vient de
 la bibliothèque libre de Roblox (sons de
-l'interface de Roblox, Pro Sound Effects, APM Music, et pour le chat « cat purring », de la boutique des créateurs) ;
-le bouton « Son », dans la barre de titre de la
+l'interface de Roblox, Pro Sound Effects, APM Music ; pour le chat, « cat purring », envoyé par Bloonkii sur
+la boutique des créateurs de Roblox) ; le bouton « Son », dans la barre de titre de la
 fenêtre, coupe tout.
 
 **Téléphone et clavier** : tant que la fenêtre de l'atelier est ouverte, l'avatar ne bouge pas (le stick et

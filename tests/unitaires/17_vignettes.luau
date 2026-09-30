@@ -17,6 +17,17 @@ do
 	end
 	Vignettes.croquis(croquis, {}, 100, 130)
 	U.verifier(peints == 9, "après sept autres croquis, le premier est repeint : on ne garde que les derniers (" .. peints .. " peints)")
+	-- Un croquis revu repasse en tête : il reste gardé tant qu'il est parmi les derniers vus
+	for _, id in ipairs({ "coton_blanc", "coton_rose_pois", "lin_naturel", "lin_bleu", "coton_bleu_carreaux" }) do
+		Vignettes.croquis(croquis, { jupe = id }, 100, 130)
+	end
+	Vignettes.croquis(croquis, {}, 100, 130) -- revu : en tête
+	peints = 0
+	for _, id in ipairs({ "lin_noir", "coton_jaune_fleurs", "coton_blanc" }) do
+		Vignettes.croquis(croquis, { jupe = id }, 100, 130)
+	end
+	Vignettes.croquis(croquis, {}, 100, 130)
+	U.verifier(peints == 3, "un croquis revu repasse en tête et reste gardé : seuls les trois nouveaux sont peints (" .. peints .. " peints)")
 	Pixels.croquis = peindre
 end
 
