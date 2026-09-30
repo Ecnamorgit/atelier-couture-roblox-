@@ -47,6 +47,17 @@ local function fusionner(defaut, props)
 	return defaut
 end
 
+-- Nombre de lignes d'un texte replié dans une largeur (px) à une taille de police donnée : estimation prudente
+-- (0,6 fois la taille par caractère, en moyenne), en comptant aussi les retours à la ligne
+function UiKit.lignes(texte, largeur, taille)
+	local parLigne = math.max(1, math.floor(largeur / (taille * 0.6)))
+	local n = 0
+	for ligne in (texte .. "\n"):gmatch("(.-)\n") do
+		n += math.max(1, math.ceil((utf8.len(ligne) or #ligne) / parLigne))
+	end
+	return n
+end
+
 function UiKit.texte(props)
 	return UiKit.creer("TextLabel", fusionner({
 		BackgroundTransparency = 1,

@@ -104,6 +104,7 @@ end
 U.verifier(differences == 0, "mille jeux d'exigences : même réponse que le calcul complet (" .. differences .. " différences)")
 U.verifier(temoinsFaux == 0, "le témoin remplit toujours les exigences (" .. temoinsFaux .. " faux)")
 U.verifier(temoinsAutres == 0, "le témoin est la première robe du calcul complet (" .. temoinsAutres .. " autres)")
+U.verifier(not Commandes.realisable({ { type = "accessoire", id = "inconnu" } }), "un accessoire inconnu : irréalisable, comme dans le calcul complet")
 
 -- Une garniture imposée (sans longueur) ne compte pas dans les styles : avec chaque garniture, on demande un peu
 -- plus que le meilleur score d'une robe simple dans un style qu'elle porte ; aucune robe ne l'atteint
