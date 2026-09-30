@@ -13,7 +13,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 6 terminé côté code, plans 15 à 18 : les mesures à molettes, la mercerie, le tissu entamé)
+## État actuel (sous-projet 7 en cours, plan 19 : des robes à couches, volant et basque)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -39,8 +39,11 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
 2. **Carnet de croquis** : une page de carnet (papier, notes de tailleur, crayon). Au centre, la robe dessinée
    au trait, de face, sur un mannequin esquissé : elle change avec chaque modèle et se colorie du motif de chaque
    tissu choisi ; toucher une partie du dessin ouvre le choix de son tissu. Dessous, une ligne par famille
-   (corsage, col, manches, jupe) : ◀ le nom du modèle ▶ et un point par modèle (19 variantes : cinq corsages dont
-   le cache-cœur et le bustier, cinq manches, quatre cols dont le col marin, cinq jupes dont la jupe crayon).
+   (corsage, col, manches, jupe) : ◀ le nom du modèle ▶ et un point par modèle (21 variantes : six corsages dont
+   le cache-cœur, le bustier et le corsage à basque, cinq manches, quatre cols dont le col marin, six jupes dont la
+   jupe crayon et la jupe à volant). **Des couches** : la basque s'évase sous la taille, par-dessus la jupe ; le
+   volant, froncé, part à 5 dm sous la taille et dépasse l'ourlet ; chacun a ses pièces (poids 0,5 dans la paie),
+   son tissu et sa partie du dessin (la toucher choisit le tissu de ses pièces). La liste des pièces défile.
    À côté du dessin, un tissu par pièce (41 tissus en onze matières, filtre par style, dont la toile de jute,
    gratuite) ; les échantillons des tissus choisis sont épinglés en haut de la page ; « Environ X m de tissu » ;
    « Tracer le patron ». La fiche de la commande, à droite : jauges de style, état des exigences, coût du tissu
