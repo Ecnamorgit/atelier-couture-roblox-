@@ -207,8 +207,21 @@ verifierTailles("mesures")
 local clienteMesuree = M.services.Workspace.AtelierLocal:FindFirstChild("Cliente")
 verifier(clienteMesuree ~= nil and clienteMesuree.Head.Nom.Texte.Text == "Colette Marchand", "Colette en personne, son nom au-dessus de la tête")
 verifier(clienteMesuree.Head.Bulle.Texte.Text == Clientes.get("colette").repliques.presentation, "elle se présente")
+do -- Sous-projet 5 : fenêtre ouverte, elle parle dans l'encadré de dialogue, à son nom ; sa bulle est pour la rue
+	local dialogue = gui.Atelier:FindFirstChild("Dialogue")
+	verifier(dialogue ~= nil and dialogue.Visible and dialogue.Nom.Text == "Colette" and dialogue.Texte.Text == Clientes.get("colette").repliques.presentation and not clienteMesuree.Head.Bulle.Enabled, "fenêtre ouverte : elle se présente dans l'encadré, à son nom, pas dans sa bulle")
+	cliquer("Fermer")
+	verifier(not dialogue.Visible and clienteMesuree.Head.Bulle.Enabled, "fenêtre fermée : sa bulle, pas d'encadré")
+	cliquer("OuvrirAtelier")
+	verifier(dialogue.Visible and not clienteMesuree.Head.Bulle.Enabled, "fenêtre rouverte : de nouveau l'encadré")
+	dialogue.Activated:Fire()
+	verifier(not dialogue.Visible, "un appui referme l'encadré")
+end
+serveur:atelier(joueur).etat.argent += 1 -- (la réponse au refus emporte un état changé : la scène se resynchronise)
 cliquer("ValiderMesures")
+serveur:atelier(joueur).etat.argent -= 1
 verifier(titre() == "Les mesures" and fenetre.Message.Visible and fenetre.Message.Text == "Mesure invalide : règle chaque ruban au bord de la silhouette.", "rubans pas réglés : mesures refusées, message")
+verifier(not gui.Atelier.Dialogue.Visible, "la même parole, après une réponse du serveur : l'encadré reste refermé")
 -- Au doigt : on glisse la poignée du ruban de la poitrine jusqu'au bord de la silhouette ; un second doigt ne
 -- tire pas le ruban, et le doigt levé ne le tire plus
 local silhouetteM = fenetre.Contenu.Silhouette
@@ -373,6 +386,7 @@ verifierTailles("carnet")
 verifier(texte("Colette (taille M) veut") ~= nil, "le carnet dit qui commande, et sa taille")
 verifier(M.services.Workspace.AtelierLocal:FindFirstChild("Cliente") == clienteMesuree and clienteMesuree.Parent ~= nil, "mesures validées : la même cliente reste là (pas reconstruite)")
 verifier(clienteMesuree.Head.Bulle.Texte.Text == requireModule(scriptClient.Scene).PAROLES.carnet, "première visite, au carnet : elle explique ce qu'elle veut (pas « Me revoilà ! »)")
+verifier(gui.Atelier.Dialogue.Visible and gui.Atelier.Dialogue.Texte.Text == requireModule(scriptClient.Scene).PAROLES.carnet, "une nouvelle parole rouvre l'encadré")
 verifier(texte("Exigence1") ~= nil and texte("Exigence1").Text ~= "", "les exigences sont affichées")
 local ligneMetrage = fenetre.Contenu.Droite:FindFirstChild("Metrage")
 verifier(ligneMetrage ~= nil and string.find(ligneMetrage.Text, "Choisis les tissus", 1, true) == 1, "sans tissu : le métrage attend les tissus, dans la colonne de droite")
@@ -963,7 +977,7 @@ M.surCapture = nil
 verifier(pendant ~= nil and pendant.interface == false and pendant.vue == origineBoutique * ScenePoste.CAMERA_PHOTO and pendant.bulle == false, "photo prise sans l'interface ni la bulle, vue centrée sur la robe")
 verifier(table.find(M.sonsJoues, "Atelier_photo") ~= nil and M.sonsJoues[#M.sonsJoues] == "Atelier_photo", "déclic de l'appareil photo")
 verifier(pendant.champ == ScenePoste.CHAMP_PHOTO and ScenePoste.CHAMP_PHOTO < 70, "champ resserré sur la robe pendant la prise")
-verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA and laCliente.Head.Bulle.Enabled and camera.FieldOfView == 70, "après la photo : interface, vue, champ et bulle rétablis")
+verifier(gui.Atelier.Enabled and camera.CFrame == origineBoutique * ScenePoste.CAMERA and not laCliente.Head.Bulle.Enabled and camera.FieldOfView == 70, "après la photo : interface, vue et champ rétablis ; la bulle reste cachée (fenêtre ouverte : l'encadré parle)")
 local apercu = fenetre.Contenu:FindFirstChild("Apercu")
 verifier(apercu ~= nil and apercu.Visible and apercu.Image.Image == "rbxtemp://capture/" .. M.captures, "aperçu de la photo")
 -- Dans Roblox, un simple cadre (même Active) laisse passer l'appui aux boutons cachés dessous (Livrer…) ;
@@ -1008,6 +1022,11 @@ livrer.Activated:Fire() -- second appui d'un double clic (moins de 0,4 s) : igno
 verifier(titre() == "7. Photo et livraison", "un double clic trop rapide ne livre pas")
 cliquer("Livrer")
 verifier(titre() == "La cliente refuse la robe" and texte("Avec : Croix d'argent") ~= nil, "sans la croix d'argent : robe refusée, exigence ratée affichée")
+do -- Son avis : une étoile
+	local etoiles = gui.Atelier.Dialogue.Etoiles
+	local OR = requireModule(scriptClient.Dialogue).OR
+	verifier(gui.Atelier.Dialogue.Visible and gui.Atelier.Dialogue.Texte.Text == Clientes.get("colette").repliques.deception and etoiles.Visible and etoiles.Etoile1.TextColor3 == OR and etoiles.Etoile2.TextColor3 ~= OR, "robe refusée : sa déception dans l'encadré, une étoile")
+end
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_echec", "robe refusée : un son déçu")
 verifierTailles("refus")
 cliquer("Retoucher")
@@ -1055,8 +1074,18 @@ verifier(maVitrine:FindFirstChild("Exposition") ~= nil, "le client construit la 
 verifier(maVitrine:GetAttribute("Recette") == requireModule(dossier.Recette).encoder(serveur:atelier(joueur).etat.robes[1]), "la robe livrée part dans la vitrine de la boutique, sur la rue")
 verifier(#robe:GetChildren() == 0 and #decorations:GetChildren() == 0 and camera.CameraType == Enum.CameraType.Custom, "atelier libéré, caméra rendue au joueur")
 verifier(laCliente.Parent ~= nil and laCliente.Head.Bulle.Texte.Text == Clientes.get("colette").repliques.merci, "Colette remercie")
+do -- Son avis en étoiles, dans l'encadré : celles de la qualité de la robe
+	local dialogue = gui.Atelier.Dialogue
+	local qualite = requireModule(scriptClient.Session).courante.derniere.reponse.bilan.qualite
+	local n = requireModule(dossier.Progression).etoiles(true, qualite)
+	local OR, dorees = requireModule(scriptClient.Dialogue).OR, 0
+	for k = 1, 5 do
+		dorees += if dialogue.Etoiles["Etoile" .. k].TextColor3 == OR then 1 else 0
+	end
+	verifier(dialogue.Visible and dialogue.Texte.Text == Clientes.get("colette").repliques.merci and dialogue.Etoiles.Visible and dorees == n and n >= 2, ("Colette remercie dans l'encadré, avec son avis : %d étoiles (qualité %d %%)"):format(dorees, math.floor(qualite * 100 + 0.5)))
+end
 M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
-verifier(laCliente.Parent == nil, "puis elle s'en va")
+verifier(laCliente.Parent == nil and not gui.Atelier.Dialogue.Visible, "puis elle s'en va, et l'encadré se vide")
 
 ---------------------------------------------------------------------------
 -- Robes libres (après deux commandes livrées) : une taille, pas de cliente ; à la photo, vendre ou offrir

@@ -12,6 +12,7 @@ local Session = require(script:WaitForChild("Session"))
 local Scene = require(script:WaitForChild("Scene"))
 local Vignettes = require(script:WaitForChild("Vignettes"))
 local Sons = require(script:WaitForChild("Sons"))
+local Dialogue = require(script:WaitForChild("Dialogue"))
 
 local ECRANS = {
 	accueil = require(script:WaitForChild("EcranAccueil")),
@@ -75,6 +76,11 @@ local fenetre = UiKit.arrondir(UiKit.creer("Frame", {
 	BackgroundColor3 = C.fond,
 	Parent = gui,
 }), 14)
+-- Ce que dit la cliente, fenêtre ouverte : l'encadré de dialogue, en haut à gauche (sa bulle est pour la rue)
+local dialogue = Dialogue.nouveau(gui, UiKit)
+scene.surParole = function(nom, texte, etoiles)
+	dialogue:dire(nom, texte, etoiles)
+end
 
 -- Mise à l'échelle sur les petits écrans (suit la caméra et la taille de la fenêtre du jeu)
 local echelle = UiKit.creer("UIScale", { Parent = fenetre })
@@ -82,6 +88,7 @@ local connexionCamera
 local function ajuster()
 	local camera = workspace.CurrentCamera
 	echelle.Scale = UiKit.echelle(camera and camera.ViewportSize or Vector2.new(1280, 720))
+	dialogue:echelle(echelle.Scale)
 end
 local function suivreCamera()
 	if connexionCamera then
@@ -196,6 +203,7 @@ local boutonAtelier = UiKit.bouton({
 end)
 fenetre:GetPropertyChangedSignal("Visible"):Connect(function()
 	boutonAtelier.Visible = not fenetre.Visible
+	dialogue:montrer(fenetre.Visible)
 	scene:ouvrir(fenetre.Visible, session.etat)
 end)
 
