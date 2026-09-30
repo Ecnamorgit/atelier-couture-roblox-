@@ -28,6 +28,40 @@ local function croquisPossibles()
 end
 local CROQUIS = croquisPossibles()
 
+-- Les styles s'additionnent (Notation.styles) : les points bruts de chaque croquis, de chaque tissu (toute la robe
+-- dans ce tissu) et de chaque objet imposé sont calculés une fois ; une robe candidate se juge alors en quelques
+-- additions, sans rien créer. (Une garniture imposée, sans longueur, ne compte pas : comme dans Notation.styles.)
+local K = Catalogue.K
+local POINTS_CROQUIS = {}
+for i, croquis in ipairs(CROQUIS) do
+	local points = {}
+	for _, s in ipairs(Catalogue.STYLES) do
+		points[s] = 0
+	end
+	for _, famille in ipairs(Catalogue.FAMILLES) do
+		for s, pts in pairs(Catalogue.variante(croquis[famille]).style) do
+			points[s] += K.pieces * pts
+		end
+	end
+	POINTS_CROQUIS[i] = points
+end
+local POINTS_TISSU = {}
+for _, t in ipairs(Catalogue.Tissus) do
+	local points = {}
+	for _, s in ipairs(Catalogue.STYLES) do
+		points[s] = K.tissu * (t.style[s] or 0)
+	end
+	POINTS_TISSU[t.id] = points
+end
+local function pointsImpose(idAccessoire)
+	local points = {}
+	local def = idAccessoire and Catalogue.accessoire(idAccessoire)
+	for _, s in ipairs(Catalogue.STYLES) do
+		points[s] = if def and def.genre == "objet" then K.accessoires * (def.style[s] or 0) else 0
+	end
+	return points
+end
+
 -- Cherche une robe simple (un seul tissu, au plus l'accessoire imposé) qui remplit les exigences.
 -- La qualité est supposée atteignable (≤ 0,9). ouverts (facultatif, Deblocages.ouverts) : seulement avec ce
 -- qui est ouvert. Retourne ok et le témoin { croquis, tissu, accessoire }.
@@ -43,19 +77,39 @@ function Commandes.realisable(exigences, ouverts)
 	if ouverts and accessoireImpose and not ouverts.accessoires[accessoireImpose] then
 		return false
 	end
-	local accessoires = accessoireImpose and { { id = accessoireImpose } } or {}
-	for _, croquis in ipairs(CROQUIS) do
-		for _, t in ipairs(Catalogue.Tissus) do
-			local permis = not ouverts
-				or (ouverts.tissus[t.id] and ouverts.variantes[croquis.corsage] and ouverts.variantes[croquis.manches] and ouverts.variantes[croquis.col] and ouverts.variantes[croquis.jupe])
-			local bilan = permis and {
-				styles = Notation.styles({ croquis = croquis, tissus = { [t.id] = 1 }, accessoires = accessoires }),
-				qualite = 1,
-				teinte = t.teinte,
-				accessoires = accessoireImpose and { [accessoireImpose] = 1 } or {},
-			}
-			if bilan and Notation.verifierExigences(exigences, bilan) then
-				return true, { croquis = croquis, tissu = t.id, accessoire = accessoireImpose }
+	-- Styles, teinte et accessoires à vérifier (la qualité, au plus 0,9, est tenue d'office ; seul le dernier
+	-- accessoire demandé est posé sur la robe témoin)
+	local aVerifier = {}
+	for _, e in ipairs(exigences) do
+		if e.type ~= "qualite" then
+			table.insert(aVerifier, e)
+		end
+	end
+	local pa = pointsImpose(accessoireImpose)
+	for i, croquis in ipairs(CROQUIS) do
+		if not ouverts or (ouverts.variantes[croquis.corsage] and ouverts.variantes[croquis.manches] and ouverts.variantes[croquis.col] and ouverts.variantes[croquis.jupe]) then
+			local pc = POINTS_CROQUIS[i]
+			for _, t in ipairs(Catalogue.Tissus) do
+				if not ouverts or ouverts.tissus[t.id] then
+					local pt = POINTS_TISSU[t.id]
+					local ok = true
+					for _, e in ipairs(aVerifier) do
+						if e.type == "teinte" then
+							ok = t.teinte == e.teinte
+						elseif e.type == "accessoire" then
+							ok = e.id == accessoireImpose
+						else
+							local v = math.clamp(pc[e.style] + pt[e.style] + pa[e.style], 0, 100)
+							ok = if e.type == "min" then v >= e.valeur - 1e-9 else v <= e.valeur + 1e-9
+						end
+						if not ok then
+							break
+						end
+					end
+					if ok then
+						return true, { croquis = croquis, tissu = t.id, accessoire = accessoireImpose }
+					end
+				end
 			end
 		end
 	end
