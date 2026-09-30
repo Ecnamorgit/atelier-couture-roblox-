@@ -7,6 +7,7 @@ local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Pixels = require(Couture:WaitForChild("Pixels"))
 local Editables = require(Couture:WaitForChild("Editables"))
 local Patron = require(Couture:WaitForChild("Patron"))
+local Clientes = require(Couture:WaitForChild("Clientes"))
 
 local Vignettes = {}
 Vignettes.ESSAI_APRES = 5 -- secondes avant de réessayer une image qui n'a pas pu être créée
@@ -96,6 +97,13 @@ function Vignettes.croquis(croquis, tissus, largeur, hauteur)
 		end
 	end
 	return contenu
+end
+
+-- Portrait d'une cliente (sous-projet 7), selon son expression (« contente », « neutre », « decue »)
+function Vignettes.portrait(idCliente, expression)
+	return figer("portrait:" .. idCliente .. ":" .. expression, function()
+		return Pixels.portrait(Clientes.get(idCliente), expression)
+	end)
 end
 
 -- Oublie les images des pièces découpées (commande finie ou recommencée) : elles occupent la mémoire des
