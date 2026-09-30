@@ -63,8 +63,10 @@ return function(ctx)
 		r.poignee.Position = UDim2.fromOffset(r.ruban.Position.X.Offset + largeur, r.ruban.Position.Y.Offset + 4)
 		r.valeur.Text = ("%s : %d cm"):format(r.nom, math.round(prises[cle] * 10))
 	end
+	-- Un ruban va de 2 dm jusqu'au bord droit du cadre, pas au-delà (la vraie mesure est toujours en deçà)
+	local maxi = {}
 	local function regler(cle, valeur)
-		prises[cle] = math.clamp(arrondi(valeur), 2, 15)
+		prises[cle] = math.clamp(arrondi(valeur), 2, maxi[cle])
 		maj(cle)
 	end
 	for _, m in ipairs(MESURES) do
@@ -72,7 +74,10 @@ return function(ctx)
 		prises[cle] = arrondi(Catalogue.TAILLES[cliente.taille][cle] * DEPART)
 		local vraieLargeur = cliente.mesures[cle] * FACE * PX
 		local ruban = UiKit.creer("Frame", { Name = "Ruban_" .. cle, BackgroundColor3 = RUBAN, BorderSizePixel = 0, Position = UDim2.fromOffset(centre - vraieLargeur / 2, m.y - 4), ZIndex = 3, Parent = silhouette })
-		local poignee = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Poignee_" .. cle, Text = "", AutoButtonColor = false, BackgroundColor3 = C.accent, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(24, 24), ZIndex = 4, Parent = silhouette }), 12)
+		maxi[cle] = math.floor((LARGEUR - (centre - vraieLargeur / 2)) / (FACE * PX) * 10) / 10
+		-- La poignée : une pastille de 24 px, dans une zone de 44 px qu'on attrape au doigt
+		local poignee = UiKit.creer("TextButton", { Name = "Poignee_" .. cle, Text = "", AutoButtonColor = false, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(44, 44), ZIndex = 4, Parent = silhouette })
+		UiKit.arrondir(UiKit.creer("Frame", { Name = "Pastille", BackgroundColor3 = C.accent, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(24, 24), ZIndex = 4, Parent = poignee }), 12)
 		local y = 50 + m.y - 18
 		local valeur = UiKit.texte({ Name = "Valeur_" .. cle, Font = Enum.Font.GothamBold, TextSize = 18, Position = UDim2.fromOffset(LARGEUR + 30, y), Size = UDim2.fromOffset(220, 36), Parent = contenu })
 		UiKit.boutonDoux({ Name = "Moins_" .. cle, Text = "−", TextSize = 22, Position = UDim2.fromOffset(LARGEUR + 260, y), Size = UDim2.fromOffset(44, 36), Parent = contenu }, function()

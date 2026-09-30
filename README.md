@@ -44,7 +44,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
 6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé
    pendant que le tissu tire ; vitesse tortue, normale ou lapin, découd-vite, assistance (note plafonnée à 85 %).
    Une pièce finie n'est rendue qu'avec « Pièce suivante » : la dernière couture se défait encore.
-7. **Décorations** : 10 objets (boutons, nœuds, fleurs, broche, perle, étoile, croix) et 5 garnitures (dentelles,
+7. **Décorations** : 18 objets (boutons, nœuds, fleurs, broche, perle, étoile, croix, et les huit souvenirs du
+   quartier une fois leur événement passé) et 5 garnitures (dentelles,
    rubans, galon). On touche la robe pour poser, on tourne (Q/E), agrandit, supprime, annule ; une garniture
    se pose point par point sur une pièce. Glisser sur la scène fait tourner la vue autour du mannequin.
    Le coût s'affiche en direct ; ce qu'on retire est remboursé.

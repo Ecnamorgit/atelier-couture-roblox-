@@ -225,6 +225,14 @@ verifier(texte("Valeur_poitrine").Text == justePoitrine, "glisser la poignée au
 doigtRuban.Position = Vector3.new(0, 0, 0)
 M.services.UserInputService.InputChanged:Fire(doigtRuban)
 verifier(texte("Valeur_poitrine").Text == justePoitrine, "doigt levé : le ruban ne bouge plus")
+-- La poignée est assez grosse pour le doigt ; tirée trop loin, le ruban s'arrête au bord du cadre
+verifier(silhouetteM.Poignee_poitrine.AbsoluteSize.X >= 40 and silhouetteM.Poignee_poitrine.AbsoluteSize.Y >= 40, "poignée d'au moins 40 px (le doigt)")
+silhouetteM.Poignee_poitrine.InputBegan:Fire(doigtRuban)
+doigtRuban.Position = Vector3.new(2000, 0, 0)
+M.services.UserInputService.InputChanged:Fire(doigtRuban)
+M.services.UserInputService.InputEnded:Fire(doigtRuban)
+local rubanP = silhouetteM.Ruban_poitrine
+verifier(rubanP.Position.X.Offset + rubanP.Size.X.Offset <= silhouetteM.Size.X.Offset, "tiré trop loin : le ruban s'arrête au bord du cadre")
 local function mesurerCliente()
 	local vraies = Clientes.get(serveur:atelier(joueur).etat.commande.cliente).mesures
 	for _, cle in ipairs(MESURES) do
@@ -923,6 +931,7 @@ verifierTailles("accueil")
 serveur:atelier(joueur).etat.prestige = 530 -- (tout reste ouvert pour la suite)
 -- Le courrier : une lettre de Colette (la seule cliente déjà venue), qui dépasse de la boîte aux lettres
 verifier(texte("Une lettre de Colette est arrivée.") ~= nil and fenetre.Contenu:FindFirstChild("Lettre1") ~= nil and boutonNomme("Inviter_1") ~= nil, "une lettre de Colette arrive, avec « Inviter »")
+verifier(boutonNomme("Inviter_1").AbsoluteSize.Y >= 40, "« Inviter » assez haut pour le doigt")
 verifier(string.find(fenetre.Contenu.Lettre1.Text, "Colette : « ", 1, true) == 1, "la lettre annonce une exigence de sa commande")
 verifier(scene:FindFirstChild("Lettre") ~= nil, "une lettre dépasse de la boîte aux lettres du comptoir")
 -- Le carnet d'adresses : les clientes déjà venues, leur amitié, ce que le prochain niveau ouvrira
@@ -947,12 +956,18 @@ verifier(boutonNomme("RobeLibre") ~= nil, "deux commandes livrées : « Robe lib
 cliquer("RobeLibre")
 local boutonL, boutonCarnet = boutonNomme("RobeLibre_L"), boutonNomme("OuvrirCarnetAdresses")
 verifier(boutonL.AbsolutePosition.X + boutonL.AbsoluteSize.X <= boutonCarnet.AbsolutePosition.X, "le choix de la taille ne recouvre pas « Carnet d'adresses »")
+cliquer("AnnulerTaille")
+verifier(fenetre.Contenu:FindFirstChild("ChoixTaille") == nil and boutonNomme("RobeLibre") ~= nil and serveur:atelier(joueur).etat.etape == "accueil", "« × » : on renonce à la robe libre, rien n'est commencé")
+cliquer("RobeLibre")
 cliquer("RobeLibre_M")
 verifier(titre() == "1. Carnet de croquis" and texte("Robe libre (taille M) : à ton idée.") ~= nil, "robe libre : droit au carnet, sans exigence")
 verifier(scene:FindFirstChild("Cliente") == nil and serveur:atelier(joueur).etat.commande.libre, "robe libre : personne n'entre")
 cliquer("Tissu_corsage_droit_devant")
 verifier(boutonNomme("Tissu_toile_jute") ~= nil and texte("Gratuit · Décontracté") ~= nil, "la toile de jute est gratuite")
-cliquer("FermerChoix")
+cliquer("Tissu_toile_jute")
+cliquer("ToutEnUnTissu")
+cliquer("Valider")
+verifier(titre() == "2. Achat du tissu" and texte("Toile de jute — Gratuit") ~= nil, "à l'achat aussi, la toile de jute est « Gratuit »")
 -- La robe menée jusqu'à la photo sur le serveur (coupée, épinglée, cousue), sans repasser par tous les postes
 local function robeLibreALaPhoto(tissu)
 	local e = serveur:atelier(joueur).etat
@@ -965,8 +980,11 @@ local function robeLibreALaPhoto(tissu)
 		e.coutures[id] = 0.9
 	end
 	e.commande.matieres = if tissu == "toile_jute" then 0 else 10
-	e.etape = "photo"
+	e.etape = "decorations"
 	requireModule(scriptClient.Session).courante:actualiser()
+	verifier(boutonNomme("Presenter").Text == "Présenter la robe", "robe libre : « Présenter la robe » (pas de cliente)")
+	cliquer("Presenter")
+	verifier(titre() == "7. Photo et vente" and string.find(fenetre.Contenu.Qualite.Text, "ajustement", 1, true) == nil and boutonNomme("Vendre").TextSize <= 14, "photo d'une robe libre : « 7. Photo et vente », la qualité sans ajustement, « Vendre » en 14 px")
 end
 robeLibreALaPhoto("coton_blanc")
 local prixLibre = serveur:atelier(joueur).etat:prixVente()
@@ -991,7 +1009,8 @@ verifier(texte("Robe libre (taille S) : à ton idée.") ~= nil, "une autre robe 
 robeLibreALaPhoto("toile_jute")
 cliquer("Offrir")
 cliquer("Offrir_colette")
-verifier(titre() == "Aiguille & Dentelle" and texte("Colette adore la robe que tu lui offres !") ~= nil and texte("Amitié de Colette : +") ~= nil, "offerte à Colette : l'accueil l'annonce")
+local gainCadeau = serveur:atelier(joueur).etat.clientes.colette.amitie - amitieColette
+verifier(titre() == "Aiguille & Dentelle" and texte(if gainCadeau >= 3 then "Colette adore la robe que tu lui offres !" else "Colette te remercie pour la robe.") ~= nil and texte("Amitié de Colette : +") ~= nil, "offerte à Colette : l'accueil l'annonce, selon ce qu'elle en pense (+" .. gainCadeau .. ")")
 verifier(serveur:atelier(joueur).etat.clientes.colette.amitie > amitieColette, "son amitié monte")
 end
 
@@ -1034,9 +1053,18 @@ local Histoire = requireModule(dossier.Histoire)
 local e = serveur:atelier(joueur).etat
 verifier(texte("Événement : Le bal des lanternes — robes livrées 0 / 2") ~= nil and boutonNomme("CommandeHistoire") ~= nil, "l'événement en cours s'annonce à l'accueil")
 e.histoire.faites.lanternes_margot = true -- (la robe de Margot, déjà livrée : celle de Colette sera la dernière)
+-- (et trois lettres en attente : la boîte est pleine)
+local lettre = { cliente = "colette", commande = { cliente = "colette", taille = "M", exigences = { { type = "min", style = "romantique", valeur = 30 } } } }
+e.lettres = { lettre, table.clone(lettre), table.clone(lettre) }
 local def = Histoire.commande("lanternes_colette")
 cliquer("CommandeHistoire")
 local conversation = fenetre.Contenu.Conversation
+-- Pendant la conversation, E ne sonne pas la clochette ; « Accepter » n'est pas sous « Suivant » (un double clic
+-- n'accepte pas la commande)
+M.services.UserInputService.InputBegan:Fire({ KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }, false)
+verifier(e.etape == "accueil" and conversation.Visible, "pendant la conversation, E ne sonne pas la clochette")
+local suivantC, accepterC = conversation.SuivantConversation, conversation.AccepterCommande
+verifier(accepterC.Position.X.Offset >= suivantC.Position.X.Offset + suivantC.Size.X.Offset, "« Accepter la commande » n'est pas sous « Suivant »")
 verifier(conversation.Visible and conversation.Interlocutrice.Text == "Colette Marchand" and conversation.Replique.Text == def.repliques.demande, "une conversation : Colette dit pourquoi elle a besoin d'une robe")
 cliquer("SuivantConversation")
 verifier(conversation.Replique.Text == def.repliques.detail and boutonNomme("AccepterCommande") ~= nil, "« Suivant » : ce qu'elle voudrait ; puis « Accepter la commande »")
@@ -1064,6 +1092,8 @@ cliquer("Livrer")
 verifier(titre() == "Aiguille & Dentelle" and fenetre.Contenu.Epilogue.Visible and texte("Le bal des lanternes a eu lieu !") ~= nil and texte("Souvenir : Lanterne de papier") ~= nil, "la dernière robe livrée : le bal a lieu, épilogue et souvenir")
 verifier(texte(Histoire.get("lanternes").epilogue) ~= nil and laColette.Head.Bulle.Texte.Text == def.repliques.merci, "l'épilogue ; Colette raconte la suite")
 verifierTailles("épilogue")
+local inviter3 = boutonNomme("Inviter_3")
+verifier(fenetre.Contenu.Courrier.Text == "Courrier (boîte pleine) :" and inviter3.Position.Y.Offset + inviter3.Size.Y.Offset <= 466, "boîte pleine : c'est dit, et les trois lettres tiennent dans la fenêtre")
 cliquer("FermerEpilogue")
 local suite = fenetre.Contenu.Suite
 verifier(suite.Visible and suite.Interlocutrice.Text == "Colette Marchand" and suite.Replique.Text == def.repliques.merci, "sous l'épilogue : la suite de l'histoire de Colette, lisible")

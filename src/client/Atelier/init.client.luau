@@ -267,7 +267,8 @@ local function afficher()
 		end
 		disposer(EN_PANNEAU[etat.etape] == true)
 		etapeAffichee = etat.etape
-		titre.Text = TITRES[etat.etape] or etat.etape
+		-- (la photo d'une robe libre mène à la vente, pas à une livraison)
+		titre.Text = if etat.etape == "photo" and etat.commande and etat.commande.libre then "7. Photo et vente" else TITRES[etat.etape] or etat.etape
 		fermerEcran = ECRANS[etat.etape]({ session = session, contenu = contenu, fenetre = fenetre, scene = scene, message = afficherMessage, refus = refus, UiKit = UiKit })
 	end
 end

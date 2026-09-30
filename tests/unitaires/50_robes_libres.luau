@@ -114,7 +114,7 @@ local relue = Sauvegarde.versEtat(M.transmettre(Sauvegarde.depuisEtat(l)))
 U.verifier(relue.etape == "carnet" and relue.commande.libre and relue.commande.taille == "L", "robe libre en cours : relue")
 l.ventes = 3
 U.verifier(Sauvegarde.versEtat(M.transmettre(Sauvegarde.depuisEtat(l))).ventes == 3, "robes vendues : sauvegardées")
-for _, cas in ipairs({ { "exigences", { { type = "qualite", valeur = 0.5 } } }, { "cliente", "colette" }, { "libre", "oui" }, { "matieres", -5 } }) do
+for _, cas in ipairs({ { "exigences", { { type = "qualite", valeur = 0.5 } } }, { "cliente", "colette" }, { "libre", "oui" }, { "matieres", -5 }, { "ajustement", 1 }, { "acompte", 5 } }) do
 	local p = M.transmettre(Sauvegarde.depuisEtat(l))
 	p.enCours.commande[cas[1]] = cas[2]
 	U.verifier(Sauvegarde.versEtat(p).etape == "accueil", "robe libre abîmée (" .. cas[1] .. ") : abandonnée")

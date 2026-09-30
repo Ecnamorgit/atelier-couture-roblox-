@@ -26,7 +26,9 @@ return function(ctx)
 	UiKit.texte({ Text = if libre then "Ta robe libre est prête." else "La cliente examine ta robe.", TextSize = 16, Size = UDim2.new(1, 0, 0, 24), Parent = contenu })
 	UiKit.texte({
 		Name = "Qualite",
-		Text = ("Qualité de la robe : %d %% (ajustement %d %%)"):format(math.floor(bilan.qualite * 100 + 0.5), math.floor(bilan.ajustement * 100 + 0.5)),
+		Text = if libre
+			then ("Qualité de la robe : %d %%"):format(math.floor(bilan.qualite * 100 + 0.5))
+			else ("Qualité de la robe : %d %% (ajustement %d %%)"):format(math.floor(bilan.qualite * 100 + 0.5), math.floor(bilan.ajustement * 100 + 0.5)),
 		Font = Enum.Font.GothamBold,
 		TextSize = 18,
 		Position = UDim2.fromOffset(0, 28),
@@ -143,7 +145,7 @@ return function(ctx)
 	-- Livrer met fin à la commande : loin de « Prendre la photo », et confirmé par un second appui. Une robe
 	-- libre se vend (confirmé aussi) ou s'offre à une cliente déjà venue (choisie dans une liste)
 	if libre then
-		UiKit.boutonConfirme({ Name = "Vendre", Text = ("Vendre (%d po)"):format(etat:prixVente()), Position = UDim2.fromOffset(0, 312), Size = UDim2.new(0.5, -6, 0, 44), Parent = contenu }, function()
+		UiKit.boutonConfirme({ Name = "Vendre", Text = ("Vendre (%d po)"):format(etat:prixVente()), TextSize = 14, Position = UDim2.fromOffset(0, 312), Size = UDim2.new(0.5, -6, 0, 44), Parent = contenu }, function()
 			local r = session:vendre()
 			if not r.ok then
 				ctx.refus(r)

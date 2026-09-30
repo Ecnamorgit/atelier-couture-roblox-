@@ -105,6 +105,7 @@ e.etape = "refus"
 e:abandonner()
 r = e:nouvelleCommande(Random.new(6))
 U.verifier(r.cliente == "colette" and not r.premiereVisite and e.etape == "mesures", "Colette revient")
+e.clientes.colette.ajustement = 1 -- (un ajustement gardé qui ne correspond plus à ses mesures : recalculé)
 r = e:reprendreMesures()
 U.verifier(r.ok and e.etape == "carnet" and U.proche(e.commande.mesures.poitrine, 9.4) and U.proche(e.commande.ajustement, 0.8), "« Reprendre ses mesures » : celles de sa première visite")
 e.clientes.colette.amitie = 10

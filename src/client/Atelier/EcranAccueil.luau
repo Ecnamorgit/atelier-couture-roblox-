@@ -49,7 +49,10 @@ return function(ctx)
 		annonce = ("Robe vendue ! +%d pièces d'or (qualité %d %%). Elle part en vitrine."):format(r.prix, math.floor(r.bilan.qualite * 100 + 0.5))
 	elseif action == "offrir" then
 		local fiche = Clientes.get(r.cliente)
-		annonce = ("%s adore la robe que tu lui offres ! Elle part en vitrine."):format(fiche and fiche.nom:match("^(%S+)") or "La cliente")
+		local prenom = fiche and fiche.nom:match("^(%S+)") or "La cliente"
+		annonce = if r.amitie and r.amitie.gain >= 3
+			then ("%s adore la robe que tu lui offres ! Elle part en vitrine."):format(prenom)
+			else ("%s te remercie pour la robe. Elle part en vitrine."):format(prenom)
 		table.insert(suite, ligneAmitie(r.amitie))
 	end
 	if annonce then
@@ -130,6 +133,11 @@ return function(ctx)
 					end
 				end)
 			end
+			-- « × » : on renonce, rien n'est commencé
+			UiKit.boutonDoux({ Name = "AnnulerTaille", Text = "×", TextSize = 18, Position = UDim2.fromOffset(276, 8), Size = UDim2.fromOffset(34, 34), Parent = choix }, function()
+				choix:Destroy()
+				libre.Visible = true
+			end)
 		end)
 	end
 	-- La jauge de prestige : « Prestige 3 — 62 / 100 »
@@ -173,7 +181,8 @@ return function(ctx)
 			suivant.Visible = false
 			accepter.Visible = true
 		end)
-		accepter = UiKit.bouton({ Name = "AccepterCommande", Text = "Accepter la commande", Visible = false, Position = UDim2.fromOffset(0, 150), Size = UDim2.fromOffset(260, 44), ZIndex = 21, Parent = conversation }, function()
+		-- (à droite de « Suivant » : un double clic sur « Suivant » n'accepte pas la commande)
+		accepter = UiKit.bouton({ Name = "AccepterCommande", Text = "Accepter la commande", Visible = false, Position = UDim2.fromOffset(220, 150), Size = UDim2.fromOffset(260, 44), ZIndex = 21, Parent = conversation }, function()
 			conversation.Visible = false
 			accueillie(ctx.session:commandeHistoire())
 		end)
@@ -211,12 +220,12 @@ return function(ctx)
 	end
 	-- Le courrier : chaque lettre annonce la première exigence de la commande ; « Inviter » fait venir la cliente
 	if etat.livraisons >= EtatAtelier.COURRIER_APRES then
-		UiKit.texte({ Name = "Courrier", Text = if #etat.lettres > 0 then "Courrier :" else "Courrier : pas de lettre pour l'instant.", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, y + 88), Size = UDim2.fromOffset(500, 22), Parent = ctx.contenu })
+		UiKit.texte({ Name = "Courrier", Text = if #etat.lettres >= EtatAtelier.LETTRES_MAX then "Courrier (boîte pleine) :" elseif #etat.lettres > 0 then "Courrier :" else "Courrier : pas de lettre pour l'instant.", Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(0, y + 88), Size = UDim2.fromOffset(500, 22), Parent = ctx.contenu })
 		for i, l in ipairs(etat.lettres) do
 			local fiche = Clientes.get(l.cliente)
-			local yl = y + 114 + (i - 1) * 40
+			local yl = y + 114 + (i - 1) * 44
 			UiKit.texte({ Name = "Lettre" .. i, Text = ("%s : « %s »"):format(fiche.nom:match("^(%S+)"), UiKit.exigence(l.commande.exigences[1], Catalogue)), TextSize = 16, Position = UDim2.fromOffset(0, yl + 6), Size = UDim2.fromOffset(600, 22), Parent = ctx.contenu })
-			UiKit.boutonDoux({ Name = "Inviter_" .. i, Text = "Inviter", TextSize = 16, Position = UDim2.fromOffset(610, yl), Size = UDim2.fromOffset(120, 34), Parent = ctx.contenu }, function()
+			UiKit.boutonDoux({ Name = "Inviter_" .. i, Text = "Inviter", TextSize = 16, Position = UDim2.fromOffset(610, yl), Size = UDim2.fromOffset(120, 40), Parent = ctx.contenu }, function()
 				accueillie(ctx.session:inviter(i))
 			end)
 		end
@@ -267,9 +276,19 @@ return function(ctx)
 			carnet.Visible = true
 		end)
 	end
-	-- E, fenêtre ouverte (pas pendant la saisie dans le chat) : sonner la clochette
+	-- E, fenêtre ouverte (pas pendant la saisie dans le chat, ni quand un panneau est ouvert par-dessus l'accueil :
+	-- conversation, épilogue, suite de l'histoire, carnet d'adresses) : sonner la clochette
+	local function panneauOuvert()
+		for _, nom in ipairs({ "Conversation", "Epilogue", "Suite", "CarnetAdresses" }) do
+			local p = ctx.contenu:FindFirstChild(nom)
+			if p and p.Visible then
+				return true
+			end
+		end
+		return false
+	end
 	local connexion = UserInputService.InputBegan:Connect(function(input, traite)
-		if not traite and input.KeyCode == Enum.KeyCode.E and ctx.fenetre.Visible then
+		if not traite and input.KeyCode == Enum.KeyCode.E and ctx.fenetre.Visible and not panneauOuvert() then
 			sonner()
 		end
 	end)

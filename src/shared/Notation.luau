@@ -254,8 +254,6 @@ end
 ---------------------------------------------------------------------------
 -- Bilan d'une recette, exigences, paie
 ---------------------------------------------------------------------------
--- recette = { croquis, pieces = { { id, tissu, x, y, angle, couture } }, accessoires = { … } }
--- Retourne { styles, qualite, teinte, accessoires = { [id] = nombre }, nbPieces }
 -- Ajustement de la robe à la cliente (sous-projet 2) : 1 si les mesures prises sont justes à 0,2 dm près ;
 -- chaque écart au-delà coûte (1,5 dm d'écart en tout : 0), jamais sous 50 %
 Notation.TOLERANCE_MESURE = 0.2
@@ -268,6 +266,8 @@ function Notation.ajustement(vraies, prises)
 	return math.clamp(1 - total / Notation.PENTE_MESURE, 0.5, 1)
 end
 
+-- recette = { croquis, pieces = { { id, tissu, x, y, angle, couture } }, accessoires = { … } }
+-- Retourne { styles, qualite, teinte, accessoires = { [id] = nombre }, nbPieces }
 function Notation.bilan(recette)
 	local tissus, piecesNotees = {}, {}
 	for _, p in ipairs(recette.pieces) do

@@ -83,7 +83,7 @@ local function commandeLisible(c, etape)
 		return false
 	end
 	if c.libre ~= nil then
-		return c.libre == true and c.cliente == nil and etape ~= "mesures" and type(c.exigences) == "table" and next(c.exigences) == nil
+		return c.libre == true and c.cliente == nil and c.ajustement == nil and c.acompte == nil and etape ~= "mesures" and type(c.exigences) == "table" and next(c.exigences) == nil
 			and mesuresLisibles(c.mesures) and (c.matieres == nil or (nombre(c.matieres, nil) and c.matieres >= 0 and c.matieres <= 100000))
 	end
 	if (c.cliente ~= nil or etape == "mesures") and not Clientes.get(c.cliente) then

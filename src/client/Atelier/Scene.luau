@@ -290,8 +290,6 @@ function Scene:finirPhoto()
 	end
 end
 
--- Met la scène d'accord avec l'état de l'atelier (derniere = dernière action réussie de la session).
--- Peut attendre (création des maillages) : l'appeler dans une tâche à part pour ne pas bloquer l'interface.
 -- Une lettre dépasse de la boîte aux lettres du comptoir tant que le courrier en contient
 function Scene:montrerCourrier(nombre)
 	local lettre = self.dossier:FindFirstChild("Lettre")
@@ -308,6 +306,8 @@ function Scene:montrerCourrier(nombre)
 	end
 end
 
+-- Met la scène d'accord avec l'état de l'atelier (derniere = dernière action réussie de la session).
+-- Peut attendre (création des maillages) : l'appeler dans une tâche à part pour ne pas bloquer l'interface.
 function Scene:synchroniser(etat, derniere)
 	self:suivreCliente(etat, derniere)
 	self:montrerCourrier(etat.lettres and #etat.lettres or 0)

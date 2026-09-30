@@ -88,12 +88,16 @@ s.lettres = { { cliente = "colette", commande = { cliente = "colette", taille = 
 local relue = Sauvegarde.versEtat(M.transmettre(Sauvegarde.depuisEtat(s)))
 U.verifier(#relue.lettres == 1 and relue.lettres[1].cliente == "colette" and relue.lettres[1].commande.exigences[1].style == "romantique", "les lettres sont sauvegardées")
 local p = M.transmettre(Sauvegarde.depuisEtat(s))
-p.lettres = {
+local bonne = p.lettres[1]
+for k, abimee in ipairs({
 	{ cliente = "inconnue", commande = { cliente = "inconnue", taille = "M", exigences = { { type = "qualite", valeur = 0.5 } } } },
 	{ cliente = "colette", commande = { cliente = "colette", taille = "M", exigences = {} } },
 	{ cliente = "colette", commande = { cliente = "margot", taille = "S", exigences = { { type = "qualite", valeur = 0.5 } } } },
 	"abîmée",
-	p.lettres[1], p.lettres[1], p.lettres[1], p.lettres[1],
-}
+}) do
+	p.lettres = { abimee }
+	U.verifier(#Sauvegarde.versEtat(p).lettres == 0, "lettre illisible laissée (" .. k .. ")")
+end
+p.lettres = { bonne, bonne, bonne, bonne }
 relue = Sauvegarde.versEtat(p)
-U.verifier(#relue.lettres == 3 and relue.lettres[1].cliente == "colette", "lettres illisibles laissées, trois au plus")
+U.verifier(#relue.lettres == 3 and relue.lettres[1].cliente == "colette", "trois lettres au plus")

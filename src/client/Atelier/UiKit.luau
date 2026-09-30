@@ -89,7 +89,6 @@ function UiKit.bouton(props, auClic, calme)
 	return b
 end
 
--- Bouton secondaire (fond clair)
 -- Un élément du catalogue pas encore ouvert (déblocages) : grisé, marqué par l'attribut « Ferme »
 function UiKit.griser(bouton, ferme)
 	bouton:SetAttribute("Ferme", ferme)
@@ -99,6 +98,7 @@ function UiKit.griser(bouton, ferme)
 	end
 end
 
+-- Bouton secondaire (fond clair)
 function UiKit.boutonDoux(props, auClic, calme)
 	return UiKit.bouton(fusionner({ BackgroundColor3 = UiKit.COULEURS.secondaire, TextColor3 = UiKit.COULEURS.texte }, props), auClic, calme)
 end
