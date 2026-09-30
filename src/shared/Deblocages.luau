@@ -24,15 +24,11 @@ Deblocages.PRESTIGE_ACCESSOIRES = {
 	couronne_fleurs = 8,
 	dentelle_doree = 8,
 }
--- Prestige qui ouvre des variantes (sous-projet 4) ; cache-cœur, bustier, trois-quarts et col marin attendent le
--- prestige 8 jusqu'à l'arrivée des nouvelles clientes (plan 8c), dont l'amitié les ouvrira
+-- Prestige qui ouvre des variantes (sous-projet 4) ; cache-cœur, bustier, trois-quarts et col marin s'ouvrent à
+-- l'amitié des nouvelles clientes (Clientes)
 Deblocages.PRESTIGE_VARIANTES = {
 	manches_courtes = 6,
 	jupe_crayon = 7,
-	corsage_cache_coeur = 8,
-	corsage_bustier = 8,
-	manches_trois_quarts = 8,
-	col_marin = 8,
 }
 Deblocages.GENRES = { "variantes", "tissus", "accessoires" }
 

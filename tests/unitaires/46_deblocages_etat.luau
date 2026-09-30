@@ -34,14 +34,14 @@ U.verifier(Progression.gainAmitie(true, 0.79999999999999993) == 3, "qualité 0,8
 local essais = Commandes.ESSAIS
 Commandes.ESSAIS = 0
 for _, c in ipairs(Clientes.LISTE) do
-	local progres = { prestige = ({ 0, 20, 50, 100 })[c.prestige], clientes = {} }
+	local progres = { prestige = Progression.SEUILS_PRESTIGE[c.prestige], clientes = {} }
 	local repli = Commandes.generer(Random.new(1), c, progres)
 	U.verifier(#repli.exigences == 1 and Commandes.realisable(repli.exigences, Deblocages.ouverts(progres)), c.id .. " : le repli est réalisable dès son arrivée (" .. tostring(repli.exigences[1].style) .. " " .. tostring(repli.exigences[1].valeur) .. ")")
 end
 Commandes.ESSAIS = essais
 
 -- Chaque cliente, dès son arrivée (son prestige atteint) : ses commandes sont réalisables avec ce qui est ouvert
-local SEUILS = { 0, 20, 50, 100 }
+local SEUILS = Progression.SEUILS_PRESTIGE
 for _, c in ipairs(Clientes.LISTE) do
 	local progres = { prestige = SEUILS[c.prestige], clientes = {} }
 	local ouverts = Deblocages.ouverts(progres)

@@ -339,6 +339,14 @@ Catalogue.Accessoires = {
 	objet("couronne_fleurs", "Couronne de fleurs", 8, { romantique = 5, mignon = 1 },
 		{ forme = "fleur", taille = 0.7, couleur = { 250, 200, 215 }, reflet = 0 }),
 	garniture("dentelle_doree", "Dentelle dorée", 4, { elegant = 4, romantique = 1 }, { largeur = 0.3, couleur = { 220, 190, 110 }, transparence = 0.15 }),
+	-- Sous-projet 4 : ce qu'ouvre l'amitié des quatre nouvelles clientes (niveau 4)
+	objet("violette", "Violette", 3, { romantique = 3, chic = 1 },
+		{ forme = "fleur", taille = 0.45, couleur = { 140, 90, 190 }, reflet = 0 }),
+	objet("boucle_ecaille", "Boucle d'écaille", 4, { chic = 3, decontracte = 2 },
+		{ forme = "cylindre", taille = 0.45, couleur = { 130, 80, 40 }, reflet = 0.3 }),
+	garniture("dentelle_rouge", "Dentelle rouge", 3, { gothique = 3, romantique = 2 }, { largeur = 0.3, couleur = { 160, 20, 40 }, transparence = 0.15 }),
+	objet("coquillage", "Coquillage", 3, { decontracte = 3, mignon = 2 },
+		{ forme = "boule", taille = 0.35, couleur = { 250, 225, 210 }, reflet = 0.2 }),
 	-- Les souvenirs des événements du quartier (sous-projet 3) : chacun s'ouvre quand son événement a lieu
 	objet("lanterne_papier", "Lanterne de papier", 4, { romantique = 3, mignon = 2 },
 		{ forme = "boule", taille = 0.5, couleur = { 245, 150, 70 }, reflet = 0 }),

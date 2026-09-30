@@ -4,9 +4,20 @@ local Catalogue = U.module("Catalogue")
 local Recette = U.module("Recette")
 
 ---------------------------------------------------------------------------
--- Les six clientes : des données valides, des mesures proches de leur taille
+-- Les dix clientes : des données valides, des mesures proches de leur taille
 ---------------------------------------------------------------------------
-U.verifier(#Clientes.LISTE == 6, "six clientes")
+U.verifier(#Clientes.LISTE == 10, "dix clientes")
+-- Sous-projet 4 : quatre clientes arrivent tard, aux prestiges 5 à 8, et vouvoient la couturière
+local TUTOIEMENT = { " tu ", "Tu ", " toi", " ta ", " ton ", " tes ", " te ", " t'" }
+for niveau, id in pairs({ [5] = "apolline", [6] = "josephine", [7] = "capucine", [8] = "maelle" }) do
+	local c = Clientes.get(id)
+	U.verifier(c ~= nil and c.prestige == niveau, id .. " : arrive au prestige " .. niveau)
+	for cle, texte in pairs(c and c.repliques or {}) do
+		for _, motif in ipairs(TUTOIEMENT) do
+			U.verifier(string.find(" " .. texte, motif, 1, true) == nil, id .. " (" .. cle .. ") : elle vouvoie (« " .. motif .. " »)")
+		end
+	end
+end
 local vus = {}
 for _, c in ipairs(Clientes.LISTE) do
 	U.verifier(not vus[c.id] and Clientes.get(c.id) == c, "identifiant unique : " .. c.id)
@@ -39,6 +50,13 @@ fiches.colette.derniere = 4
 U.verifier(Clientes.prochaine(fiches, 1) == "margot", "… puis la suivante")
 U.verifier(Clientes.prochaine(fiches, 2) == "helene", "prestige 2 : Hélène, nouvelle venue, passe avant les autres")
 U.verifier(Clientes.prochaine(fiches, 8) == "helene", "plusieurs nouvelles venues possibles : dans l'ordre de la liste")
+local toutesVues = {}
+for i, c in ipairs(Clientes.LISTE) do
+	if c.prestige <= 4 then
+		toutesVues[c.id] = { vues = 1, derniere = i }
+	end
+end
+U.verifier(Clientes.prochaine(toutesVues, 4) == "colette" and Clientes.prochaine(toutesVues, 5) == "apolline" and Clientes.prochaine(toutesVues, 8) == "apolline", "prestige 5 : Apolline, nouvelle venue, passe avant les habituées")
 
 ---------------------------------------------------------------------------
 -- Niveaux d'amitié et de prestige, gains
