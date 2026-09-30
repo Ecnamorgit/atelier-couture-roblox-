@@ -11,7 +11,7 @@ local Histoire = require(dossier:WaitForChild("Histoire"))
 local Deblocages = {}
 
 -- Prestige qui ouvre chaque matière (cotons et lins sont ouverts au départ) et deux garnitures
-Deblocages.PRESTIGE_MATIERES = { laine = 2, satin = 3, velours = 4, soie = 5 }
+Deblocages.PRESTIGE_MATIERES = { laine = 2, satin = 3, velours = 4, soie = 5, crepe = 6, organza = 6, brocart = 7, tulle = 8 }
 Deblocages.PRESTIGE_ACCESSOIRES = { ruban_noir = 2, dentelle_noire = 3 }
 Deblocages.GENRES = { "variantes", "tissus", "accessoires" }
 
