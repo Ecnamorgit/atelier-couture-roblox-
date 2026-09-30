@@ -125,7 +125,9 @@ end
 
 -- Manche droite (+X) ; la gauche est son symétrique
 local function manche(e, u, v, hauteur, m)
-	local epaule = Vector3.new((m.poitrine / (2 * math.pi) + 0.1) * EX + 0.35, HAUTEUR_EPAULE, 0)
+	-- (sous-projet 7) des hanches bien plus larges que la poitrine écartent un peu l'épaule : la manche longue passe
+	-- alors au-dehors d'une basque, même aux mesures prises à 1,5 dm près (rien ne change tant que l'écart reste sous 1 dm)
+	local epaule = Vector3.new((m.poitrine / (2 * math.pi) + 0.1) * EX + 0.35 + 0.12 * math.max(0, m.hanches - m.poitrine - 1), HAUTEUR_EPAULE, 0)
 	local axe = Vector3.new(math.sin(INCLINAISON_BRAS), -math.cos(INCLINAISON_BRAS), 0)
 	local n1 = Vector3.new(0, 0, 1)
 	local n2 = axe:Cross(n1).Unit

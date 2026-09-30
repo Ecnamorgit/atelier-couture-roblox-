@@ -13,7 +13,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 7 en cours, plan 19 : des robes à couches, volant et basque)
+## État actuel (sous-projet 7 en cours, plans 19 et 20 : des robes à couches, volant et basque)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -64,7 +64,8 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    5 m, la bande est jetée d'elle-même, et on l'annonce. Une robe libre compte en matières ce qu'elle ajoute à la
    bande.
 5. **Épinglage** : le mannequin prend les mesures de la cliente ; chaque pièce touchée s'y épingle,
-   dans le tissu exactement tel qu'il a été découpé.
+   dans le tissu exactement tel qu'il a été découpé. Les couches (volant, basque) viennent en fin de liste : elles se
+   posent par-dessus les autres pièces.
 6. **Couture** : on maintient « Coudre » (ou Espace) et on glisse pour garder l'aiguille sur le pointillé
    pendant que le tissu tire ; vitesse tortue, normale ou lapin, découd-vite, assistance (note plafonnée à 85 %).
    Une pièce finie n'est rendue qu'avec « Pièce suivante » : la dernière couture se défait encore. La dernière

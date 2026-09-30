@@ -88,6 +88,61 @@ end
 U.verifier(recouvertes >= #paires and #ratees == 0, ("chaque couche passe au moins 0,03 dm au-dessus de celle du dessous (%d cas ; en défaut : %s)"):format(recouvertes, table.concat(ratees, " ; ")))
 
 ---------------------------------------------------------------------------
+-- (plan 20) Les manches passent au-dehors des couches, pour les tailles du catalogue et toutes les mesures qu'on peut
+-- prendre en jeu : la robe est construite aux mesures prises, jusqu'à 1,5 dm de chaque vraie mesure. Le pire coin, pour
+-- chaque cliente : la poitrine au plus étroit, les hanches et la taille au plus large (la manche s'en rapproche)
+---------------------------------------------------------------------------
+local Clientes = U.module("Clientes")
+local reelles = table.clone(Catalogue.TAILLES)
+for _, c in ipairs(Clientes.LISTE) do
+	reelles[c.id] = c.mesures
+	local P = math.max(Recette.POITRINE[1], c.mesures.poitrine - 1.5)
+	local H = math.min(Recette.HANCHES[2], c.mesures.hanches + 1.5)
+	reelles[c.id .. " mal mesurée"] = { poitrine = P, hanches = H, taille = math.min(c.mesures.taille + 1.5, P, H) }
+end
+local couches = {}
+for id, def in pairs(Catalogue.Pieces) do
+	if def.enroulement.type == "jupe" and def.enroulement.couche then
+		couches[def.enroulement.cote] = couches[def.enroulement.cote] or {}
+		table.insert(couches[def.enroulement.cote], id)
+	end
+end
+local croisees = {}
+for idManche, defManche in pairs(Catalogue.Pieces) do
+	if defManche.enroulement.type == "manche" then
+		local b = Polygone.boite(defManche.contour)
+		for nom, mesures in pairs(reelles) do
+			for j = 0, 48 do -- (serré : l'ourlet d'une couche peut tomber entre deux rangs)
+				local y = math.min(b.minY + (b.maxY - b.minY) * j / 48, b.maxY)
+				local x0, x1 = Polygone.etendueLigne(defManche.contour, y)
+				for i = 0, 16 do
+					for _, copie in ipairs({ "droite", "gauche" }) do
+					local p = Patron.point(idManche, copie, x0 + (x1 - x0) * i / 16, y, mesures)
+					local yd = -p.Y
+					local phi = math.atan2(p.Z / Patron.ELLIPSE.z, p.X / Patron.ELLIPSE.x) % (2 * math.pi)
+					local cote = if phi >= math.pi then "devant" else "dos"
+					local u = if cote == "devant" then (2 * math.pi - phi) / math.pi else (math.pi - phi) / math.pi
+					for _, idCouche in ipairs(couches[cote] or {}) do
+						local e = Catalogue.piece(idCouche).enroulement
+						local v = (yd - (e.depart or 0)) / hauteur(idCouche)
+						if v >= 0 and v <= 1 and rayon(p) < rayon(point(idCouche, math.clamp(u, 0, 1), v, mesures)) + 0.03 then
+							croisees[idManche .. " dans " .. idCouche .. " (" .. nom .. ")"] = true
+						end
+					end
+					end
+				end
+			end
+		end
+	end
+end
+local listeCroisees = {}
+for n in pairs(croisees) do
+	table.insert(listeCroisees, n)
+end
+table.sort(listeCroisees)
+U.verifier(#listeCroisees == 0, "les manches passent au-dehors des couches (en défaut : " .. table.concat(listeCroisees, " ; ") .. ")")
+
+---------------------------------------------------------------------------
 -- Une grille propre à la pièce : le volant, froncé serré, en 32 × 3 (24 × 2 en vitrine, où ses fronces se voient encore)
 ---------------------------------------------------------------------------
 local maillage = Maillage.piece("volant_devant", "unique", M, "robe")
