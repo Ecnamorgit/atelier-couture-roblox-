@@ -31,8 +31,9 @@ function Molette:glisser(dy)
 	local n = if self.reste >= 0 then math.floor(self.reste / Molette.PX_PAR_CRAN) else -math.floor(-self.reste / Molette.PX_PAR_CRAN)
 	self.reste -= n * Molette.PX_PAR_CRAN
 	self:crans(n)
-	if self.valeur == self.mini or self.valeur == self.maxi then
-		self.reste = 0 -- en butée : le glissement en trop ne compte pas
+	-- En butée, le glissement en trop (celui qui pousse vers la borne) ne compte pas ; dans l'autre sens, il est gardé
+	if (self.valeur == self.maxi and self.reste > 0) or (self.valeur == self.mini and self.reste < 0) then
+		self.reste = 0
 	end
 	return self.valeur
 end

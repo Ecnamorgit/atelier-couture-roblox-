@@ -20,6 +20,18 @@ U.verifier(m.valeur == 9.7 and math.abs(m.valeur * 10 - math.round(m.valeur * 10
 U.verifier(m:glisser(-12 * 100) == 14, "tournée trop loin : s'arrête à sa borne haute")
 U.verifier(m:glisser(12) == 13.9, "en butée, le glissement en trop ne compte pas : un cran vers le bas redescend tout de suite")
 U.verifier(m:glisser(12 * 500) == 2 and m:crans(-1) == 2, "borne basse")
+-- En butée, un glissement lent dans l'autre sens (des pas de 3 px, image par image) la fait repartir
+local b = Molette.nouvelle(14, 2, 14)
+b:glisser(-12 * 10) -- en butée haute
+for _ = 1, 40 do
+	b:glisser(3) -- 120 px vers le bas, par petits pas
+end
+U.verifier(math.abs(b.valeur - 13) < 1e-9, "en butée haute, un glissement lent vers le bas redescend de dix crans (" .. b.valeur .. ")")
+local h = Molette.nouvelle(2, 2, 14)
+for _ = 1, 40 do
+	h:glisser(-3)
+end
+U.verifier(math.abs(h.valeur - 3) < 1e-9, "en butée basse, un glissement lent vers le haut remonte de dix crans (" .. h.valeur .. ")")
 -- Régler directement (reprendre les mesures) ; la fente tourne avec la molette
 local r = Molette.nouvelle(6, 2, 14)
 U.verifier(r:regler(8.93) == 8.9 and r:regler(40) == 14, "régler directement : au dixième, dans les bornes")

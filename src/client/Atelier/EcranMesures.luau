@@ -32,7 +32,7 @@ return function(ctx)
 	local fiche = etat.clientes[cliente.id]
 	local connexions = {}
 	local molettes, elements = {}, {}
-	local saisie, survol = nil, nil
+	local saisie = nil
 
 	UiKit.texte({
 		Name = "Consigne",
@@ -51,7 +51,7 @@ return function(ctx)
 	UiKit.arrondir(UiKit.creer("Frame", { Name = "Bouchon", BackgroundColor3 = BOIS, BorderSizePixel = 0, Position = UDim2.fromOffset(centre - 16, 36), Size = UDim2.fromOffset(32, 10), Parent = mannequin }), 5)
 
 	-- La silhouette de la cliente, en pointillé par-dessus le mannequin (comme un calque) : ses bords gauche et droit, à
-	-- chaque mesure, et le haut et le bas de chaque bande
+	-- chaque mesure
 	local function pointille(parent, x0, y0, x1, y1)
 		local n = math.max(1, math.floor(math.max(math.abs(x1 - x0), math.abs(y1 - y0)) / PAS_POINTS))
 		for k = 0, n do
@@ -98,26 +98,31 @@ return function(ctx)
 		end)
 		elements[cle] = { corps = corps, ruban = ruban, fente = fente, valeur = valeur, nom = mesure.nom, y = mesure.y }
 		maj(cle)
-		-- Glisser sur la molette (souris ou doigt) ; la molette de la souris quand le pointeur est dessus
+		-- Glisser sur la molette (souris ou doigt) ; un second doigt ne prend pas la main au premier
 		table.insert(connexions, bouton.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			if not saisie and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
 				saisie = { cle = cle, input = input, y = input.Position.Y }
 			end
 		end))
-		table.insert(connexions, bouton.MouseEnter:Connect(function()
-			survol = cle
-		end))
-		table.insert(connexions, bouton.MouseLeave:Connect(function()
-			if survol == cle then
-				survol = nil
+		elements[cle].bouton = bouton
+	end
+	-- La molette de la souris, sur une molette : elle la tourne (vérifié dans Studio : pointeur sur un bouton de
+	-- l'interface, la caméra de Roblox ne zoome pas) ; ailleurs, rien
+	local function sousLePointeur(position)
+		for cle, e in pairs(elements) do
+			local p, t = e.bouton.AbsolutePosition, e.bouton.AbsoluteSize
+			if position.X >= p.X and position.X <= p.X + t.X and position.Y >= p.Y and position.Y <= p.Y + t.Y then
+				return cle
 			end
-		end))
+		end
+		return nil
 	end
 	table.insert(connexions, UserInputService.InputChanged:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseWheel then
-			if survol and input.Position.Z ~= 0 then
-				molettes[survol]:crans(if input.Position.Z > 0 then 1 else -1)
-				maj(survol)
+			local cle = ctx.fenetre.Visible and input.Position.Z ~= 0 and sousLePointeur(input.Position)
+			if cle then
+				molettes[cle]:crans(if input.Position.Z > 0 then 1 else -1)
+				maj(cle)
 			end
 			return
 		end

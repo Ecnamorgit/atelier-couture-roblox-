@@ -29,7 +29,7 @@ EtatAtelier.ACHAT_MAX = 100 -- dm par achat
 EtatAtelier.TOLERANCE_MESURES = 2 -- mesures de couture en plus ou en moins acceptées (spec §6)
 EtatAtelier.DUREE_MIN = 0.9 -- part de la durée minimale d'une couture (trajet / vitesse maximale)
 EtatAtelier.ECART_MESURE_MAX = 1.5 -- dm : une mesure plus loin de la vraie est refusée (ruban pas réglé)
-local MESURE_INVALIDE = "Mesure invalide : tourne chaque molette jusqu'à épouser sa silhouette."
+local MESURE_INVALIDE = "Mesure invalide : tourne chaque molette jusqu'à ce que le mannequin épouse sa silhouette."
 -- Étapes du plan 3b (le plan 3c ajoute la photo et la livraison après les décorations)
 EtatAtelier.ROBES_GARDEES = 10 -- robes livrées gardées, la plus récente en vitrine (spec §6)
 EtatAtelier.ETAPES = { "accueil", "mesures", "carnet", "achat", "decoupe", "epinglage", "couture", "decorations", "photo", "refus" }

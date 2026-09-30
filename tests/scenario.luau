@@ -220,7 +220,7 @@ end
 serveur:atelier(joueur).etat.argent += 1 -- (la réponse au refus emporte un état changé : la scène se resynchronise)
 cliquer("ValiderMesures")
 serveur:atelier(joueur).etat.argent -= 1
-verifier(titre() == "Les mesures" and fenetre.Message.Visible and fenetre.Message.Text == "Mesure invalide : tourne chaque molette jusqu'à épouser sa silhouette.", "molettes pas réglées : mesures refusées, message")
+verifier(titre() == "Les mesures" and fenetre.Message.Visible and fenetre.Message.Text == "Mesure invalide : tourne chaque molette jusqu'à ce que le mannequin épouse sa silhouette.", "molettes pas réglées : mesures refusées, message")
 verifier(not gui.Atelier.Dialogue.Visible, "la même parole, après une réponse du serveur : l'encadré reste refermé")
 -- Sous-projet 6 : le mannequin à molettes. La silhouette de la cliente est en pointillé par-dessus le mannequin
 local mannequinM = fenetre.Contenu:FindFirstChild("Mannequin")
@@ -260,14 +260,26 @@ M.services.UserInputService.InputChanged:Fire(doigtMolette)
 M.services.UserInputService.InputEnded:Fire(doigtMolette)
 local corpsP = mannequinM.Corps_poitrine
 verifier(corpsP.Position.X.Offset >= 0 and corpsP.Position.X.Offset + corpsP.Size.X.Offset <= mannequinM.Size.X.Offset, "tournée trop loin : le mannequin s'arrête au bord de son cadre")
--- À la souris : la molette de la souris tourne la molette survolée, et seulement elle
-local avantTaille = lue("taille")
-fenetre.Contenu.Molette_taille.MouseEnter:Fire()
-M.services.UserInputService.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseWheel, Position = Vector3.new(0, 0, 1) })
-verifier(math.abs(lue("taille") - (avantTaille + 0.1)) < 1e-6, "la molette de la souris sur la molette de la taille : un cran")
-fenetre.Contenu.Molette_taille.MouseLeave:Fire()
-M.services.UserInputService.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseWheel, Position = Vector3.new(0, 0, 1) })
-verifier(math.abs(lue("taille") - (avantTaille + 0.1)) < 1e-6, "pointeur ailleurs : la molette de la souris ne la tourne plus")
+-- À la souris : la molette de la souris tourne la molette sous le pointeur, et seulement elle
+do
+	local avantTaille = lue("taille")
+	local mt = fenetre.Contenu.Molette_taille
+	local dessus = Vector3.new(mt.AbsolutePosition.X + mt.AbsoluteSize.X / 2, mt.AbsolutePosition.Y + mt.AbsoluteSize.Y / 2, 1)
+	M.services.UserInputService.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseWheel, Position = dessus })
+	verifier(math.abs(lue("taille") - (avantTaille + 0.1)) < 1e-6, "la molette de la souris sur la molette de la taille : un cran")
+	M.services.UserInputService.InputChanged:Fire({ UserInputType = Enum.UserInputType.MouseWheel, Position = Vector3.new(5, 5, 1) })
+	verifier(math.abs(lue("taille") - (avantTaille + 0.1)) < 1e-6, "pointeur ailleurs : la molette de la souris ne la tourne pas")
+	-- Un second doigt posé sur une autre molette ne prend pas la main au premier
+	local premier = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(0, 300, 0) }
+	local second = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(0, 300, 0) }
+	local avantHanches = lue("hanches")
+	fenetre.Contenu.Molette_taille.InputBegan:Fire(premier)
+	fenetre.Contenu.Molette_hanches.InputBegan:Fire(second)
+	premier.Position = Vector3.new(0, 300 - 12 * echelleM, 0)
+	M.services.UserInputService.InputChanged:Fire(premier)
+	M.services.UserInputService.InputEnded:Fire(premier)
+	verifier(math.abs(lue("taille") - (avantTaille + 0.2)) < 1e-6 and lue("hanches") == avantHanches, "un second doigt sur une autre molette ne prend pas la main au premier")
+end
 local function mesurerCliente()
 	local vraies = Clientes.get(serveur:atelier(joueur).etat.commande.cliente).mesures
 	for _, cle in ipairs(MESURES) do
