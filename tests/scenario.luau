@@ -1577,6 +1577,7 @@ do -- L'achat du coton blanc : le conseil ne compte que le tissu neuf
 	local l = fenetre.Contenu.Lignes.Ligne_coton_blanc
 	local conseilCoton = tonumber(l.Infos.Text:match("^Conseillé : (%d+) dm"))
 	verifier(conseilCoton ~= nil and l.Infos.Text == ("Conseillé : %d dm · Neuf : 0 dm (6 entamés)"):format(conseilCoton) and l.Quantite.Text == conseilCoton .. " dm", "coton blanc tout entamé : la quantité proposée est le conseil entier (" .. l.Infos.Text .. ")")
+	verifier(l.Infos.Size.X.Offset >= 336 and l.Infos.Size.Y.Offset >= 34 and l.Infos.Position.Y.Offset + l.Infos.Size.Y.Offset <= l.Size.Y.Offset and l.Infos.Position.X.Offset + l.Infos.Size.X.Offset <= l.Moins.Position.X.Offset, "l'information du tissu a la place de deux lignes, dans la ligne d'achat, avant « − »")
 end
 local lignesAchat = fenetre.Contenu:FindFirstChild("Lignes")
 verifier(lignesAchat ~= nil and lignesAchat:IsA("ScrollingFrame"), "les lignes d'achat sont dans une liste qui défile")
