@@ -37,6 +37,7 @@ return function(ctx)
 	})
 	if libre then
 		UiKit.texte({ Name = "PrixVente", Text = ("Prix de vente : %d po"):format(etat:prixVente()), Font = Enum.Font.GothamBold, TextSize = 16, Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 0, 22), Parent = contenu })
+		UiKit.texte({ Name = "Rang", Text = "Ton rang : " .. Progression.texteRang(etat.livraisons + etat.ventes), TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(0, 82), Size = UDim2.new(1, 0, 0, 20), Parent = contenu })
 	else
 		UiKit.texte({ Text = "Elle voulait :", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 0, 20), Parent = contenu })
 	end

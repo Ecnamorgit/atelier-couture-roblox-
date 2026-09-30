@@ -69,6 +69,11 @@ function UiKit.mesureAnnonce(texte, largeur)
 	return 14, 19 * UiKit.lignes(texte, largeur, 14) + 2
 end
 
+-- L'avis d'une cliente en étoiles (1 à 5) : « ★★★★☆ »
+function UiKit.etoiles(n)
+	return string.rep("★", n) .. string.rep("☆", 5 - n)
+end
+
 function UiKit.texte(props)
 	return UiKit.creer("TextLabel", fusionner({
 		BackgroundTransparency = 1,

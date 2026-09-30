@@ -25,6 +25,13 @@ local function ligneAmitie(amitie)
 	return ("Amitié %s : %s%d%s"):format(Deblocages.de(prenom), amitie.gain >= 0 and "+" or "", amitie.gain, niveau)
 end
 
+-- Le rang de la couturière vient de monter (robes livrées ou vendues) : « Nouveau rang : Couturière ! » ; sinon nil
+local function nouveauRang(etat)
+	local robes = etat.livraisons + etat.ventes
+	local rang = Progression.rang(robes)
+	return if rang ~= Progression.rang(robes - 1) then ("Nouveau rang : %s !"):format(rang.nom) else nil
+end
+
 return function(ctx)
 	local UiKit = ctx.UiKit
 	local C = UiKit.COULEURS
@@ -36,8 +43,9 @@ return function(ctx)
 	local suite = {}
 	if action == "livrer" and r.reussie then
 		local fiche = r.amitie and Clientes.get(r.amitie.cliente)
-		annonce = ("%s est ravie ! +%d pièces d'or (qualité %d %%). Sa robe est en vitrine."):format(
+		annonce = ("%s est ravie ! %s +%d pièces d'or (qualité %d %%). Sa robe est en vitrine."):format(
 			fiche and fiche.nom:match("^(%S+)") or "La cliente",
+			UiKit.etoiles(Progression.etoiles(true, r.bilan.qualite)),
 			r.verse or r.paie,
 			math.floor(r.bilan.qualite * 100 + 0.5)
 		)
@@ -45,8 +53,10 @@ return function(ctx)
 			table.insert(suite, ("Acompte de %d déjà reçu"):format(r.acompte))
 		end
 		table.insert(suite, ligneAmitie(r.amitie))
+		table.insert(suite, nouveauRang(ctx.session.etat))
 	elseif action == "vendre" then
 		annonce = ("Robe vendue ! +%d pièces d'or (qualité %d %%). Elle part en vitrine."):format(r.prix, math.floor(r.bilan.qualite * 100 + 0.5))
+		table.insert(suite, nouveauRang(ctx.session.etat))
 	elseif action == "offrir" then
 		local fiche = Clientes.get(r.cliente)
 		local prenom = fiche and fiche.nom:match("^(%S+)") or "La cliente"
@@ -139,16 +149,17 @@ return function(ctx)
 			end)
 		end)
 	end
-	-- La jauge de prestige : « Prestige 3 — 62 / 100 »
+	-- La jauge de prestige, et le titre de la réputation : « Réputation : Appréciée (prestige 3) — 62 / 100 »
 	local niveau = Progression.niveauPrestige(etat.prestige)
 	local seuil, suivant = Progression.SEUILS_PRESTIGE[niveau], Progression.SEUILS_PRESTIGE[niveau + 1]
 	local y = ligne + 66
+	local reputation = ("Réputation : %s (prestige %d)"):format(Progression.titreReputation(niveau), niveau)
 	UiKit.texte({
 		Name = "Prestige",
-		Text = if suivant then ("Prestige %d — %d / %d"):format(niveau, etat.prestige, suivant) else ("Prestige %d — %d (au plus haut)"):format(niveau, etat.prestige),
+		Text = if suivant then ("%s — %d / %d"):format(reputation, etat.prestige, suivant) else ("%s — %d, au plus haut"):format(reputation, etat.prestige),
 		Font = Enum.Font.GothamBold,
 		Position = UDim2.fromOffset(0, y),
-		Size = UDim2.fromOffset(360, 22),
+		Size = UDim2.fromOffset(600, 22),
 		Parent = ctx.contenu,
 	})
 	local fond = UiKit.arrondir(UiKit.creer("Frame", { Name = "JaugePrestige", BackgroundColor3 = C.secondaire, Position = UDim2.fromOffset(0, y + 26), Size = UDim2.fromOffset(360, 12), Parent = ctx.contenu }), 6)
@@ -239,7 +250,8 @@ return function(ctx)
 	end
 	if #venues > 0 then
 		local carnet = UiKit.arrondir(UiKit.creer("TextButton", { Name = "CarnetAdresses", Text = "", AutoButtonColor = false, Visible = false, BackgroundColor3 = C.panneau, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = ctx.contenu }), 10)
-		UiKit.texte({ Text = "Carnet d'adresses", Font = Enum.Font.GothamBold, Size = UDim2.new(1, -130, 0, 34), ZIndex = 21, Parent = carnet })
+		-- En tête : le rang de la couturière (robes livrées ou vendues)
+		UiKit.texte({ Name = "TitreAdresses", Text = "Carnet d'adresses — " .. Progression.texteRang(etat.livraisons + etat.ventes), Font = Enum.Font.GothamBold, Size = UDim2.new(1, -130, 0, 34), ZIndex = 21, Parent = carnet })
 		UiKit.boutonDoux({ Name = "FermerCarnetAdresses", Text = "Fermer", TextSize = 14, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(110, 34), ZIndex = 21, Parent = carnet }, function()
 			carnet.Visible = false
 		end)

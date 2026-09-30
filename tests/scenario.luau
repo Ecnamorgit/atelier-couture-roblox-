@@ -1051,10 +1051,15 @@ cliquer("Livrer")
 verifier(titre() == "Aiguille & Dentelle" and argent() > avantLivraison, "robe acceptée : payée")
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_reussite", "robe acceptée : une petite fanfare")
 verifier(texte("Colette est ravie") ~= nil, "l'accueil annonce la paie")
+do -- Sous-projet 5 : son avis en étoiles, dans l'annonce
+	local qualite = requireModule(scriptClient.Session).courante.derniere.reponse.bilan.qualite
+	local n = requireModule(dossier.Progression).etoiles(true, qualite)
+	verifier(texte("Colette est ravie ! " .. string.rep("★", n) .. string.rep("☆", 5 - n) .. " +") ~= nil, "l'annonce donne son avis : " .. n .. " étoiles sur 5")
+end
 verifier(texte("Amitié de Colette : +") ~= nil and texte("Prestige : +") ~= nil, "l'accueil annonce l'amitié et le prestige gagnés")
 verifier(texte("Acompte de ") ~= nil and texte("(niveau 3 !)") ~= nil and texte("Nouveau : les satins (4), Dentelle noire.") ~= nil, "l'accueil rappelle l'acompte, le niveau de prestige atteint et ce qui vient de s'ouvrir")
 local prestigeJoueur = serveur:atelier(joueur).etat.prestige
-verifier(fenetre.Contenu.Prestige.Text == ("Prestige 3 — %d / 100"):format(prestigeJoueur), "jauge de prestige : « Prestige 3 — " .. prestigeJoueur .. " / 100 »")
+verifier(fenetre.Contenu.Prestige.Text == ("Réputation : Appréciée (prestige 3) — %d / 100"):format(prestigeJoueur), "jauge de prestige : « Réputation : Appréciée (prestige 3) — " .. prestigeJoueur .. " / 100 »")
 verifier(math.abs(fenetre.Contenu.JaugePrestige.Rempli.Size.X.Scale - (prestigeJoueur - 50) / 50) < 1e-6, "la jauge se remplit vers le niveau suivant")
 verifierTailles("accueil")
 serveur:atelier(joueur).etat.prestige = 530 -- (tout reste ouvert pour la suite)
@@ -1066,6 +1071,10 @@ verifier(scene:FindFirstChild("Lettre") ~= nil, "une lettre dépasse de la boît
 -- Le carnet d'adresses : les clientes déjà venues, leur amitié, ce que le prochain niveau ouvrira
 cliquer("OuvrirCarnetAdresses")
 verifier(texte("Colette Marchand — amitié niveau 5") ~= nil and fenetre.Contenu.CarnetAdresses:FindFirstChild("Adresse_margot") == nil, "carnet d'adresses : Colette, pas encore Margot")
+do -- Le rang de la couturière, en tête du carnet d'adresses
+	local e = requireModule(scriptClient.Session).courante.etat
+	verifier(fenetre.Contenu.CarnetAdresses.TitreAdresses.Text == "Carnet d'adresses — " .. requireModule(dossier.Progression).texteRang(e.livraisons + e.ventes), "carnet d'adresses : le rang de la couturière (" .. fenetre.Contenu.CarnetAdresses.TitreAdresses.Text .. ")")
+end
 cliquer("FermerCarnetAdresses")
 verifier(not fenetre.Contenu.CarnetAdresses.Visible, "carnet d'adresses refermé")
 verifier(imageAvant ~= nil and Vignettes.piece(idVignette, tissuVignette, placeVignette, 256) ~= imageAvant, "commande finie : les images des pièces découpées sont oubliées (mémoire)")
@@ -1129,14 +1138,23 @@ robeLibreALaPhoto("coton_blanc")
 local prixLibre = serveur:atelier(joueur).etat:prixVente()
 verifier(fenetre.Contenu.PrixVente.Text == ("Prix de vente : %d po"):format(prixLibre) and boutonNomme("Vendre").Text == ("Vendre (%d po)"):format(prixLibre), "à la photo : le prix de vente, « Vendre (" .. prixLibre .. " po) »")
 verifier(fenetre.Contenu:FindFirstChild("Livrer") == nil, "une robe libre ne se livre pas")
+do -- À la vente : le rang de la couturière
+	local e = serveur:atelier(joueur).etat
+	verifier(fenetre.Contenu.Rang.Text == "Ton rang : " .. requireModule(dossier.Progression).texteRang(e.livraisons + e.ventes), "à la vente : le rang (" .. fenetre.Contenu.Rang.Text .. ")")
+end
 cliquer("Offrir")
 verifier(boutonNomme("Offrir_colette") ~= nil and fenetre.Contenu.ChoixCliente:FindFirstChild("Offrir_ines") == nil, "offrir : seulement aux clientes déjà venues")
 cliquer("FermerChoixCliente")
 verifier(not fenetre.Contenu.ChoixCliente.Visible, "annuler : le choix se ferme")
 local avantVente = argent()
+-- (quatorze robes déjà livrées : celle-ci est la quinzième, la couturière change de rang)
+local livraisonsVraies = serveur:atelier(joueur).etat.livraisons
+serveur:atelier(joueur).etat.livraisons = 14
 cliquer("Vendre")
 cliquer("Vendre")
 verifier(titre() == "Aiguille & Dentelle" and argent() == avantVente + prixLibre and texte(("Robe vendue ! +%d pièces d'or"):format(prixLibre)) ~= nil, "robe vendue : le prix dans la caisse, annoncé")
+verifier(texte("Nouveau rang : Couturière !") ~= nil, "la quinzième robe : « Nouveau rang : Couturière ! »")
+serveur:atelier(joueur).etat.livraisons = livraisonsVraies
 verifier(M.sonsJoues[#M.sonsJoues] == "Atelier_achat" and serveur:atelier(joueur).etat.ventes == 1, "vendue : la caisse sonne")
 M.avancer(1)
 verifier(maVitrine:GetAttribute("Recette") == requireModule(dossier.Recette).encoder(serveur:atelier(joueur).etat.robes[1]), "la robe vendue part en vitrine")
