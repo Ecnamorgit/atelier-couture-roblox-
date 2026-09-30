@@ -2,6 +2,8 @@
 -- À chaque commande : mesures justes, la robe la moins chère qui la remplit avec ce qui est ouvert (un seul
 -- tissu, l'accessoire demandé), qualité 0,8 ; une robe refusée (qualité demandée trop haute) est abandonnée.
 -- Une robe sur quatre (dès que les robes libres sont ouvertes) : une robe libre en toile de jute, vendue.
+-- Le courrier : quand une lettre attend, le joueur invite sa cliente (la moins avancée en amitié d'abord) au
+-- lieu de sonner la clochette.
 local EtatAtelier = U.module("EtatAtelier")
 local Clientes = U.module("Clientes")
 local Catalogue = U.module("Catalogue")
@@ -70,7 +72,7 @@ local function simuler(graine)
 local e = EtatAtelier.nouveau()
 local rng = Random.new(graine)
 local niveauA, toutOuvertA = {}, nil
-local plusPauvre, livrees, commandes, vendues = math.huge, 0, 0, 0
+local plusPauvre, livrees, commandes, vendues, invitees = math.huge, 0, 0, 0, 0
 local JUTE = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
 for n = 1, ROBES do
 	if n % 4 == 0 and e.livraisons >= EtatAtelier.LIBRES_APRES then
@@ -85,11 +87,22 @@ for n = 1, ROBES do
 		assert(e:validerCroquis(JUTE, tissus).ok)
 		e.etape = "decorations"
 		assert(e:decorer({}).ok)
-		assert(e:vendre().ok)
+		assert(e:vendre(rng).ok)
 		vendues += 1
 	else
 	commandes += 1
-	assert(e:nouvelleCommande(rng).ok)
+	local lettre
+	for i, l in ipairs(e.lettres) do
+		if not lettre or e.clientes[l.cliente].amitie < e.clientes[e.lettres[lettre].cliente].amitie then
+			lettre = i
+		end
+	end
+	if lettre then
+		assert(e:inviter(lettre).ok)
+		invitees += 1
+	else
+		assert(e:nouvelleCommande(rng).ok)
+	end
 	assert(e:mesurer(Clientes.get(e.commande.cliente).mesures).ok)
 	local choix = choisir(e)
 	local reussie = false
@@ -109,7 +122,7 @@ for n = 1, ROBES do
 		e.etape = "decorations"
 		local deco = choix.impose and { { id = choix.impose, piece = 1, copie = "unique", u = 0.5, v = 0.5, echelle = 1, angle = 0 } } or {}
 		assert(e:decorer(deco).ok)
-		reussie = e:livrer().reussie
+		reussie = e:livrer(rng).reussie
 	end
 	if reussie then
 		livrees += 1
@@ -127,7 +140,7 @@ for n = 1, ROBES do
 		toutOuvertA = n
 	end
 end
-return { prestige2 = niveauA[2] or math.huge, prestige5 = niveauA[5] or math.huge, toutOuvert = toutOuvertA or math.huge, plusPauvre = plusPauvre, livrees = livrees, commandes = commandes, vendues = vendues }
+return { prestige2 = niveauA[2] or math.huge, prestige5 = niveauA[5] or math.huge, toutOuvert = toutOuvertA or math.huge, plusPauvre = plusPauvre, livrees = livrees, commandes = commandes, vendues = vendues, invitees = invitees }
 end
 
 -- Vingt parties : les tirages changent d'une partie à l'autre, l'équilibrage se juge sur l'ensemble
@@ -151,11 +164,13 @@ local pauvres = serie("plusPauvre")
 local function texte(v)
 	return if v == math.huge then "jamais" else tostring(v)
 end
-local bilan = ("%d parties de %d robes, une robe libre de jute vendue sur quatre : prestige 2 à la robe %s au plus tard ; 5 de la %s à la %s (médiane %s) ; tout ouvert de la %s à la %s (médiane %s) ; au plus bas %d po"):format(PARTIES, ROBES, texte(p2[#p2]), texte(p5[1]), texte(p5[#p5]), texte(medianeP5), texte(tout[1]), texte(tout[#tout]), texte(medianeTout), pauvres[1])
+local invitees, medianeInvitees = serie("invitees")
+local bilan = ("%d parties de %d robes, une robe libre de jute vendue sur quatre, %s commandes par lettre (médiane) : prestige 2 à la robe %s au plus tard ; 5 de la %s à la %s (médiane %s) ; tout ouvert de la %s à la %s (médiane %s) ; au plus bas %d po"):format(PARTIES, ROBES, texte(medianeInvitees), texte(p2[#p2]), texte(p5[1]), texte(p5[#p5]), texte(medianeP5), texte(tout[1]), texte(tout[#tout]), texte(medianeTout), pauvres[1])
 print("Équilibrage : " .. bilan)
 U.verifier(p2[#p2] <= 3, "prestige 2 en trois robes au plus, dans chaque partie (" .. bilan .. ")")
 U.verifier(medianeP5 >= 12 and medianeP5 <= 20 and p5[#p5] <= 25, "prestige 5 entre la 12e et la 20e robe en médiane, à la 25e au plus tard (" .. bilan .. ")")
 U.verifier(medianeTout >= 50 and medianeTout <= 80, "tout le catalogue ouvert entre la 50e et la 80e robe, en médiane (" .. bilan .. ")")
+U.verifier(medianeInvitees >= 10, "le courrier fait venir des clientes (" .. bilan .. ")")
 U.verifier(pauvres[1] >= robeSimple, "l'argent ne descend jamais sous le prix d'une robe simple (" .. bilan .. ")")
 local livreesEtVendues = true
 for _, p in ipairs(parties) do

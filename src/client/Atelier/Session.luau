@@ -185,14 +185,18 @@ end
 function Session:retourDecorations()
 	return agir(self, "retourDecorations")
 end
+-- (hors du jeu, la session tire elle-même les lettres du courrier)
 function Session:livrer()
-	return agir(self, "livrer")
+	return agir(self, "livrer", if self.remote then nil else self.rng)
+end
+function Session:inviter(indice)
+	return agir(self, "inviter", indice)
 end
 function Session:nouvelleRobeLibre(taille)
 	return agir(self, "nouvelleRobeLibre", taille)
 end
 function Session:vendre()
-	return agir(self, "vendre")
+	return agir(self, "vendre", if self.remote then nil else self.rng)
 end
 function Session:offrir(idCliente)
 	return agir(self, "offrir", idCliente)

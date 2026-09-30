@@ -100,6 +100,19 @@ function Deblocages.message(genre, id)
 	return ("Pas encore ouvert : %s (%s)."):format(Deblocages.nom(genre, id), Deblocages.raison(genre, id))
 end
 
+-- Ce que l'amitié d'une cliente ouvrira ensuite : { niveau, nom }, ou nil si tout ce qu'elle ouvre l'est déjà
+function Deblocages.prochainDeCliente(id, points)
+	local cliente = Clientes.get(id)
+	local niveau = Progression.niveauAmitie(points)
+	for _, k in ipairs({ 2, 4 }) do
+		local d = cliente.deblocages[k]
+		if d and k > niveau then
+			return { niveau = k, nom = if d.variante then Deblocages.nom("variantes", d.variante) else Deblocages.nom("accessoires", d.accessoire) }
+		end
+	end
+	return nil
+end
+
 -- Ce qui est ouvert, par genre : { variantes = { [id] = true }, tissus = …, accessoires = … }
 function Deblocages.ouverts(progres)
 	local out = { variantes = {}, tissus = {}, accessoires = {} }

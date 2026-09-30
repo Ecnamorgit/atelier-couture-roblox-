@@ -9,7 +9,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 `docs/superpowers/specs/2026-09-29-clientes-progression-design.md` pour les clientes et la progression ;
 plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 2 en cours : plans 5a à 5c, les clientes, le prestige, les déblocages et les robes libres)
+## État actuel (sous-projet 2 terminé côté code, plans 5a à 5d : clientes, prestige, déblocages, robes libres, courrier)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -67,10 +67,17 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    6 po par pièce) × (0,5 + qualité), +6 % par niveau de prestige au-delà du premier ; du prestige, un quinzième
    de la main d'œuvre, qui ne s'achète pas en décorant) ou « Offrir à… » une cliente déjà venue (+1 à +4 d'amitié selon le score de son style préféré,
    +2 de prestige). La robe part en vitrine.
+   **Courrier** (après cinq commandes livrées) : une lettre arrive toutes les deux robes livrées ou vendues, d'une
+   cliente déjà venue, et dépasse de la boîte aux lettres du comptoir ; l'accueil montre jusqu'à trois lettres,
+   chacune avec la première exigence de la commande qu'elle annonce. « Inviter » fait venir la cliente avec cette
+   commande ; livrée et acceptée, elle rapporte un point d'amitié de plus. Les lettres n'expirent pas.
+   **Carnet d'adresses** : les clientes déjà venues, leur niveau d'amitié (points et seuil suivant) et ce que
+   le prochain niveau ouvrira.
    **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8, une robe libre de
-   jute vendue sur quatre robes) atteint le prestige 2 à la 3e robe au plus tard, le 5 vers la 19e, et tout est
-   ouvert vers la 61e (médianes).
-9. La suite : courrier et carnet d'adresses (plan 5d).
+   jute vendue sur quatre robes, les lettres invitées) atteint le prestige 2 à la 3e robe au plus tard, le 5 vers
+   la 19e, et tout est ouvert vers la 62e (médianes).
+9. La suite : sous-projet 3 (histoire, dialogues, événements, nom définitif du jeu), puis sous-projet 4 (porter
+   la robe, défilés).
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
@@ -117,7 +124,7 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Coupon`, `Metrage` | Rouleau de découpe (pli, chevauchements) et métrage conseillé |
   | `Notation`, `Commandes` | Droit-fil, couture, qualité, styles, exigences, paie, ajustement aux mesures ; commandes réalisables, d'après les goûts de la cliente |
   | `Clientes`, `Progression` | Les six clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux |
-  | `Deblocages` | Ce qui est fermé au départ et ce qui l'ouvre (prestige, amitié) ; ce qu'une livraison vient d'ouvrir |
+  | `Deblocages` | Ce qui est fermé au départ et ce qui l'ouvre (prestige, amitié) ; ce qu'une livraison vient d'ouvrir ; ce que l'amitié d'une cliente ouvrira ensuite |
   | `Pixels` | Motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron |
   | `Recette` | Recette d'une robe en JSON et validation complète (filtre du serveur au plan 4) |
   | `Maillage`, `Mannequin`, `Editables`, `ConstructeurRobe`, `Vitrines` | Robe 3D, mannequin, vitrines |

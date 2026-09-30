@@ -282,8 +282,25 @@ end
 
 -- Met la scène d'accord avec l'état de l'atelier (derniere = dernière action réussie de la session).
 -- Peut attendre (création des maillages) : l'appeler dans une tâche à part pour ne pas bloquer l'interface.
+-- Une lettre dépasse de la boîte aux lettres du comptoir tant que le courrier en contient
+function Scene:montrerCourrier(nombre)
+	local lettre = self.dossier:FindFirstChild("Lettre")
+	if nombre > 0 and not lettre then
+		lettre = Instance.new("Part")
+		lettre.Name = "Lettre"
+		lettre.Anchored, lettre.CanCollide, lettre.CastShadow = true, false, false
+		lettre.Size = Vector3.new(0.05, 0.45, 0.7)
+		lettre.Color = Color3.fromRGB(250, 246, 236)
+		lettre.CFrame = self.origine * Boutique.BOITE_AUX_LETTRES * CFrame.new(0, 0.55, 0)
+		lettre.Parent = self.dossier
+	elseif nombre == 0 and lettre then
+		lettre:Destroy()
+	end
+end
+
 function Scene:synchroniser(etat, derniere)
 	self:suivreCliente(etat, derniere)
+	self:montrerCourrier(etat.lettres and #etat.lettres or 0)
 	if etat.etape ~= "photo" then
 		self:finirPhoto()
 	end

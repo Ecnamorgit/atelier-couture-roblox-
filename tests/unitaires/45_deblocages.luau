@@ -67,6 +67,11 @@ U.verifier(#nouveaux == 5 and nouveaux[1].genre == "tissus" and nouveaux[5].id =
 U.verifier(#Deblocages.nouveaux(au(50), au(99)) == 0, "rien de neuf sans changer de niveau")
 U.verifier(Deblocages.resume(nouveaux) == "les satins (4), Dentelle noire", "en une ligne : les satins ensemble (" .. Deblocages.resume(nouveaux) .. ")")
 U.verifier(Deblocages.message("tissus", "soie_rouge") == "Pas encore ouvert : Soie rouge (Prestige 5).", "le refus dit ce qu'il faut pour ouvrir")
+local prochain = Deblocages.prochainDeCliente("colette", 0)
+U.verifier(prochain ~= nil and prochain.niveau == 2 and prochain.nom == "Jupe ample froncée", "carnet d'adresses : l'amitié de Colette ouvrira ensuite la jupe ample (niveau 2)")
+prochain = Deblocages.prochainDeCliente("colette", 7)
+U.verifier(prochain ~= nil and prochain.niveau == 4 and prochain.nom == "Dentelle blanche", "… puis la dentelle blanche (niveau 4)")
+U.verifier(Deblocages.prochainDeCliente("colette", 18) == nil, "au niveau 4, tout ce qu'elle ouvre est ouvert")
 local avantAmitie = { prestige = 0, clientes = { colette = { amitie = 6 } } }
 local apresAmitie = { prestige = 0, clientes = { colette = { amitie = 7 } } }
 local n = Deblocages.nouveaux(avantAmitie, apresAmitie)

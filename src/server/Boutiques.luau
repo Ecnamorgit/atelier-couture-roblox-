@@ -101,6 +101,7 @@ local function construire(indice, joueur, parent)
 	-- Comptoir et clochette, contre le mur de gauche
 	bloc(modele, origine, "Comptoir", Vector3.new(-9, 1.5, 38), Vector3.new(3, 3, 6), BOIS)
 	bloc(modele, origine, "Clochette", Vector3.new(-9, 3.4, 36.5), Vector3.new(0.8, 0.8, 0.8), rgb(230, 190, 70), { forme = Enum.PartType.Ball, matiere = Enum.Material.Metal, decor = true })
+	bloc(modele, origine, "BoiteAuxLettres", Boutique.BOITE_AUX_LETTRES.Position, Vector3.new(0.7, 0.8, 1), rgb(70, 110, 170), { matiere = Enum.Material.Metal, decor = true })
 	-- Étagère de tissus : un rouleau par tissu (les douze premiers du catalogue)
 	bloc(modele, origine, "Etagere", Vector3.new(-11, 3.5, 48), Vector3.new(1.5, 7, 10), BOIS_CLAIR, { matiere = Enum.Material.Wood })
 	for k = 1, math.min(12, #Catalogue.Tissus) do

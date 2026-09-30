@@ -904,9 +904,10 @@ local idVignette = "corsage_v_devant"
 local tissuVignette, placeVignette = etatClient.tissus[idVignette], table.clone(etatClient.coupees[idVignette])
 local imageAvant = Vignettes.piece(idVignette, tissuVignette, placeVignette, 256)
 -- Prestige 45 avant la livraison : elle fait passer au niveau 3 (les satins et la dentelle noire s'ouvrent) ;
--- une livraison déjà faite : celle-ci est la deuxième, les robes libres s'ouvrent
+-- cinq livraisons déjà faites : celle-ci est la sixième, les robes libres et le courrier sont ouverts, et une
+-- lettre arrive
 serveur:atelier(joueur).etat.prestige = 45
-serveur:atelier(joueur).etat.livraisons = 1
+serveur:atelier(joueur).etat.livraisons = 5
 cliquer("Livrer")
 cliquer("Livrer")
 verifier(titre() == "Atelier de couture" and argent() > avantLivraison, "robe acceptée : payée")
@@ -919,6 +920,15 @@ verifier(fenetre.Contenu.Prestige.Text == ("Prestige 3 — %d / 100"):format(pre
 verifier(math.abs(fenetre.Contenu.JaugePrestige.Rempli.Size.X.Scale - (prestigeJoueur - 50) / 50) < 1e-6, "la jauge se remplit vers le niveau suivant")
 verifierTailles("accueil")
 serveur:atelier(joueur).etat.prestige = 530 -- (tout reste ouvert pour la suite)
+-- Le courrier : une lettre de Colette (la seule cliente déjà venue), qui dépasse de la boîte aux lettres
+verifier(texte("Une lettre de Colette est arrivée.") ~= nil and fenetre.Contenu:FindFirstChild("Lettre1") ~= nil and boutonNomme("Inviter_1") ~= nil, "une lettre de Colette arrive, avec « Inviter »")
+verifier(string.find(fenetre.Contenu.Lettre1.Text, "Colette : « ", 1, true) == 1, "la lettre annonce une exigence de sa commande")
+verifier(scene:FindFirstChild("Lettre") ~= nil, "une lettre dépasse de la boîte aux lettres du comptoir")
+-- Le carnet d'adresses : les clientes déjà venues, leur amitié, ce que le prochain niveau ouvrira
+cliquer("OuvrirCarnetAdresses")
+verifier(texte("Colette Marchand — amitié niveau 5") ~= nil and fenetre.Contenu.CarnetAdresses:FindFirstChild("Adresse_margot") == nil, "carnet d'adresses : Colette, pas encore Margot")
+cliquer("FermerCarnetAdresses")
+verifier(not fenetre.Contenu.CarnetAdresses.Visible, "carnet d'adresses refermé")
 verifier(imageAvant ~= nil and Vignettes.piece(idVignette, tissuVignette, placeVignette, 256) ~= imageAvant, "commande finie : les images des pièces découpées sont oubliées (mémoire)")
 M.avancer(1)
 verifier(maVitrine:FindFirstChild("Exposition") ~= nil, "le client construit la robe exposée dans la vitrine de la rue")
@@ -934,6 +944,8 @@ verifier(laCliente.Parent == nil, "puis elle s'en va")
 do -- (les variables de cette partie restent dans ce bloc : Luau limite un bloc à 200 variables locales)
 verifier(boutonNomme("RobeLibre") ~= nil, "deux commandes livrées : « Robe libre » à l'accueil")
 cliquer("RobeLibre")
+local boutonL, boutonCarnet = boutonNomme("RobeLibre_L"), boutonNomme("OuvrirCarnetAdresses")
+verifier(boutonL.AbsolutePosition.X + boutonL.AbsoluteSize.X <= boutonCarnet.AbsolutePosition.X, "le choix de la taille ne recouvre pas « Carnet d'adresses »")
 cliquer("RobeLibre_M")
 verifier(titre() == "1. Carnet de croquis" and texte("Robe libre (taille M) : à ton idée.") ~= nil, "robe libre : droit au carnet, sans exigence")
 verifier(scene:FindFirstChild("Cliente") == nil and serveur:atelier(joueur).etat.commande.libre, "robe libre : personne n'entre")
@@ -980,6 +992,36 @@ cliquer("Offrir")
 cliquer("Offrir_colette")
 verifier(titre() == "Atelier de couture" and texte("Colette adore la robe que tu lui offres !") ~= nil and texte("Amitié de Colette : +") ~= nil, "offerte à Colette : l'accueil l'annonce")
 verifier(serveur:atelier(joueur).etat.clientes.colette.amitie > amitieColette, "son amitié monte")
+end
+
+---------------------------------------------------------------------------
+-- Inviter : la cliente de la lettre vient avec sa commande ; livrée, un point d'amitié de plus
+---------------------------------------------------------------------------
+do
+cliquer("Inviter_1")
+verifier(titre() == "Les mesures" and serveur:atelier(joueur).etat.commande.parLettre and #serveur:atelier(joueur).etat.lettres == 0, "invitée : Colette vient avec la commande de sa lettre")
+verifier(fenetre.Message.Visible and string.find(fenetre.Message.Text, "Colette verse un acompte", 1, true) == 1, "elle verse l'acompte")
+M.avancer(0.5)
+verifier(scene:FindFirstChild("Lettre") == nil, "plus de lettre dans la boîte")
+cliquer("ReprendreMesures")
+verifier(titre() == "1. Carnet de croquis", "ses mesures reprises : le carnet")
+-- La robe menée jusqu'à la photo sur le serveur, sans repasser par tous les postes
+local e = serveur:atelier(joueur).etat
+e.commande.exigences = { { type = "qualite", valeur = 0.1 } }
+e.croquis = { corsage = "corsage_droit", manches = "manches_sans", col = "col_sans", jupe = "jupe_droite" }
+e.tissus = {}
+for _, id in ipairs(e:piecesDuCroquis()) do
+	e.tissus[id] = "coton_blanc"
+	e.coupees[id] = { x = 0, y = 0, angle = 0 }
+	e.epinglees[id] = true
+	e.coutures[id] = 0.9
+end
+e.etape = "photo"
+requireModule(scriptClient.Session).courante:actualiser()
+cliquer("Livrer")
+cliquer("Livrer")
+verifier(titre() == "Atelier de couture" and texte("Colette est ravie") ~= nil and texte("Amitié de Colette : +4") ~= nil, "commande venue par lettre : +4 d'amitié (+3 et +1 de la lettre)")
+M.avancer(ScenePoste.DUREE_ADIEU + 0.5)
 end
 -- La touche E sonne la clochette, fenêtre ouverte seulement (comme au comptoir)
 local toucheE = { KeyCode = Enum.KeyCode.E, UserInputType = Enum.UserInputType.Keyboard }

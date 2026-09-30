@@ -22,6 +22,8 @@ EtatAtelier.ACOMPTE = 0.25 -- part de la base versée quand la cliente passe com
 EtatAtelier.PIECES_ACOMPTE = 4 -- la base de l'acompte est celle de la robe la plus simple (quatre pièces)
 EtatAtelier.LIBRES_APRES = 2 -- les robes libres s'ouvrent après deux commandes livrées
 EtatAtelier.MAIN_OEUVRE = 6 -- pièces d'or par pièce posée, dans le prix de vente d'une robe libre
+EtatAtelier.COURRIER_APRES = 5 -- le courrier s'ouvre après cinq commandes livrées
+EtatAtelier.LETTRES_MAX = 3
 EtatAtelier.ACHAT_MAX = 100 -- dm par achat
 EtatAtelier.TOLERANCE_MESURES = 2 -- mesures de couture en plus ou en moins acceptées (spec §6)
 EtatAtelier.DUREE_MIN = 0.9 -- part de la durée minimale d'une couture (trajet / vitesse maximale)
@@ -80,7 +82,7 @@ local function pareil(a, b)
 end
 
 -- Champs de l'état échangés avec le serveur (les rouleaux à part : ce sont des objets Coupon)
-local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites", "ventes" }
+local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites", "ventes", "lettres" }
 
 function EtatAtelier.nouveau(argent)
 	return setmetatable({
@@ -103,6 +105,7 @@ function EtatAtelier.nouveau(argent)
 		livraisons = 0,
 		visites = 0,
 		ventes = 0,
+		lettres = {}, -- le courrier : { { cliente, commande } }, trois au plus
 	}, EtatAtelier)
 end
 
@@ -190,19 +193,15 @@ function EtatAtelier:nouvelleRobeLibre(taille)
 	return { ok = true, commande = self.commande }
 end
 
--- La clochette : une cliente vient (Clientes.prochaine) avec une commande tirée de ses goûts. On prend
--- d'abord ses mesures (étape « mesures ») ; une cliente déjà venue peut les reprendre.
-function EtatAtelier:nouvelleCommande(rng)
-	if self.etape ~= "accueil" then
-		return refus("Une commande est déjà en cours.")
-	end
-	local id = Clientes.prochaine(self.clientes, Progression.niveauPrestige(self.prestige))
+-- Une cliente entre avec sa commande : sa visite est notée, elle verse l'acompte, on prend d'abord ses mesures
+-- (étape « mesures ») ; une cliente déjà venue peut les reprendre
+local function accueillir(self, id, commande)
 	local fiche = self.clientes[id] or { amitie = 0, vues = 0, derniere = 0 }
 	self.clientes[id] = fiche
 	self.visites += 1
 	fiche.vues += 1
 	fiche.derniere = self.visites
-	self.commande = Commandes.generer(rng, Clientes.get(id), self)
+	self.commande = commande
 	self.commande.numero = self.visites -- la reconnaît d'une copie à l'autre (la scène garde la même cliente)
 	-- L'acompte : un quart de la base, versé tout de suite, déduit de la paie ; gardé en cas d'abandon
 	local acompte = math.floor(EtatAtelier.ACOMPTE * Notation.base(EtatAtelier.PIECES_ACOMPTE, #self.commande.exigences))
@@ -212,6 +211,53 @@ function EtatAtelier:nouvelleCommande(rng)
 	self.epinglees, self.coutures, self.accessoires = {}, {}, {}
 	self.etape = "mesures"
 	return { ok = true, commande = self.commande, cliente = id, premiereVisite = fiche.vues == 1, acompte = acompte }
+end
+
+-- La clochette : une cliente vient (Clientes.prochaine) avec une commande tirée de ses goûts
+function EtatAtelier:nouvelleCommande(rng)
+	if self.etape ~= "accueil" then
+		return refus("Une commande est déjà en cours.")
+	end
+	local id = Clientes.prochaine(self.clientes, Progression.niveauPrestige(self.prestige))
+	return accueillir(self, id, Commandes.generer(rng, Clientes.get(id), self))
+end
+
+-- Inviter la cliente d'une lettre (indice dans le courrier) : elle vient avec la commande annoncée ; livrée et
+-- acceptée, elle rapporte un point d'amitié de plus
+function EtatAtelier:inviter(indice)
+	if self.etape ~= "accueil" then
+		return refus("Une commande est déjà en cours.")
+	end
+	local lettre = type(indice) == "number" and self.lettres[indice] or nil
+	if not lettre then
+		return refus("Cette lettre n'existe pas.")
+	end
+	table.remove(self.lettres, indice)
+	lettre.commande.parLettre = true
+	return accueillir(self, lettre.cliente, lettre.commande)
+end
+
+-- Le courrier : après cinq commandes livrées, une lettre arrive toutes les deux robes (livrées ou vendues), d'une
+-- cliente déjà venue tirée au hasard, avec la commande qu'elle passera (on en voit la première exigence). Trois
+-- lettres au plus ; elles n'expirent pas. Renvoie la lettre arrivée, ou nil
+local function courrier(self, rng)
+	if not rng or self.livraisons < EtatAtelier.COURRIER_APRES or #self.lettres >= EtatAtelier.LETTRES_MAX or (self.livraisons + self.ventes) % 2 ~= 0 then
+		return nil
+	end
+	local venues = {}
+	for _, c in ipairs(Clientes.LISTE) do
+		local f = self.clientes[c.id]
+		if f and f.vues > 0 then
+			table.insert(venues, c)
+		end
+	end
+	if #venues == 0 then
+		return nil
+	end
+	local cliente = venues[rng:NextInteger(1, #venues)]
+	local lettre = { cliente = cliente.id, commande = Commandes.generer(rng, cliente, self) }
+	table.insert(self.lettres, lettre)
+	return lettre
 end
 
 -- Mesures prises au ruban (dm) : trois nombres dans les bornes d'une recette, à moins de 1,5 dm des vraies.
@@ -567,7 +613,8 @@ local function amitie(self, reussie, qualite)
 	end
 	local avant = fiche.amitie
 	local plancher = Progression.SEUILS_AMITIE[Progression.niveauAmitie(avant) + 1]
-	fiche.amitie = math.max(plancher, avant + Progression.gainAmitie(reussie, qualite))
+	local lettre = if reussie and self.commande.parLettre then Progression.BONUS_LETTRE else 0
+	fiche.amitie = math.max(plancher, avant + Progression.gainAmitie(reussie, qualite) + lettre)
 	return { cliente = id, gain = fiche.amitie - avant, points = fiche.amitie, niveau = Progression.niveauAmitie(fiche.amitie), niveauAvant = Progression.niveauAmitie(avant) }
 end
 
@@ -581,7 +628,8 @@ end
 
 -- Livraison : la cliente juge la robe (styles, qualité, couleur, accessoires) d'après sa recette.
 -- Acceptée : paie = base × (0,5 + qualité), la robe part en vitrine. Refusée : retouche ou abandon.
-function EtatAtelier:livrer()
+-- rng (facultatif) : de quoi tirer une lettre, si le courrier en apporte une
+function EtatAtelier:livrer(rng)
 	if self.etape ~= "photo" then
 		return refus("Ce n'est pas le moment de livrer.")
 	end
@@ -615,7 +663,7 @@ function EtatAtelier:livrer()
 	end
 	terminer(self)
 	local nouveaux = Deblocages.nouveaux(avant, self)
-	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige, nouveaux = nouveaux }
+	return { ok = true, reussie = true, paie = paie, acompte = acompte, verse = verse, bilan = bilan, ratees = {}, amitie = gainAmitie, prestige = prestige, nouveaux = nouveaux, lettre = courrier(self, rng) }
 end
 
 -- Robes libres : le prestige et les amitiés avant la vente ou le cadeau (pour dire ce qui s'ouvre), le prestige
@@ -649,8 +697,9 @@ function EtatAtelier:prixVente()
 end
 
 -- Vendre la robe libre : le prix, du prestige ; elle part en vitrine. Le prestige vient de la main d'œuvre
--- seule (ce qu'elle rapporterait sans matières ni décorations, / 15) : il ne s'achète pas en décorant
-function EtatAtelier:vendre()
+-- seule (ce qu'elle rapporterait sans matières ni décorations, / 15) : il ne s'achète pas en décorant.
+-- rng : de quoi tirer une lettre, comme pour livrer
+function EtatAtelier:vendre(rng)
 	if self.etape ~= "photo" or not self.commande.libre then
 		return refus("Seule une robe libre se vend, une fois présentée.")
 	end
@@ -663,7 +712,7 @@ function EtatAtelier:vendre()
 	local prestige = gagnerPrestige(self, Progression.prestigeVente(mainOeuvre))
 	garderRobe(self, recette)
 	terminer(self)
-	return { ok = true, prix = prix, bilan = bilan, prestige = prestige, nouveaux = Deblocages.nouveaux(avant, self) }
+	return { ok = true, prix = prix, bilan = bilan, prestige = prestige, nouveaux = Deblocages.nouveaux(avant, self), lettre = courrier(self, rng) }
 end
 
 -- Offrir la robe libre à une cliente déjà venue : son amitié monte selon le score de son style préféré le plus
