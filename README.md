@@ -13,7 +13,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 7 en cours, plans 19 et 20 : des robes à couches, volant et basque)
+## État actuel (sous-projet 7 en cours, plans 19 à 21 : des robes à couches, volant et basque ; seize étiquettes)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -85,6 +85,11 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    la robe (styles, qualité, couleur dominante, accessoires). Acceptée : paie = base × (0,5 + qualité), et la
    robe part en vitrine ; la cliente remercie et s'en va. Refusée : les exigences ratées s'affichent (avec le
    score actuel pour les styles) ; on retouche les décorations ou on abandonne.
+   **Seize étiquettes** (sous-projet 7, plan 21 : le calcul ; les commandes les demanderont au plan 22) : aux six
+   styles s'ajoutent trois occasions (Journée, Soirée, Travail : points des variantes et des matières) et sept
+   traits calculés d'après la robe : Légère / Chaude (matière, manches, longueur de la jupe), Sobre / Travaillée
+   (poids des pièces, décorations), Unie / Fleurie / À motifs (surface de chaque motif) ; et la matière dominante.
+   La cliente sait juger ces exigences, le carnet les prévoit, la sauvegarde les garde.
    **Avis en étoiles** : refusée, une étoile ; acceptée, deux, plus une à 60, 80 et 90 % de qualité (dans
    l'encadré de la cliente et l'annonce de l'accueil) ; rien n'en dépend.
    **Amitié et prestige** : une robe acceptée vaut +2 d'amitié avec la cliente (+1 de plus à 80 % de qualité),
@@ -119,8 +124,9 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    jute vendue sur quatre robes, les lettres invitées) atteint le prestige 2 à la 3e robe au plus tard, le 5 vers
    la 19e, le 8 vers la 57e, et tout est ouvert vers la 123e (médianes, parties de 160 robes : l'amitié des quatre
    dernières clientes, arrivées aux prestiges 5 à 8, ouvre les dernières variantes). Le tirage d'une commande ne recalcule
-   jamais les styles robe par robe (les points de chaque croquis et de chaque tissu sont précalculés ; les tissus
-   d'une autre teinte que celle demandée sont écartés d'abord).
+   jamais les styles robe par robe (les points de chaque variante et de chaque tissu sont précalculés ; les tissus
+   d'une autre teinte, matière ou motif que ceux demandés sont écartés d'abord ; la recherche avance famille par
+   famille et abandonne une branche qui ne peut plus tenir une exigence).
 9. **L'histoire** : douze événements du quartier se suivent (le bal des lanternes, la kermesse, le vernissage, les
    régates, la veillée des contes, le mariage de Margot, le concert du kiosque, le grand bal d'hiver, le salon du
    livre, la première du théâtre, le mariage de Colette, le grand défilé du quartier). Le premier
@@ -182,6 +188,7 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Catalogue` | Pièces, variantes, tissus, accessoires, constantes |
   | `Coupon`, `Metrage` | Rouleau de découpe (pli, chevauchements) et métrage conseillé |
   | `Notation`, `Commandes` | Droit-fil, couture, qualité, styles, exigences, paie, ajustement aux mesures ; commandes réalisables, d'après les goûts de la cliente |
+  | `Etiquettes` | Occasions et traits calculés (chaleur, richesse, motifs), matière dominante, fourchette du carnet |
   | `Clientes`, `Progression` | Les dix clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux ; avis en étoiles, titres de la réputation, rang de la couturière |
   | `Deblocages` | Ce qui est fermé au départ et ce qui l'ouvre (prestige, amitié, événement) ; ce qu'une livraison vient d'ouvrir ; ce que l'amitié d'une cliente ouvrira ensuite |
   | `Histoire` | Les douze événements du quartier : leurs robes, tenues, répliques, épilogues et souvenirs ; l'événement en cours et sa prochaine robe |

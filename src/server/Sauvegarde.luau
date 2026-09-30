@@ -61,6 +61,12 @@ local function exigenceLisible(e)
 		return table.find(Catalogue.TEINTES, e.teinte) ~= nil
 	elseif e.type == "accessoire" then
 		return type(e.id) == "string" and Catalogue.accessoire(e.id) ~= nil
+	elseif e.type == "occasion" then -- (sous-projet 7)
+		return table.find(Catalogue.OCCASIONS, e.occasion) ~= nil and nombre(e.valeur, nil) ~= nil
+	elseif e.type == "trait" then
+		return table.find(Catalogue.TRAITS, e.trait) ~= nil and nombre(e.valeur, nil) ~= nil
+	elseif e.type == "matiere" then
+		return type(e.matiere) == "string" and Catalogue.MATIERES[e.matiere] ~= nil
 	end
 	return false
 end

@@ -43,7 +43,7 @@ return function(ctx)
 		UiKit.texte({ Text = "Elle voulait :", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 0, 20), Parent = contenu })
 	end
 	for i, e in ipairs(etat.commande.exigences) do
-		UiKit.texte({ Text = "· " .. UiKit.exigence(e, Catalogue, bilan.styles), TextSize = 14, Position = UDim2.fromOffset(0, 58 + i * 22), Size = UDim2.new(1, 0, 0, 20), Parent = contenu })
+		UiKit.texte({ Text = "· " .. UiKit.exigence(e, Catalogue, bilan.scores), TextSize = 14, Position = UDim2.fromOffset(0, 58 + i * 22), Size = UDim2.new(1, 0, 0, 20), Parent = contenu })
 	end
 
 	-- Réglages de la photo

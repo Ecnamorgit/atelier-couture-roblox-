@@ -6,65 +6,95 @@ local Catalogue = require(dossier:WaitForChild("Catalogue"))
 local Notation = require(dossier:WaitForChild("Notation"))
 local Deblocages = require(dossier:WaitForChild("Deblocages"))
 local Progression = require(dossier:WaitForChild("Progression"))
+local Etiquettes = require(dossier:WaitForChild("Etiquettes"))
 
 local Commandes = {}
 
 local NOMS_TAILLES = { "S", "M", "L" }
 Commandes.ESSAIS = 30 -- tirages avant le repli
 
--- Toutes les combinaisons de variantes du carnet (6 × 5 × 4 × 6 = 720, depuis le sous-projet 7)
-local function croquisPossibles()
-	local out = {}
-	for _, c in ipairs(Catalogue.variantesDe("corsage")) do
-		for _, m in ipairs(Catalogue.variantesDe("manches")) do
-			for _, k in ipairs(Catalogue.variantesDe("col")) do
-				for _, j in ipairs(Catalogue.variantesDe("jupe")) do
-					table.insert(out, { corsage = c.id, manches = m.id, col = k.id, jupe = j.id })
-				end
-			end
-		end
-	end
-	return out
-end
-local CROQUIS = croquisPossibles()
-
--- Les styles s'additionnent (Notation.styles) : les points bruts de chaque croquis, de chaque tissu (toute la robe
--- dans ce tissu) et de chaque objet imposé sont calculés une fois ; une robe candidate se juge alors en quelques
--- additions, sans rien créer. (Une garniture imposée, sans longueur, ne compte pas : comme dans Notation.styles.)
+-- Les points s'additionnent (Notation.styles, Etiquettes) : ceux de chaque variante et de chaque tissu (toute la
+-- robe dans ce tissu), styles, occasions, chaleur et poids des pièces, sont calculés une fois ; une robe candidate
+-- se juge alors en quelques additions, sans rien créer. (Une garniture imposée, sans longueur, ne compte pas : comme
+-- dans Notation.styles.)
 local K = Catalogue.K
-local POINTS_CROQUIS = {}
-for i, croquis in ipairs(CROQUIS) do
-	local points = {}
-	for _, s in ipairs(Catalogue.STYLES) do
-		points[s] = 0
+local CLES = table.clone(Catalogue.STYLES)
+for _, o in ipairs(Catalogue.OCCASIONS) do
+	table.insert(CLES, o)
+end
+table.insert(CLES, "chaleur")
+table.insert(CLES, "poids")
+local function zero()
+	local t = {}
+	for _, c in ipairs(CLES) do
+		t[c] = 0
 	end
-	for _, famille in ipairs(Catalogue.FAMILLES) do
-		for s, pts in pairs(Catalogue.variante(croquis[famille]).style) do
-			points[s] += K.pieces * pts
+	return t
+end
+local APPORTS_VARIANTES, APPORTS_TISSUS = {}, {}
+for _, v in ipairs(Catalogue.Variantes) do
+	local e, a = Etiquettes.variante(v.id), zero()
+	for s, pts in pairs(v.style) do
+		a[s] = K.pieces * pts
+	end
+	for _, o in ipairs(Catalogue.OCCASIONS) do
+		a[o] = e.occasions[o]
+	end
+	a.chaleur, a.poids = e.chaleur, e.poids
+	APPORTS_VARIANTES[v.id] = a
+end
+for _, t in ipairs(Catalogue.Tissus) do
+	local e, a = Etiquettes.tissu(t.id), zero()
+	for s, pts in pairs(t.style) do
+		a[s] = K.tissu * pts
+	end
+	for _, o in ipairs(Catalogue.OCCASIONS) do
+		a[o] = e.occasions[o]
+	end
+	a.chaleur = e.chaleur
+	APPORTS_TISSUS[t.id] = a
+end
+local function apportObjet(idAccessoire, fois)
+	local a = zero()
+	local def = idAccessoire and Catalogue.accessoire(idAccessoire)
+	if def and def.genre == "objet" then
+		for s, pts in pairs(def.style) do
+			a[s] = K.accessoires * pts * fois
 		end
 	end
-	POINTS_CROQUIS[i] = points
-end
-local POINTS_TISSU = {}
-for _, t in ipairs(Catalogue.Tissus) do
-	local points = {}
-	for _, s in ipairs(Catalogue.STYLES) do
-		points[s] = K.tissu * (t.style[s] or 0)
-	end
-	POINTS_TISSU[t.id] = points
-end
-local function pointsImpose(idAccessoire)
-	local points = {}
-	local def = idAccessoire and Catalogue.accessoire(idAccessoire)
-	for _, s in ipairs(Catalogue.STYLES) do
-		points[s] = if def and def.genre == "objet" then K.accessoires * (def.style[s] or 0) else 0
-	end
-	return points
+	return a
 end
 
--- Cherche une robe simple (un seul tissu, au plus l'accessoire imposé) qui remplit les exigences.
--- La qualité est supposée atteignable (≤ 0,9). ouverts (facultatif, Deblocages.ouverts) : seulement avec ce
--- qui est ouvert. Retourne ok et le témoin { croquis, tissu, accessoire }.
+-- Une exigence chiffrée borne une somme de points : jugement = { cle, note (la somme, et le nombre de décorations,
+-- → le score de 0 à 100), croissant (le score monte avec la somme), auPlus, valeur }
+local function borne(x)
+	return math.clamp(x, 0, 100)
+end
+local NOTES_TRAITS = {
+	chaude = { cle = "chaleur", croissant = true, note = function(x)
+		return (Etiquettes.traitsIndice(x))
+	end },
+	legere = { cle = "chaleur", croissant = false, note = function(x)
+		return select(2, Etiquettes.traitsIndice(x))
+	end },
+	travaillee = { cle = "poids", croissant = true, note = function(poids, decorations)
+		return (Etiquettes.traitsIndice(Etiquettes.richesse(poids, decorations)))
+	end },
+	sobre = { cle = "poids", croissant = false, note = function(poids, decorations)
+		return select(2, Etiquettes.traitsIndice(Etiquettes.richesse(poids, decorations)))
+	end },
+}
+local function tient(j, score)
+	return if j.auPlus then score <= j.valeur + 1e-9 else score >= j.valeur - 1e-9
+end
+
+-- Cherche une robe simple qui remplit les exigences : un seul tissu, l'accessoire imposé et, pour une robe travaillée,
+-- juste assez d'un même objet ouvert (le premier qui convient, dans l'ordre du catalogue). La qualité est supposée
+-- atteignable (≤ 0,9). ouverts (facultatif, Deblocages.ouverts) : seulement avec ce qui est ouvert. Retourne ok et
+-- le témoin { croquis, tissu, accessoire, ajout = { id, nombre } ou nil }.
+-- Sous-projet 7 : la recherche avance famille par famille (corsage, manches, col, jupe, puis le tissu) et abandonne
+-- une branche dès qu'aucune suite ne peut plus tenir une exigence : elle trouve la même robe que l'essai de chaque
+-- croquis dans l'ordre, sans les essayer tous.
 function Commandes.realisable(exigences, ouverts)
 	local accessoireImpose
 	for _, e in ipairs(exigences) do
@@ -78,22 +108,40 @@ function Commandes.realisable(exigences, ouverts)
 		return false
 	end
 	-- Les exigences les plus fermées d'abord, une fois pour toutes : les accessoires (seul le dernier demandé est
-	-- posé sur la robe témoin) et la teinte (seuls les tissus ouverts de cette teinte restent candidats) ;
-	-- restent les styles, à vérifier robe par robe (la qualité, au plus 0,9, est tenue d'office)
-	local aVerifier = {}
+	-- posé sur la robe témoin) ; la teinte, la matière et le motif (seuls les tissus ouverts qui les ont restent
+	-- candidats) ; restent les exigences chiffrées (la qualité, au plus 0,9, est tenue d'office)
+	local jugements, decoratives = {}, {}
 	for _, e in ipairs(exigences) do
 		if e.type == "accessoire" and e.id ~= accessoireImpose then
 			return false
-		elseif e.type == "min" or e.type == "max" then
-			table.insert(aVerifier, e)
+		elseif e.type == "min" or e.type == "max" or e.type == "occasion" then
+			table.insert(jugements, { cle = e.style or e.occasion, note = borne, croissant = true, auPlus = e.type == "max", valeur = e.valeur })
+		elseif e.type == "trait" and NOTES_TRAITS[e.trait] then
+			local t = NOTES_TRAITS[e.trait]
+			local j = { cle = t.cle, note = t.note, croissant = t.croissant, valeur = e.valeur }
+			table.insert(jugements, j)
+			if e.trait == "travaillee" then
+				table.insert(decoratives, j)
+			end
+		end
+	end
+	-- Deux traits opposés (Légère et Chaude, Sobre et Travaillée) : leur indice ne peut pas être à la fois positif et
+	-- négatif ; impossibles d'emblée, sans essayer chaque robe (relecture)
+	for _, a in ipairs(jugements) do
+		for _, b in ipairs(jugements) do
+			if (a.cle == "chaleur" or a.cle == "poids") and a.cle == b.cle and a.croissant and not b.croissant and a.valeur > 1e-9 and b.valeur > 1e-9 then
+				return false
+			end
 		end
 	end
 	local tissus = {}
 	for _, t in ipairs(Catalogue.Tissus) do
 		local permis = not ouverts or ouverts.tissus[t.id]
 		for _, e in ipairs(exigences) do
-			if e.type == "teinte" and e.teinte ~= t.teinte then
+			if (e.type == "teinte" and e.teinte ~= t.teinte) or (e.type == "matiere" and e.matiere ~= t.matiere) then
 				permis = false
+			elseif e.type == "trait" and not NOTES_TRAITS[e.trait] then -- un motif : toute la robe l'a, ou pas du tout
+				permis = permis and (if Etiquettes.tissu(t.id).motif == e.trait then 100 else 0) >= e.valeur - 1e-9
 			end
 		end
 		if permis then
@@ -103,27 +151,167 @@ function Commandes.realisable(exigences, ouverts)
 	if #tissus == 0 then
 		return false
 	end
-	local pa = pointsImpose(accessoireImpose)
-	for i, croquis in ipairs(CROQUIS) do
-		if not ouverts or (ouverts.variantes[croquis.corsage] and ouverts.variantes[croquis.manches] and ouverts.variantes[croquis.col] and ouverts.variantes[croquis.jupe]) then
-			local pc = POINTS_CROQUIS[i]
-			for _, t in ipairs(tissus) do
-				local pt = POINTS_TISSU[t.id]
-				local ok = true
-				for _, e in ipairs(aVerifier) do
-					local v = math.clamp(pc[e.style] + pt[e.style] + pa[e.style], 0, 100)
-					ok = if e.type == "min" then v >= e.valeur - 1e-9 else v <= e.valeur + 1e-9
-					if not ok then
-						break
-					end
-				end
-				if ok then
-					return true, { croquis = croquis, tissu = t.id, accessoire = accessoireImpose }
-				end
+	local objets = {} -- de quoi rendre la robe travaillée
+	if #decoratives > 0 then
+		for _, a in ipairs(Catalogue.Accessoires) do
+			if a.genre == "objet" and (not ouverts or ouverts.accessoires[a.id]) then
+				table.insert(objets, a)
 			end
 		end
 	end
-	return false
+	local base = Etiquettes.decorations(accessoireImpose and { { id = accessoireImpose } })
+	local impose = apportObjet(accessoireImpose, 1)
+
+	-- Ce que peuvent encore apporter les familles k à 4, puis le tissu, l'accessoire imposé et les décorations :
+	-- reste[k] = { bas = { [cle] = … }, haut = { … } }
+	local variantes, reste = {}, {}
+	for k, famille in ipairs(Catalogue.FAMILLES) do
+		variantes[k] = {}
+		for _, v in ipairs(Catalogue.variantesDe(famille)) do
+			if not ouverts or ouverts.variantes[v.id] then
+				table.insert(variantes[k], v.id)
+			end
+		end
+		if #variantes[k] == 0 then
+			return false
+		end
+	end
+	local function extremes(apports)
+		local bas, haut = {}, {}
+		for _, c in ipairs(CLES) do
+			bas[c], haut[c] = math.huge, -math.huge
+			for _, a in ipairs(apports) do
+				bas[c], haut[c] = math.min(bas[c], a[c]), math.max(haut[c], a[c])
+			end
+		end
+		return bas, haut
+	end
+	local apportsTissus, apportsObjets = {}, { zero() }
+	for _, t in ipairs(tissus) do
+		table.insert(apportsTissus, APPORTS_TISSUS[t.id])
+	end
+	for _, a in ipairs(objets) do
+		table.insert(apportsObjets, apportObjet(a.id, Etiquettes.DECORATIONS_PLEINES))
+	end
+	local basT, hautT = extremes(apportsTissus)
+	local basD, hautD = extremes(apportsObjets)
+	reste[#Catalogue.FAMILLES + 1] = { bas = {}, haut = {} }
+	for _, c in ipairs(CLES) do
+		reste[#Catalogue.FAMILLES + 1].bas[c] = basT[c] + impose[c] + basD[c]
+		reste[#Catalogue.FAMILLES + 1].haut[c] = hautT[c] + impose[c] + hautD[c]
+	end
+	for k = #Catalogue.FAMILLES, 1, -1 do
+		local apports = {}
+		for _, id in ipairs(variantes[k]) do
+			table.insert(apports, APPORTS_VARIANTES[id])
+		end
+		local bas, haut = extremes(apports)
+		reste[k] = { bas = {}, haut = {} }
+		for _, c in ipairs(CLES) do
+			reste[k].bas[c] = bas[c] + reste[k + 1].bas[c]
+			reste[k].haut[c] = haut[c] + reste[k + 1].haut[c]
+		end
+	end
+	-- Une somme partielle peut-elle encore tout tenir ? (chaque exigence à son extrême le plus favorable)
+	local function possible(somme, r)
+		for _, j in ipairs(jugements) do
+			local monte = j.croissant ~= (j.auPlus == true)
+			local x = somme[j.cle] + (if monte then r.haut[j.cle] else r.bas[j.cle])
+			if not tient(j, j.note(x, if monte then Etiquettes.DECORATIONS_PLEINES else base)) then
+				return false
+			end
+		end
+		return true
+	end
+	local function tientTout(somme, decorations)
+		for _, j in ipairs(jugements) do
+			if not tient(j, j.note(somme[j.cle], decorations)) then
+				return false
+			end
+		end
+		return true
+	end
+	-- Une robe complète : son tissu, puis juste assez de décorations. Les objets ne changent que les styles : un tissu
+	-- dont une exigence hors style (occasion, chaleur, poids) échoue est écarté avant d'en essayer aucun (relecture)
+	local horsStyles = {}
+	for _, j in ipairs(jugements) do
+		if not table.find(Catalogue.STYLES, j.cle) then
+			table.insert(horsStyles, j)
+		end
+	end
+	local resteDecorations = { bas = basD, haut = hautD }
+	local croquis = {}
+	local function essayerTissus(partiel)
+		for _, t in ipairs(tissus) do
+			local somme = {}
+			for _, c in ipairs(CLES) do
+				somme[c] = partiel[c] + APPORTS_TISSUS[t.id][c] + impose[c]
+			end
+			if not possible(somme, resteDecorations) then
+				continue -- même avec les meilleures décorations, ce tissu ne peut pas tout tenir
+			end
+			local n = 0
+			local function assez()
+				for _, j in ipairs(decoratives) do
+					if not tient(j, j.note(somme.poids, base + n)) then
+						return false
+					end
+				end
+				return true
+			end
+			while not assez() and base + n < Etiquettes.DECORATIONS_PLEINES do
+				n += 1
+			end
+			if not assez() then
+				continue -- même couverte de décorations, cette robe ne serait pas assez travaillée
+			end
+			local horsStylesTenues = true
+			for _, j in ipairs(horsStyles) do
+				horsStylesTenues = horsStylesTenues and tient(j, j.note(somme[j.cle], base + n))
+			end
+			if not horsStylesTenues then
+				continue
+			elseif n == 0 then
+				if tientTout(somme, base) then
+					return { croquis = table.clone(croquis), tissu = t.id, accessoire = accessoireImpose }
+				end
+			else
+				for _, a in ipairs(objets) do
+					local avec = table.clone(somme)
+					for s, pts in pairs(a.style) do
+						avec[s] += K.accessoires * pts * n
+					end
+					if tientTout(avec, base + n) then
+						return { croquis = table.clone(croquis), tissu = t.id, accessoire = accessoireImpose, ajout = { id = a.id, nombre = n } }
+					end
+				end
+			end
+		end
+		return nil
+	end
+	local function chercher(k, partiel)
+		if not possible(partiel, reste[k]) then
+			return nil
+		elseif k > #Catalogue.FAMILLES then
+			return essayerTissus(partiel)
+		end
+		local famille = Catalogue.FAMILLES[k]
+		for _, id in ipairs(variantes[k]) do
+			croquis[famille] = id
+			local somme = {}
+			for _, c in ipairs(CLES) do
+				somme[c] = partiel[c] + APPORTS_VARIANTES[id][c]
+			end
+			local temoin = chercher(k + 1, somme)
+			if temoin then
+				return temoin
+			end
+		end
+		croquis[famille] = nil
+		return nil
+	end
+	local temoin = chercher(1, zero())
+	return temoin ~= nil, temoin
 end
 
 local function tirer(liste, rng)

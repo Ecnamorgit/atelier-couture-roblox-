@@ -27,6 +27,20 @@ Catalogue.NOMS_STYLES = {
 	decontracte = "Décontracté",
 }
 Catalogue.TEINTES = { "rose", "rouge", "bleu", "vert", "jaune", "violet", "noir", "blanc", "brun" }
+-- Sous-projet 7 : trois occasions (points des variantes et des matières, comme les styles) et sept traits calculés
+-- d'après la robe (voir Etiquettes)
+Catalogue.OCCASIONS = { "journee", "soiree", "travail" }
+Catalogue.NOMS_OCCASIONS = { journee = "Journée", soiree = "Soirée", travail = "Travail" }
+Catalogue.TRAITS = { "legere", "chaude", "sobre", "travaillee", "unie", "fleurie", "a_motifs" }
+Catalogue.NOMS_TRAITS = {
+	legere = "Légère",
+	chaude = "Chaude",
+	sobre = "Sobre",
+	travaillee = "Travaillée",
+	unie = "Unie",
+	fleurie = "Fleurie",
+	a_motifs = "À motifs",
+}
 
 -- Mensurations (tours en dm) des tailles proposées par les clientes anonymes
 Catalogue.TAILLES = {
@@ -156,48 +170,63 @@ Catalogue.Pieces = {
 }
 
 ---------------------------------------------------------------------------
--- Variantes du carnet de croquis (points de style par variante)
+-- Variantes du carnet de croquis (points de style et, sous-projet 7, d'occasion par variante)
 ---------------------------------------------------------------------------
 Catalogue.Variantes = {
 	{ id = "corsage_droit", famille = "corsage", nom = "Droit",
-		pieces = { "corsage_droit_devant", "corsage_droit_dos" }, style = { chic = 6, decontracte = 6 } },
+		pieces = { "corsage_droit_devant", "corsage_droit_dos" }, style = { chic = 6, decontracte = 6 },
+		occasion = { travail = 8, journee = 4 } },
 	{ id = "corsage_v", famille = "corsage", nom = "Décolleté en V",
-		pieces = { "corsage_v_devant", "corsage_droit_dos" }, style = { elegant = 8, romantique = 4 } },
+		pieces = { "corsage_v_devant", "corsage_droit_dos" }, style = { elegant = 8, romantique = 4 },
+		occasion = { soiree = 6, journee = 2 } },
 	{ id = "corsage_bretelles", famille = "corsage", nom = "À bretelles",
-		pieces = { "corsage_bretelles_devant", "corsage_bretelles_dos" }, style = { decontracte = 8, mignon = 4 } },
+		pieces = { "corsage_bretelles_devant", "corsage_bretelles_dos" }, style = { decontracte = 8, mignon = 4 },
+		occasion = { journee = 8 } },
 	{ id = "corsage_cache_coeur", famille = "corsage", nom = "Cache-cœur",
-		pieces = { "corsage_cache_coeur_devant", "corsage_droit_dos" }, style = { romantique = 8, chic = 4 } },
+		pieces = { "corsage_cache_coeur_devant", "corsage_droit_dos" }, style = { romantique = 8, chic = 4 },
+		occasion = { journee = 4, soiree = 4 } },
 	{ id = "corsage_bustier", famille = "corsage", nom = "Bustier",
-		pieces = { "corsage_bustier_devant", "corsage_bustier_dos" }, style = { gothique = 7, elegant = 5 } },
-	{ id = "manches_sans", famille = "manches", nom = "Sans manches", pieces = {}, style = { decontracte = 3 } },
+		pieces = { "corsage_bustier_devant", "corsage_bustier_dos" }, style = { gothique = 7, elegant = 5 },
+		occasion = { soiree = 10 } },
+	{ id = "manches_sans", famille = "manches", nom = "Sans manches", pieces = {}, style = { decontracte = 3 },
+		occasion = { journee = 4, soiree = 4 } },
 	{ id = "manches_ballon", famille = "manches", nom = "Ballon", pieces = { "manche_ballon" },
-		style = { mignon = 8, romantique = 4 } },
+		style = { mignon = 8, romantique = 4 }, occasion = { journee = 6 } },
 	{ id = "manches_longues", famille = "manches", nom = "Longues", pieces = { "manche_longue" },
-		style = { elegant = 5, gothique = 5, chic = 3 } },
+		style = { elegant = 5, gothique = 5, chic = 3 }, occasion = { travail = 6, soiree = 2 } },
 	{ id = "manches_courtes", famille = "manches", nom = "Courtes", pieces = { "manche_courte" },
-		style = { decontracte = 6, mignon = 3 } },
+		style = { decontracte = 6, mignon = 3 }, occasion = { journee = 6, travail = 2 } },
 	{ id = "manches_trois_quarts", famille = "manches", nom = "Trois-quarts", pieces = { "manche_trois_quarts" },
-		style = { chic = 6, elegant = 4 } },
-	{ id = "col_sans", famille = "col", nom = "Sans col", pieces = {}, style = {} },
-	{ id = "col_claudine", famille = "col", nom = "Claudine", pieces = { "col_claudine" }, style = { mignon = 6, chic = 2 } },
-	{ id = "col_montant", famille = "col", nom = "Montant", pieces = { "col_montant" }, style = { gothique = 6, elegant = 4 } },
-	{ id = "col_marin", famille = "col", nom = "Marin", pieces = { "col_marin" }, style = { mignon = 5, decontracte = 5 } },
+		style = { chic = 6, elegant = 4 }, occasion = { travail = 8 } },
+	{ id = "col_sans", famille = "col", nom = "Sans col", pieces = {}, style = {}, occasion = { soiree = 4 } },
+	{ id = "col_claudine", famille = "col", nom = "Claudine", pieces = { "col_claudine" }, style = { mignon = 6, chic = 2 },
+		occasion = { journee = 4, travail = 2 } },
+	{ id = "col_montant", famille = "col", nom = "Montant", pieces = { "col_montant" }, style = { gothique = 6, elegant = 4 },
+		occasion = { travail = 6, soiree = 2 } },
+	{ id = "col_marin", famille = "col", nom = "Marin", pieces = { "col_marin" }, style = { mignon = 5, decontracte = 5 },
+		occasion = { journee = 6 } },
 	{ id = "jupe_droite", famille = "jupe", nom = "Droite",
-		pieces = { "jupe_droite_devant", "jupe_droite_dos" }, style = { chic = 8 } },
+		pieces = { "jupe_droite_devant", "jupe_droite_dos" }, style = { chic = 8 }, occasion = { travail = 8 } },
 	{ id = "jupe_trapeze", famille = "jupe", nom = "Trapèze",
-		pieces = { "jupe_trapeze_devant", "jupe_trapeze_dos" }, style = { decontracte = 5, mignon = 4 } },
+		pieces = { "jupe_trapeze_devant", "jupe_trapeze_dos" }, style = { decontracte = 5, mignon = 4 },
+		occasion = { journee = 8 } },
 	{ id = "jupe_ample", famille = "jupe", nom = "Ample froncée",
-		pieces = { "jupe_ample_devant", "jupe_ample_dos" }, style = { romantique = 8, mignon = 4 } },
+		pieces = { "jupe_ample_devant", "jupe_ample_dos" }, style = { romantique = 8, mignon = 4 },
+		occasion = { journee = 6, soiree = 4 } },
 	{ id = "jupe_evasee", famille = "jupe", nom = "Longue évasée",
-		pieces = { "jupe_evasee_devant", "jupe_evasee_dos" }, style = { elegant = 10, gothique = 4, decontracte = -4 } },
+		pieces = { "jupe_evasee_devant", "jupe_evasee_dos" }, style = { elegant = 10, gothique = 4, decontracte = -4 },
+		occasion = { soiree = 10 } },
 	{ id = "jupe_crayon", famille = "jupe", nom = "Crayon",
-		pieces = { "jupe_crayon_devant", "jupe_crayon_dos" }, style = { chic = 8, elegant = 4, decontracte = -2 } },
+		pieces = { "jupe_crayon_devant", "jupe_crayon_dos" }, style = { chic = 8, elegant = 4, decontracte = -2 },
+		occasion = { travail = 10, soiree = 2 } },
 	-- Sous-projet 7 : des couches. (Une variante ne change jamais de pièces : les robes gardées et les recettes des
 	-- vitrines resteraient invalides ; on en ajoute de nouvelles.)
 	{ id = "corsage_basque", famille = "corsage", nom = "À basque",
-		pieces = { "corsage_droit_devant", "corsage_droit_dos", "basque_devant", "basque_dos" }, style = { elegant = 6, chic = 6, romantique = 2 } },
+		pieces = { "corsage_droit_devant", "corsage_droit_dos", "basque_devant", "basque_dos" }, style = { elegant = 6, chic = 6, romantique = 2 },
+		occasion = { travail = 8, soiree = 4 } },
 	{ id = "jupe_volant", famille = "jupe", nom = "À volant",
-		pieces = { "jupe_droite_devant", "jupe_droite_dos", "volant_devant", "volant_dos" }, style = { romantique = 8, mignon = 6 } },
+		pieces = { "jupe_droite_devant", "jupe_droite_dos", "volant_devant", "volant_dos" }, style = { romantique = 8, mignon = 6 },
+		occasion = { journee = 6, soiree = 4 } },
 }
 
 ---------------------------------------------------------------------------
@@ -295,19 +324,21 @@ Catalogue.Tissus = {
 		{ type = "carreaux", couleurs = { { 176, 140, 96 }, { 150, 116, 76 } }, periode = 0.25 }, { decontracte = 4 }),
 }
 
--- Rendu 3D par matière : matériau Roblox et reflet (SurfaceAppearance est interdite en jeu, voir le spike)
+-- Par matière : rendu 3D, matériau Roblox et reflet (SurfaceAppearance est interdite en jeu, voir le spike) ;
+-- sous-projet 7 : son nom, ses points d'occasion (comme les points de style d'un tissu : K 2, au prorata de la
+-- surface) et sa chaleur, de -1 (la plus légère) à 1 (la plus chaude)
 Catalogue.MATIERES = {
-	coton = { rugosite = 0.9, reflet = 0, materiau = "Fabric" },
-	lin = { rugosite = 1, reflet = 0, materiau = "Fabric" },
-	jute = { rugosite = 1, reflet = 0, materiau = "Fabric" },
-	crepe = { rugosite = 0.7, reflet = 0.02, materiau = "Fabric" },
-	organza = { rugosite = 0.3, reflet = 0.12, materiau = "SmoothPlastic" },
-	brocart = { rugosite = 0.4, reflet = 0.15, materiau = "SmoothPlastic" },
-	tulle = { rugosite = 0.6, reflet = 0.05, materiau = "Fabric" },
-	laine = { rugosite = 1, reflet = 0, materiau = "Fabric" },
-	soie = { rugosite = 0.35, reflet = 0.1, materiau = "SmoothPlastic" },
-	velours = { rugosite = 0.8, reflet = 0, materiau = "Fabric" },
-	satin = { rugosite = 0.25, reflet = 0.15, materiau = "SmoothPlastic" },
+	coton = { nom = "coton", rugosite = 0.9, reflet = 0, materiau = "Fabric", occasion = { journee = 20, travail = 6 }, chaleur = -0.5 },
+	lin = { nom = "lin", rugosite = 1, reflet = 0, materiau = "Fabric", occasion = { journee = 14, travail = 10 }, chaleur = -0.8 },
+	jute = { nom = "jute", rugosite = 1, reflet = 0, materiau = "Fabric", occasion = { journee = 10, travail = 8 }, chaleur = 0.1 },
+	crepe = { nom = "crêpe", rugosite = 0.7, reflet = 0.02, materiau = "Fabric", occasion = { soiree = 10, travail = 12 }, chaleur = 0 },
+	organza = { nom = "organza", rugosite = 0.3, reflet = 0.12, materiau = "SmoothPlastic", occasion = { soiree = 20 }, chaleur = -0.9 },
+	brocart = { nom = "brocart", rugosite = 0.4, reflet = 0.15, materiau = "SmoothPlastic", occasion = { soiree = 16, travail = 4 }, chaleur = 0.6 },
+	tulle = { nom = "tulle", rugosite = 0.6, reflet = 0.05, materiau = "Fabric", occasion = { soiree = 16, journee = 2 }, chaleur = -0.7 },
+	laine = { nom = "laine", rugosite = 1, reflet = 0, materiau = "Fabric", occasion = { travail = 18, journee = 4 }, chaleur = 0.9 },
+	soie = { nom = "soie", rugosite = 0.35, reflet = 0.1, materiau = "SmoothPlastic", occasion = { soiree = 14, journee = 6 }, chaleur = -0.4 },
+	velours = { nom = "velours", rugosite = 0.8, reflet = 0, materiau = "Fabric", occasion = { soiree = 14, travail = 4 }, chaleur = 0.8 },
+	satin = { nom = "satin", rugosite = 0.25, reflet = 0.15, materiau = "SmoothPlastic", occasion = { soiree = 16, journee = 2 }, chaleur = -0.1 },
 }
 
 ---------------------------------------------------------------------------

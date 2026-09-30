@@ -14,6 +14,20 @@ U.verifier(juge(auMoins, 30) and UiKit.exigence(auMoins, Catalogue, { elegant = 
 U.verifier(not juge(auPlus, 20.4) and UiKit.exigence(auPlus, Catalogue, { elegant = 20.4 }) == "Au plus 20 en Élégant (actuel : 21)", "au plus 20 raté à 20,4 : affiché 21")
 U.verifier(juge(auPlus, 20) and UiKit.exigence(auPlus, Catalogue, { elegant = 20 }) == "Au plus 20 en Élégant (actuel : 20)", "au plus 20 tenu à 20 : affiché 20")
 U.verifier(UiKit.exigence(auMoins, Catalogue) == "Au moins 30 en Élégant", "sans scores : l'exigence seule (carnet)")
+-- (sous-projet 7) Occasions, traits et matière, avec les seize étiquettes du bilan
+local soir = { type = "occasion", occasion = "soiree", valeur = 40 }
+local motifs = { type = "trait", trait = "a_motifs", valeur = 50 }
+U.verifier(UiKit.exigence(soir, Catalogue, { soiree = 39.6, elegant = 80 }) == "Pour la soirée : au moins 40 (actuel : 39)", "occasion : « Pour la soirée : au moins 40 (actuel : 39) »")
+U.verifier(UiKit.exigence(motifs, Catalogue, { a_motifs = 50 }) == "Robe à motifs : au moins 50 (actuel : 50)" and UiKit.exigence(motifs, Catalogue) == "Robe à motifs : au moins 50", "trait : « Robe à motifs : au moins 50 »")
+U.verifier(UiKit.exigence({ type = "matiere", matiere = "crepe" }, Catalogue) == "Matière dominante : crêpe", "matière : « Matière dominante : crêpe »")
+local noms = {}
+for _, o in ipairs(Catalogue.OCCASIONS) do
+	table.insert(noms, UiKit.exigence({ type = "occasion", occasion = o, valeur = 20 }, Catalogue))
+end
+for _, t in ipairs(Catalogue.TRAITS) do
+	table.insert(noms, UiKit.exigence({ type = "trait", trait = t, valeur = 20 }, Catalogue))
+end
+U.verifier(not table.concat(noms, "|"):find("nil") and not table.concat(noms, "|"):find("%?"), "chaque occasion et chaque trait ont leur texte : " .. table.concat(noms, " | "))
 
 -- Échelle de la fenêtre (téléphones) : réduite pour tenir, jamais nulle ni négative
 U.verifier(UiKit.echelle(Vector2.new(1920, 1080)) == 1, "grand écran : échelle 1")
