@@ -27,7 +27,8 @@ end
 -- Chaque élément a au plus une condition, et chaque élément fermé a la sienne
 for _, genre in ipairs(Deblocages.GENRES) do
 	for id, c in pairs(Deblocages.CONDITIONS[genre]) do
-		U.verifier((c.prestige ~= nil) ~= (c.cliente ~= nil), id .. " : une seule condition")
+		local sortes = (c.prestige and 1 or 0) + (c.cliente and 1 or 0) + (c.evenement and 1 or 0)
+		U.verifier(sortes == 1, id .. " : une seule condition")
 		U.verifier(c.prestige == nil or (c.prestige >= 2 and c.prestige <= 8), id .. " : un niveau de prestige possible")
 		U.verifier(c.cliente == nil or (Clientes.get(c.cliente) ~= nil and (c.amitie == 2 or c.amitie == 4)), id .. " : une cliente et un niveau d'amitié")
 	end

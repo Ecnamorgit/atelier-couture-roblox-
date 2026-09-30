@@ -1,10 +1,12 @@
 -- Déblocages (sous-projet 2) : ce qui est fermé au départ, et ce qui l'ouvre. Chaque élément du catalogue a au
--- plus une condition : un niveau de prestige, ou un niveau d'amitié avec une cliente. Rien n'est sauvegardé :
--- tout se déduit du prestige et des amitiés (un changement du tableau s'applique aux parties existantes).
+-- plus une condition : un niveau de prestige, un niveau d'amitié avec une cliente, ou (sous-projet 3) un
+-- événement du quartier qui a eu lieu (ses souvenirs). Rien n'est sauvegardé : tout se déduit du prestige, des
+-- amitiés et de l'histoire (un changement du tableau s'applique aux parties existantes).
 local dossier = script.Parent
 local Catalogue = require(dossier:WaitForChild("Catalogue"))
 local Clientes = require(dossier:WaitForChild("Clientes"))
 local Progression = require(dossier:WaitForChild("Progression"))
+local Histoire = require(dossier:WaitForChild("Histoire"))
 
 local Deblocages = {}
 
@@ -13,7 +15,8 @@ Deblocages.PRESTIGE_MATIERES = { laine = 2, satin = 3, velours = 4, soie = 5 }
 Deblocages.PRESTIGE_ACCESSOIRES = { ruban_noir = 2, dentelle_noire = 3 }
 Deblocages.GENRES = { "variantes", "tissus", "accessoires" }
 
--- CONDITIONS[genre][id] = { prestige = n } ou { cliente = id, amitie = n } ; absent : ouvert au départ
+-- CONDITIONS[genre][id] = { prestige = n }, { cliente = id, amitie = n } ou { evenement = id } ; absent : ouvert
+-- au départ
 local CONDITIONS = { variantes = {}, tissus = {}, accessoires = {} }
 for _, t in ipairs(Catalogue.Tissus) do
 	local niveau = Deblocages.PRESTIGE_MATIERES[t.matiere]
@@ -32,6 +35,9 @@ for _, c in ipairs(Clientes.LISTE) do
 			CONDITIONS.accessoires[d.accessoire] = { cliente = c.id, amitie = niveau }
 		end
 	end
+end
+for _, ev in ipairs(Histoire.EVENEMENTS) do
+	CONDITIONS.accessoires[ev.souvenir] = { evenement = ev.id }
 end
 Deblocages.CONDITIONS = CONDITIONS
 
@@ -63,11 +69,15 @@ function Deblocages.nom(genre, id)
 	return nom or id
 end
 
--- progres : { prestige = points, clientes = { [id] = { amitie = points } } } (l'état de l'atelier convient)
+-- progres : { prestige = points, clientes = { [id] = { amitie = points } }, histoire = { faites } } (l'état de
+-- l'atelier convient)
 function Deblocages.ouvert(progres, genre, id)
 	local c = CONDITIONS[genre][id]
 	if not c then
 		return true
+	end
+	if c.evenement then
+		return Histoire.aEuLieu(progres, c.evenement)
 	end
 	if c.prestige then
 		return Progression.niveauPrestige(progres.prestige or 0) >= c.prestige
@@ -91,6 +101,8 @@ function Deblocages.raison(genre, id)
 	end
 	if c.prestige then
 		return ("Prestige %d"):format(c.prestige)
+	elseif c.evenement then
+		return ("Souvenir : %s"):format(Histoire.get(c.evenement).nom)
 	end
 	return ("Amitié %s : %d"):format(deCliente(c.cliente), c.amitie)
 end
@@ -128,11 +140,11 @@ function Deblocages.ouverts(progres)
 	return out
 end
 
--- Tout le catalogue est-il ouvert ?
+-- Tout ce que le prestige et l'amitié ouvrent est-il ouvert ? (Les souvenirs viennent de l'histoire, à part.)
 function Deblocages.toutOuvert(progres)
 	for _, genre in ipairs(Deblocages.GENRES) do
-		for id in pairs(CONDITIONS[genre]) do
-			if not Deblocages.ouvert(progres, genre, id) then
+		for id, c in pairs(CONDITIONS[genre]) do
+			if not c.evenement and not Deblocages.ouvert(progres, genre, id) then
 				return false
 			end
 		end
