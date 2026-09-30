@@ -67,6 +67,27 @@ for rang, ev in ipairs(Histoire.EVENEMENTS) do
 end
 U.verifier(#sansOccasion == 0, "à partir de la kermesse, chaque robe demande l'occasion de son événement (sans : " .. table.concat(sansOccasion, ", ") .. ")")
 U.verifier(occasionsDe.bal_hiver == "soiree" and occasionsDe.premiere == "soiree" and occasionsDe.kermesse == "journee" and occasionsDe.noces_colette == "journee" and occasionsDe.lanternes == nil, "le bal d'hiver et la première : la soirée ; la kermesse et les mariages : la journée")
+-- (relecture) Les répliques ne contredisent pas la commande : une robe de journée n'est pas pour « ce soir-là » ni pour
+-- une soirée ; ce qu'elle voudrait ne nomme pas un trait qu'elle ne demande pas (« légère », « sobre »…)
+local contredites = {}
+for _, ev in ipairs(Histoire.EVENEMENTS) do
+	for _, c in ipairs(ev.commandes) do
+		local demandes = {}
+		for _, e in ipairs(c.exigences) do
+			demandes[e.occasion or e.trait or ""] = true
+		end
+		local textes = string.lower(c.repliques.detail .. " " .. c.repliques.merci)
+		if demandes.journee and (string.find(textes, "soirée", 1, true) or string.find(textes, "ce soir", 1, true)) then
+			table.insert(contredites, c.id .. " (soir)")
+		end
+		for _, trait in ipairs({ "légère", "chaude", "sobre", "travaillée", "fleurie" }) do
+			if string.find(string.lower(c.repliques.detail), trait, 1, true) and not demandes[Catalogue.TRAITS[table.find({ "légère", "chaude", "sobre", "travaillée", "unie", "fleurie" }, trait)]] then
+				table.insert(contredites, c.id .. " (" .. trait .. ")")
+			end
+		end
+	end
+end
+U.verifier(#contredites == 0, "les répliques ne contredisent pas la commande (en défaut : " .. table.concat(contredites, ", ") .. ")")
 -- Le récit tient debout : au bal des lanternes, Margot tient son stand de limonade (elle ne danse pas) ; le bateau
 -- des régates n'est pas celui de Colette (on l'y emmène) ; au bal d'hiver, la neige tombe dehors, pas dans la salle ;
 -- Margot ne répète pas « tout le monde » dans la même phrase

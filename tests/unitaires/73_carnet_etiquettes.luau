@@ -111,7 +111,33 @@ for id in pairs(cartes()) do
 	end
 end
 U.verifier(soir > 0 and soir < n and #intrus == 0 and choix.Filtre_soiree.Position.Y.Offset == 40, ("filtre « Soirée », sur la seconde rangée : %d tissus de soirée (intrus : %s)"):format(soir, table.concat(intrus, ", ")))
+-- (relecture) le filtre ne garde que les matières qui servent vraiment l'occasion (10 points au moins) : sous
+-- « Journée », ni le satin ni la laine (2 et 4 points)
+M.avancer(0.5)
+choix.Filtre_journee.Activated:Fire()
+local jour, faibles = cartes(), {}
+for id in pairs(jour) do
+	if (Catalogue.MATIERES[Catalogue.tissu(id).matiere].occasion.journee or 0) < 10 then
+		table.insert(faibles, id)
+	end
+end
+table.sort(faibles)
+U.verifier(jour.coton_blanc ~= nil and #faibles == 0, "filtre « Journée » : les matières de journée seulement (en trop : " .. table.concat(faibles, ", ") .. ")")
+-- (relecture) une carte dit la matière quand le nom ne la dit pas : « Tartan vert (laine) », mais « Coton blanc »
+M.avancer(0.5)
+choix.Filtre_tous.Activated:Fire()
+toutes = cartes()
+local nomTartan, nomCoton = toutes.laine_verte_carreaux.Nom.Text, toutes.coton_blanc.Nom.Text
+U.verifier(nomTartan == "Tartan vert (laine)" and toutes.coton_bleu_carreaux.Nom.Text == "Vichy bleu (coton)" and nomCoton == "Coton blanc" and toutes.crepe_noir.Nom.Text == "Crêpe noir", ("la matière sur la carte quand le nom ne la dit pas (%s ; %s)"):format(nomTartan, nomCoton))
 fermer()
+
+-- (relecture) Sobre et Travaillée : la fiche dit que les décorations comptent
+etat.commande.exigences = { { type = "min", style = "romantique", valeur = 30 }, { type = "trait", trait = "travaillee", valeur = 40 } }
+local ctxT = contexte()
+local fermerT = EcranCarnet(ctxT)
+local ligne = ctxT.contenu.Droite.Exigence2
+U.verifier(string.find(ligne.Text, "les décorations comptent", 1, true) ~= nil and ligne.Size.Y.Offset >= 40, "Travaillée : « les décorations comptent », sur une seconde ligne (« " .. ligne.Text .. " »)")
+fermerT()
 
 local libre = Session.nouvelle(23)
 libre.etat.livraisons = 10

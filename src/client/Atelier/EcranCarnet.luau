@@ -25,6 +25,7 @@ local LISERE = Color3.fromRGB(196, 168, 150)
 local CRAYON = Color3.fromRGB(110, 90, 96)
 local L_DESSIN, H_DESSIN = 212, 276 -- pixels de l'image du dessin (100 × 130 unités de croquis)
 local HAUT_LIGNES, PAS_LIGNES = 282, 36 -- les lignes ◀ ▶ sous le dessin : assez grandes pour le doigt
+local SEUIL_OCCASION = 10 -- (relecture du plan 22) points d'occasion d'une matière qui la sert vraiment (filtre)
 
 return function(ctx)
 	local UiKit, session, contenu = ctx.UiKit, ctx.session, ctx.contenu
@@ -124,7 +125,8 @@ return function(ctx)
 	local yExigence = 36
 	for i, e in ipairs(etat.commande.exigences) do
 		-- (une exigence d'accessoire dit aussi ce qu'on en a dans la mercerie, sur une seconde ligne)
-		local haut = if e.type == "accessoire" then 40 else 20
+		-- (relecture du plan 22 : Sobre et Travaillée disent aussi que les décorations comptent)
+		local haut = if e.type == "accessoire" or e.trait == "sobre" or e.trait == "travaillee" then 40 else 20
 		lignesExigences[i] = UiKit.texte({ Name = "Exigence" .. i, TextSize = 14, TextYAlignment = Enum.TextYAlignment.Top, Position = UDim2.fromOffset(12, yExigence), Size = UDim2.new(1, -24, 0, haut), Parent = droite })
 		yExigence += haut + 2
 	end
@@ -203,7 +205,7 @@ return function(ctx)
 			for _, t in ipairs(Catalogue.Tissus) do
 				local garde = not filtre
 					or (filtre.style and (t.style[filtre.style] or 0) > 0)
-					or (filtre.occasion and (Catalogue.MATIERES[t.matiere].occasion[filtre.occasion] or 0) > 0)
+					or (filtre.occasion and (Catalogue.MATIERES[t.matiere].occasion[filtre.occasion] or 0) >= SEUIL_OCCASION)
 				if garde then
 					local ouvert = Deblocages.ouvert(etat, "tissus", t.id)
 					local carte = UiKit.arrondir(UiKit.creer("TextButton", { Name = "Tissu_" .. t.id, Text = "", AutoButtonColor = ouvert, BackgroundColor3 = if ouvert then C.panneau else C.ferme, ZIndex = 12, Parent = grille }), 8)
@@ -221,7 +223,10 @@ return function(ctx)
 					if motif then
 						echantillon.ImageContent = motif
 					end
-					UiKit.texte({ Text = t.nom, Font = Enum.Font.GothamBold, TextSize = 14, Position = UDim2.fromOffset(72, 8), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
+					-- (relecture du plan 22) la matière, quand le nom ne la dit pas : « Tartan vert (laine) »
+					local matiere = Catalogue.MATIERES[t.matiere].nom
+					local nom = if string.find(string.lower(t.nom), matiere, 1, true) then t.nom else ("%s (%s)"):format(t.nom, matiere)
+					UiKit.texte({ Name = "Nom", Text = nom, Font = Enum.Font.GothamBold, TextSize = 14, Position = UDim2.fromOffset(72, 8), Size = UDim2.new(1, -80, 0, 36), ZIndex = 13, Parent = carte })
 					-- (sous-projet 7) ses quatre étiquettes les plus fortes : styles, occasions, Légère ou Chaude
 					local etiquettes = {}
 					for k, a in ipairs(Etiquettes.apportsTissu(t.id)) do
@@ -397,6 +402,8 @@ return function(ctx)
 			elseif e.type == "accessoire" then
 				local q = etat.mercerie[e.id] or 0
 				texte ..= "\n      (en stock : " .. (if Catalogue.accessoire(e.id).genre == "garniture" then Mercerie.metres(q) .. " m" else tostring(q)) .. ")"
+			elseif e.trait == "sobre" or e.trait == "travaillee" then
+				texte ..= "\n      (les décorations comptent)"
 			end
 			lignesExigences[i].Text = SYMBOLES[statut] .. "  " .. texte
 			lignesExigences[i].TextColor3 = COULEURS_STATUT[statut]
