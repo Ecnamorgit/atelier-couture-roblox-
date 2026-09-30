@@ -226,10 +226,10 @@ Histoire.EVENEMENTS = {
 		nom = "Le mariage de Colette",
 		prestige = 7,
 		souvenir = "alliance_or",
-		epilogue = "Colette a dit oui au bord du lac, là où tout avait commencé. Margot a pleuré plus fort que tout le monde, et Apolline a lu le poème qu'elle leur avait écrit.",
+		epilogue = "Colette a dit oui sous les lanternes du square, là où tout avait commencé. Margot a pleuré plus fort que tout le monde, et Apolline a lu le poème qu'elle leur avait écrit.",
 		commandes = {
 			commande("noces_colette", "colette", { min("romantique", 40), teinte("blanc") },
-				"Ça y est, c'est bientôt le grand jour ! Et vous m'aviez promis ma robe, vous vous souvenez ?",
+				"Ça y est, c'est bientôt le grand jour ! Vous vous souvenez ? Au bal d'hiver, je vous ai demandé ma robe.",
 				"Blanche, la plus romantique du monde. Comme au bal d'hiver, en mieux.",
 				"Il a pleuré en me voyant arriver. Moi aussi. Merci pour tout, depuis le début."),
 			commande("noces_margot", "margot", { min("mignon", 35), teinte("rose") },

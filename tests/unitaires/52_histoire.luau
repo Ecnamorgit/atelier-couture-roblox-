@@ -17,6 +17,11 @@ for rang = 9, #Histoire.EVENEMENTS do
 	end
 end
 U.verifier(joueuses.apolline and joueuses.josephine and joueuses.capucine and joueuses.maelle, "les quatre nouvelles clientes jouent dans les événements 9 à 12")
+-- Le mariage de Colette répond à son histoire : tout a commencé au bal des lanternes, sur le square ; au bal
+-- d'hiver, elle avait demandé sa robe (on ne la lui avait pas promise)
+local noces = Histoire.get("noces_colette")
+local demandeNoces = Histoire.commande("noces_colette").repliques.demande
+U.verifier(string.find(noces.epilogue, "lanternes", 1, true) ~= nil and string.find(noces.epilogue, "lac", 1, true) == nil and string.find(demandeNoces, "promis", 1, true) == nil and string.find(demandeNoces, "bal d'hiver", 1, true) ~= nil, "le mariage de Colette répond à son histoire (les lanternes du square, la robe demandée au bal d'hiver)")
 local ids, faites = {}, {}
 local precedent = 0
 for rang, ev in ipairs(Histoire.EVENEMENTS) do

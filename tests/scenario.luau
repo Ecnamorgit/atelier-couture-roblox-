@@ -1075,6 +1075,8 @@ do
 		end
 	end
 	verifier(liste ~= nil and liste:IsA("ScrollingFrame") and bas > 0 and (if liste.CanvasSize then liste.CanvasSize.Y.Offset else 0) >= bas and liste:FindFirstChild("Adresse_maelle") ~= nil and texte("Le grand défilé du quartier — souvenir : Rosette d'honneur") ~= nil, "dix clientes et douze souvenirs : le carnet d'adresses défile jusqu'au dernier")
+	verifier(liste.ScrollBarImageColor3 == requireModule(scriptClient.UiKit).COULEURS.accent, "la barre de défilement du carnet d'adresses se voit (couleur d'accent, comme les onglets)")
+	verifier(liste.Souvenirs.TextYAlignment == Enum.TextYAlignment.Top, "les souvenirs commencent juste sous les adresses (texte calé en haut)")
 	cliquer("FermerCarnetAdresses")
 	local e = serveur:atelier(joueur).etat
 	for _, c in ipairs(Clientes.LISTE) do

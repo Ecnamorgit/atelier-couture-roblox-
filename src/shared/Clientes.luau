@@ -115,7 +115,7 @@ Clientes.LISTE = {
 	-- Sous-projet 4 : quatre clientes qui arrivent tard (prestiges 5 à 8)
 	{
 		id = "apolline",
-		nom = "Apolline Garnier",
+		nom = "Apolline Roussel",
 		taille = "M",
 		mesures = { poitrine = 8.7, taille = 7.0, hanches = 9.3 },
 		styles = { "romantique", "chic" },

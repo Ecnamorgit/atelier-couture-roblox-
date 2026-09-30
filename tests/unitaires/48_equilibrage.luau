@@ -191,6 +191,13 @@ U.verifier(p2[#p2] <= 3, "prestige 2 en trois robes au plus, dans chaque partie 
 U.verifier(medianeP8 <= 70, "le prestige 8 (qui ouvre maintenant le tulle et deux décorations) est atteint vers la 70e robe au plus tard, en médiane (" .. bilan .. ")")
 U.verifier(medianeP5 >= 12 and medianeP5 <= 20 and p5[#p5] <= 25, "prestige 5 entre la 12e et la 20e robe en médiane, à la 25e au plus tard (" .. bilan .. ")")
 U.verifier(medianeTout >= 100 and medianeTout <= 150, "tout le catalogue ouvert entre la 100e et la 150e robe, en médiane : l'amitié des quatre dernières clientes, arrivées aux prestiges 5 à 8, ouvre les dernières variantes (" .. bilan .. ")")
+local toutAvantLaFin = 0
+for _, n in ipairs(tout) do
+	if n <= ROBES then
+		toutAvantLaFin += 1
+	end
+end
+U.verifier(toutAvantLaFin >= 16, ("au moins 16 parties sur 20 ouvrent tout avant la %de robe (%d) (%s)"):format(ROBES, toutAvantLaFin, bilan))
 U.verifier(medianeInvitees >= 10, "le courrier fait venir des clientes (" .. bilan .. ")")
 U.verifier(pauvres[1] >= robeSimple, "l'argent ne descend jamais sous le prix d'une robe simple (" .. bilan .. ")")
 local livreesEtVendues = true

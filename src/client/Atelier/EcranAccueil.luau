@@ -244,7 +244,7 @@ return function(ctx)
 			carnet.Visible = false
 		end)
 		-- Sous le titre, une liste qui défile (dix clientes et douze souvenirs ne tiennent pas dans la fenêtre)
-		local liste = UiKit.creer("ScrollingFrame", { Name = "Liste", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, 0, 1, -40), ScrollBarThickness = 10, ScrollingDirection = Enum.ScrollingDirection.Y, ZIndex = 21, Parent = carnet })
+		local liste = UiKit.creer("ScrollingFrame", { Name = "Liste", BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, 0, 1, -40), ScrollBarThickness = 10, ScrollBarImageColor3 = C.accent, ScrollingDirection = Enum.ScrollingDirection.Y, ZIndex = 21, Parent = carnet })
 		for k, v in ipairs(venues) do
 			local niveau = Progression.niveauAmitie(v.fiche.amitie)
 			local seuil = Progression.SEUILS_AMITIE[niveau + 2]
@@ -271,7 +271,7 @@ return function(ctx)
 			end
 		end
 		if #passes > 0 then
-			UiKit.texte({ Name = "Souvenirs", Text = "Souvenirs du quartier :\n" .. table.concat(passes, "\n"), TextSize = 16, Position = UDim2.fromOffset(0, bas + 10), Size = UDim2.new(1, -14, 0, 22 * (#passes + 1)), ZIndex = 21, Parent = liste })
+			UiKit.texte({ Name = "Souvenirs", Text = "Souvenirs du quartier :\n" .. table.concat(passes, "\n"), TextSize = 16, Position = UDim2.fromOffset(0, bas + 10), Size = UDim2.new(1, -14, 0, 22 * (#passes + 1)), TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 21, Parent = liste })
 			bas += 10 + 22 * (#passes + 1)
 		end
 		liste.CanvasSize = UDim2.fromOffset(0, bas)
