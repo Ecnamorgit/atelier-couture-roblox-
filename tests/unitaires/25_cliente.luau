@@ -55,6 +55,9 @@ U.verifier(math.abs(bas - place.Position.Y) < 1e-6 and math.abs(pivot.X - 3) < 1
 ---------------------------------------------------------------------------
 Cliente.dire(modele, "Bonjour !")
 local bulle = modele.Head:FindFirstChild("Bulle")
+-- Son bord bas est calé juste au-dessus de la tête, à toute distance : elle ne monte plus sous les boutons de
+-- Roblox, en haut à gauche de l'écran, quand la caméra du poste cadre la cliente de près
+U.verifier(bulle ~= nil and bulle.SizeOffset.X == 0 and bulle.SizeOffset.Y == 0.5 and bulle.StudsOffset.Y <= 1, "la bulle se pose juste au-dessus de la tête, son bord bas calé dessus")
 U.verifier(bulle ~= nil and bulle:IsA("BillboardGui") and bulle.Texte.Text == "Bonjour !", "la cliente parle")
 U.verifier(bulle.Texte.TextSize >= 14, "texte de bulle lisible (14 px au moins)")
 Cliente.dire(modele, "Merci !")
