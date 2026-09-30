@@ -1,4 +1,4 @@
-# Atelier de couture — jeu Roblox
+# Aiguille & Dentelle — jeu Roblox
 
 Jeu de couture sur Roblox, inspiré des mécaniques de *Dressmaker* (Cozy Lives / Free Lives, 2026).
 On ne choisit pas un vêtement tout fait : on **dessine**, **coupe**, **coud** et **décore** la robe,
@@ -6,10 +6,10 @@ et le tissu découpé se voit tel quel sur la robe en 3D.
 
 Le jeu est en cours de refonte, sous-projet par sous-projet
 (specs : `docs/superpowers/specs/2026-09-28-atelier-coeur-design.md` pour le cœur de l'atelier,
-`docs/superpowers/specs/2026-09-29-clientes-progression-design.md` pour les clientes et la progression ;
-plans : `docs/superpowers/plans/`).
+`docs/superpowers/specs/2026-09-29-clientes-progression-design.md` pour les clientes et la progression,
+`docs/superpowers/specs/2026-09-30-histoire-evenements-design.md` pour l'histoire ; plans : `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 2 terminé côté code, plans 5a à 5d : clientes, prestige, déblocages, robes libres, courrier)
+## État actuel (sous-projet 3 terminé côté code, plan 6 : l'histoire et les événements du quartier)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -76,8 +76,14 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    **Équilibrage** (simulé par les tests, sur vingt parties) : un joueur moyen (qualité 0,8, une robe libre de
    jute vendue sur quatre robes, les lettres invitées) atteint le prestige 2 à la 3e robe au plus tard, le 5 vers
    la 19e, et tout est ouvert vers la 62e (médianes).
-9. La suite : sous-projet 3 (histoire, dialogues, événements, nom définitif du jeu), puis sous-projet 4 (porter
-   la robe, défilés).
+9. **L'histoire** : huit événements du quartier se suivent (le bal des lanternes, la kermesse, le vernissage, les
+   régates, la veillée des contes, le mariage de Margot, le concert du kiosque, le grand bal d'hiver). Le premier
+   s'annonce après trois commandes livrées, les suivants à leur prestige. « Commande de l'événement » ouvre une
+   conversation avec la cliente (pourquoi elle a besoin de cette robe, ce qu'elle voudrait), puis la commande,
+   avec une tenue imposée. Toutes les robes livrées, l'événement a lieu : son épilogue, un souvenir (une des huit
+   décorations nouvelles) et 15 de prestige ; le carnet d'adresses garde les souvenirs. Les commandes ordinaires
+   continuent à côté.
+10. La suite : sous-projet 4 (porter la robe sur son avatar, défilés).
 
 « Recommencer la robe » (le tissu coupé et les décorations posées sont perdus) et « Livrer la robe »
 demandent une confirmation (deuxième appui).
@@ -124,7 +130,8 @@ dans un jeu publié, le compte propriétaire doit être vérifié (13 ans et plu
   | `Coupon`, `Metrage` | Rouleau de découpe (pli, chevauchements) et métrage conseillé |
   | `Notation`, `Commandes` | Droit-fil, couture, qualité, styles, exigences, paie, ajustement aux mesures ; commandes réalisables, d'après les goûts de la cliente |
   | `Clientes`, `Progression` | Les six clientes (mesures, tenue, goûts, répliques) et qui vient à la clochette ; amitié, prestige et leurs niveaux |
-  | `Deblocages` | Ce qui est fermé au départ et ce qui l'ouvre (prestige, amitié) ; ce qu'une livraison vient d'ouvrir ; ce que l'amitié d'une cliente ouvrira ensuite |
+  | `Deblocages` | Ce qui est fermé au départ et ce qui l'ouvre (prestige, amitié, événement) ; ce qu'une livraison vient d'ouvrir ; ce que l'amitié d'une cliente ouvrira ensuite |
+  | `Histoire` | Les huit événements du quartier : leurs robes, tenues, répliques, épilogues et souvenirs ; l'événement en cours et sa prochaine robe |
   | `Pixels` | Motifs de tissu, découpe exacte de l'image d'une pièce, silhouette du patron |
   | `Recette` | Recette d'une robe en JSON et validation complète (filtre du serveur au plan 4) |
   | `Maillage`, `Mannequin`, `Editables`, `ConstructeurRobe`, `Vitrines` | Robe 3D, mannequin, vitrines |
