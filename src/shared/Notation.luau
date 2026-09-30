@@ -1,9 +1,11 @@
--- Notation : droit-fil, couture, qualité, jauges de style, exigences des commandes et paie.
+-- Notation : droit-fil, couture, qualité, jauges de style (et, sous-projet 7, d'occasion et de trait : voir
+-- Etiquettes), exigences des commandes et paie.
 -- Utilisé par le serveur (qui fait foi) et par le client (affichage en direct).
 local dossier = script.Parent
 local Catalogue = require(dossier:WaitForChild("Catalogue"))
 local Polygone = require(dossier:WaitForChild("Polygone"))
 local Patron = require(dossier:WaitForChild("Patron"))
+local Etiquettes = require(dossier:WaitForChild("Etiquettes"))
 
 local Notation = {}
 
@@ -152,7 +154,8 @@ end
 -- Jauges du carnet : choix = { [idPiece] = idTissu ou nil } ; accessoires = accessoires imposés par
 -- la commande ({ { id } }, voir accessoiresImposes), qui seront forcément sur la robe.
 -- Retourne { [style] = { acquis, min, max } } : acquis = points des variantes seules,
--- min / max = fourchette possible selon les tissus encore à choisir.
+-- min / max = fourchette possible selon les tissus encore à choisir. Sous-projet 7 : aussi { [occasion ou trait] =
+-- { min, max } } (Etiquettes.fourchette : les décorations à venir comptent pour Sobre et Travaillée).
 -- tissusOuverts (facultatif, { [idTissu] = true }, voir Deblocages.ouverts) : les pièces sans tissu ne comptent que
 -- les tissus ouverts, la fourchette ne promet rien de plus.
 function Notation.fourchette(croquis, choix, accessoires, tissusOuverts)
@@ -202,6 +205,9 @@ function Notation.fourchette(croquis, choix, accessoires, tissusOuverts)
 			max = math.clamp(brutAcquis + haut, 0, 100),
 		}
 	end
+	for cle, f in pairs(Etiquettes.fourchette(croquis, choix, Etiquettes.decorations(accessoires), tissusOuverts)) do
+		out[cle] = f
+	end
 	return out
 end
 
@@ -239,19 +245,22 @@ end
 function Notation.prevision(e, croquis, choix, fourchette, ajustement)
 	if e.type == "qualite" and ajustement and e.valeur > ajustement then
 		return "non" -- la qualité est multipliée par l'ajustement : celle-ci est hors d'atteinte
-	elseif e.type == "min" then
-		local f = fourchette[e.style]
+	elseif e.type == "min" or e.type == "occasion" or e.type == "trait" then
+		local f = fourchette[e.style or e.occasion or e.trait]
 		return f.min >= e.valeur - 1e-9 and "ok" or (f.max < e.valeur - 1e-9 and "non" or "?")
 	elseif e.type == "max" then
 		local f = fourchette[e.style]
 		return f.max <= e.valeur + 1e-9 and "ok" or (f.min > e.valeur + 1e-9 and "non" or "?")
-	elseif e.type == "teinte" then
+	elseif e.type == "teinte" or e.type == "matiere" then
 		local pieces = {}
 		for _, id in ipairs(Patron.piecesDuCroquis(croquis)) do
 			if not choix[id] then
 				return "?"
 			end
 			table.insert(pieces, { id = id, tissu = choix[id] })
+		end
+		if e.type == "matiere" then
+			return Etiquettes.matiereDominante(pieces) == e.matiere and "ok" or "non"
 		end
 		return Notation.teinteDominante(pieces) == e.teinte and "ok" or "non"
 	end
@@ -274,7 +283,9 @@ function Notation.ajustement(vraies, prises)
 end
 
 -- recette = { croquis, pieces = { { id, tissu, x, y, angle, couture } }, accessoires = { … } }
--- Retourne { styles, qualite, teinte, accessoires = { [id] = nombre }, nbPieces }
+-- Retourne { styles, qualite, teinte, accessoires = { [id] = nombre }, nbPieces } ; sous-projet 7 : occasions,
+-- traits (Etiquettes.calculer), matiere (la matière dominante) et scores (les seize étiquettes ensemble, pour les
+-- textes : styles, occasions et traits)
 function Notation.bilan(recette)
 	local tissus, piecesNotees = {}, {}
 	for _, p in ipairs(recette.pieces) do
@@ -294,17 +305,32 @@ function Notation.bilan(recette)
 		table.insert(accessoires, entree)
 		comptes[a.id] = (comptes[a.id] or 0) + 1
 	end
+	local entree = { croquis = recette.croquis, tissus = tissus, accessoires = accessoires }
+	local styles, etiquettes = Notation.styles(entree), Etiquettes.calculer(entree)
+	local scores = table.clone(styles)
+	for cle, v in pairs(etiquettes.occasions) do
+		scores[cle] = v
+	end
+	for cle, v in pairs(etiquettes.traits) do
+		scores[cle] = v
+	end
 	return {
-		styles = Notation.styles({ croquis = recette.croquis, tissus = tissus, accessoires = accessoires }),
+		styles = styles,
+		occasions = etiquettes.occasions,
+		traits = etiquettes.traits,
+		scores = scores,
 		qualite = Notation.qualite(piecesNotees),
 		teinte = teinte,
+		matiere = Etiquettes.matiereDominante(recette.pieces),
 		accessoires = comptes,
 		nbPieces = #recette.pieces,
 	}
 end
 
 -- exigences : { { type = "min"|"max", style, valeur } | { type = "qualite", valeur }
---              | { type = "teinte", teinte } | { type = "accessoire", id } }
+--              | { type = "teinte", teinte } | { type = "accessoire", id }
+--              | (sous-projet 7) { type = "occasion", occasion, valeur } | { type = "trait", trait, valeur } (au moins)
+--              | { type = "matiere", matiere } (la matière dominante) }
 -- Retourne ok, et la liste des indices des exigences ratées
 function Notation.verifierExigences(exigences, bilan)
 	local ratees = {}
@@ -320,6 +346,12 @@ function Notation.verifierExigences(exigences, bilan)
 			ok = bilan.teinte == e.teinte
 		elseif e.type == "accessoire" then
 			ok = (bilan.accessoires[e.id] or 0) > 0
+		elseif e.type == "occasion" then
+			ok = bilan.occasions[e.occasion] >= e.valeur - 1e-9
+		elseif e.type == "trait" then
+			ok = bilan.traits[e.trait] >= e.valeur - 1e-9
+		elseif e.type == "matiere" then
+			ok = bilan.matiere == e.matiere
 		else
 			error("exigence inconnue : " .. tostring(e.type))
 		end
