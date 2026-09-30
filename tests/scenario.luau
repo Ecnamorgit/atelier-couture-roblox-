@@ -664,7 +664,7 @@ verifier(pieceC.Rotation == rotationFermee, "fenêtre fermée : R ne tourne plus
 cliquer("OuvrirAtelier")
 verifier(M.actions.AtelierDerouler ~= nil, "fenêtre rouverte : A et D déroulent de nouveau")
 -- Tissu entamé : rien de coupé, le rouleau est intact
-verifier(string.find(panneau.InfoRouleau.Text, "Entamé : 0 / ", 1, true) == 1 and not rouleau.Tissu.Entame.Visible, "rien de coupé : rouleau intact")
+verifier(string.find(panneau.InfoRouleau.Text, "0,00 m entamés / ", 1, true) == 1 and string.find(panneau.InfoRouleau.Text, "\nCette robe : +0,00 m (0 po)", 1, true) ~= nil and not rouleau.Tissu.Entame.Visible, "rien de coupé : rouleau intact (" .. panneau.InfoRouleau.Text .. ")")
 cliquer("Proposer")
 -- « Plus de tissu » cliqué deux fois très vite : un seul achat
 local avantPlus = argent()
@@ -689,7 +689,8 @@ while titre() == "3. Table de découpe" and essais < 20 do
 			if coupes == 1 and titre() == "3. Table de découpe" then
 				-- Couper consomme le rouleau jusqu'au bas de la pièce la plus basse : le tissu entamé s'affiche
 				local c = requireModule(scriptClient.Session).courante.etat.coupons.soie_rose_fleurs
-				verifier(c:longueurUtilisee() > 0 and panneau.InfoRouleau.Text == ("Entamé : %d / %d dm"):format(c:longueurUtilisee(), c.longueur), "une pièce coupée : le tissu entamé s'affiche")
+				local metres = requireModule(scriptClient.Mercerie).metres
+				verifier(c:longueurUtilisee() > 0 and c:ajout() == c:longueurUtilisee() and panneau.InfoRouleau.Text == ("%s m entamés / %s m\nCette robe : +%s m (%d po)"):format(metres(c:longueurUtilisee() * 10), metres(c.longueur * 10), metres(c:ajout() * 10), EtatAtelier.prix("soie_rose_fleurs", c:ajout())), "une pièce coupée : le compteur du rouleau, et ce que cette robe y ajoute (" .. panneau.InfoRouleau.Text .. ")")
 				verifier(rouleau.Tissu.Entame.Visible and rouleau.Tissu.Entame.Position.Y.Offset == c:longueurUtilisee() * 36, "une ligne marque le tissu entamé sur le rouleau")
 			end
 		end
@@ -1611,7 +1612,7 @@ do -- (sous-projet 6) Le rouleau de coton blanc entamé : ses trous sont dessin�
 	end
 	local c = SessionModule.courante.etat.coupons.coton_blanc
 	cliquer("Proposer")
-	verifier(trousVus == 2 and fenetre.Contenu.Panneau.Statut.Text == "Place libre : tu peux couper." and fenetre.Contenu.Panneau.InfoRouleau.Text == ("Entamé : 6 / %d dm"):format(c.longueur), "coton blanc entamé : deux trous dessinés, « Proposer » trouve une place libre, 6 dm entamés (" .. fenetre.Contenu.Panneau.Statut.Text .. ")")
+	verifier(trousVus == 2 and fenetre.Contenu.Panneau.Statut.Text == "Place libre : tu peux couper." and fenetre.Contenu.Panneau.InfoRouleau.Text == ("0,60 m entamés / %s m\nCette robe : +0,00 m (0 po)"):format(requireModule(scriptClient.Mercerie).metres(c.longueur * 10)), "coton blanc entamé : deux trous dessinés, « Proposer » trouve une place libre, 6 dm entamés (" .. fenetre.Contenu.Panneau.Statut.Text .. ")")
 	-- Une bande jetée d'elle-même (plus de 24 trous) est annoncée
 	SessionModule.courante.annonce("couper", { ok = true, jetees = { { tissu = "coton_blanc", dm = 13 } } })
 	verifier(fenetre.Message.Visible and fenetre.Message.Text == "Trop de trous : la bande entamée est jetée (Coton blanc, 1,30 m).", "une bande jetée d'elle-même est annoncée")
