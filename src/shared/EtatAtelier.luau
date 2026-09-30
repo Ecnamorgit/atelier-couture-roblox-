@@ -48,6 +48,9 @@ EtatAtelier.MERCERIE_MAX_CM = 9999
 EtatAtelier.LOT_GARNITURE = 50 -- cm par lot de garniture acheté
 EtatAtelier.ACHAT_MERCERIE_MAX = 99 -- unités ou lots par achat
 EtatAtelier.SOUVENIRS_OFFERTS = 5 -- exemplaires du souvenir d'un événement qui a lieu
+-- Sous-projet 6 : le tissu coupé laisse une bande entamée en haut du rouleau, avec ses trous ; au-delà de 24 trous,
+-- elle est jetée d'elle-même
+EtatAtelier.TROUS_MAX = 24
 
 local function refus(message)
 	return { ok = false, erreur = message }
@@ -98,7 +101,7 @@ local function pareil(a, b)
 end
 
 -- Champs de l'état échangés avec le serveur (les rouleaux à part : ce sont des objets Coupon)
-local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites", "ventes", "lettres", "histoire", "mercerie" }
+local CHAMPS = { "argent", "stock", "etape", "commande", "croquis", "tissus", "coupees", "epinglees", "coutures", "accessoires", "robes", "clientes", "prestige", "livraisons", "visites", "ventes", "lettres", "histoire", "mercerie", "entames" }
 
 function EtatAtelier.nouveau(argent)
 	return setmetatable({
@@ -124,6 +127,9 @@ function EtatAtelier.nouveau(argent)
 		lettres = {}, -- le courrier : { { cliente, commande } }, trois au plus
 		histoire = { faites = {} }, -- sous-projet 3 : les commandes d'histoire livrées ([idCommande] = true)
 		mercerie = table.clone(EtatAtelier.KIT_MERCERIE), -- sous-projet 6
+		-- Sous-projet 6 : la bande entamée en haut de chaque rouleau ([idTissu] = { bas = dm, trous = { { piece, x, y,
+		-- angle } } }), comptée dans le stock ; absente : un rouleau neuf
+		entames = {},
 	}, EtatAtelier)
 end
 
@@ -181,12 +187,52 @@ function EtatAtelier:tissusUtilises()
 	return out
 end
 
--- Le tissu déjà coupé est perdu : on retire du stock la longueur entamée de chaque rouleau
-local function consommer(self)
+-- Le tissu du stock qui n'est pas entamé (dm)
+function EtatAtelier:stockNeuf(idTissu)
+	local entame = self.entames[idTissu]
+	return math.max(0, (self.stock[idTissu] or 0) - (entame and entame.bas or 0))
+end
+
+-- Le tissu neuf de chaque tissu en stock ([idTissu] = dm) : ce que le métrage conseillé compte
+function EtatAtelier:stocksNeufs()
+	local out = {}
+	for idTissu in pairs(self.stock) do
+		out[idTissu] = self:stockNeuf(idTissu)
+	end
+	return out
+end
+
+-- Le tissu coupé reste sur le rouleau : les pièces de chaque rouleau deviennent des trous de sa bande entamée, qui
+-- descend jusqu'au bas de la plus basse. Au-delà de 24 trous, la bande est jetée (retirée du stock). Renvoie les bandes
+-- jetées ({ { tissu, dm } }), ou nil
+local function entamer(self)
+	local jetees = {}
 	for idTissu, coupon in pairs(self.coupons) do
-		self.stock[idTissu] = math.max(0, (self.stock[idTissu] or 0) - coupon:longueurUtilisee())
+		if next(coupon.poses) then
+			local trous, ids = table.clone(coupon.trous), {}
+			for idPiece in pairs(coupon.poses) do
+				table.insert(ids, idPiece)
+			end
+			table.sort(ids) -- (un ordre stable, d'une copie à l'autre)
+			for _, idPiece in ipairs(ids) do
+				local p = coupon.poses[idPiece]
+				table.insert(trous, { piece = idPiece, x = p.x, y = p.y, angle = p.angle })
+			end
+			local bas = coupon:longueurUtilisee()
+			if #trous > EtatAtelier.TROUS_MAX then
+				self.stock[idTissu] = math.max(0, (self.stock[idTissu] or 0) - bas)
+				self.entames[idTissu] = nil
+				table.insert(jetees, { tissu = idTissu, dm = bas })
+			else
+				self.entames[idTissu] = { bas = bas, trous = trous }
+			end
+		end
 	end
 	self.coupons = {}
+	table.sort(jetees, function(a, b)
+		return a.tissu < b.tissu
+	end)
+	return if #jetees > 0 then jetees else nil
 end
 
 -- Une robe libre (prêt-à-porter) : ni cliente ni exigence ni acompte ; une taille standard, dont le mannequin
@@ -434,7 +480,8 @@ function EtatAtelier:commencerDecoupe()
 	end
 	self.coupons = {}
 	for _, t in ipairs(self:tissusUtilises()) do
-		self.coupons[t] = Coupon.nouveau(math.min(self.stock[t], Recette.LONGUEUR_MAX))
+		local entame = self.entames[t]
+		self.coupons[t] = Coupon.nouveau(math.min(self.stock[t], Recette.LONGUEUR_MAX), entame and entame.trous)
 	end
 	self.etape = "decoupe"
 	return { ok = true }
@@ -454,19 +501,20 @@ function EtatAtelier:couper(idPiece, placement)
 		return refus(erreur)
 	end
 	self.coupees[idPiece] = coupon.poses[idPiece]
+	local jetees
 	if #self:piecesAPoser() == 0 then
 		if self.commande.libre then
-			-- le prix des matières d'une robe libre : le tissu entamé de chaque rouleau
+			-- le prix des matières d'une robe libre : ce qu'elle ajoute à la bande entamée de chaque rouleau
 			local matieres = 0
 			for idTissu, c in pairs(self.coupons) do
-				matieres += EtatAtelier.prix(idTissu, c:longueurUtilisee())
+				matieres += EtatAtelier.prix(idTissu, c:ajout())
 			end
 			self.commande.matieres = matieres
 		end
-		consommer(self)
+		jetees = entamer(self)
 		self.etape = "epinglage"
 	end
-	return { ok = true, reste = #self:piecesAPoser() }
+	return { ok = true, reste = #self:piecesAPoser(), jetees = jetees }
 end
 
 -- Épingle une pièce coupée sur le mannequin ; la dernière mène à la couture
@@ -860,7 +908,7 @@ function EtatAtelier:abandonner()
 	return { ok = true, amitie = perte }
 end
 
--- Abandonne la robe en cours (le tissu déjà coupé est perdu), garde la commande
+-- Abandonne la robe en cours (les pièces déjà coupées deviennent des trous de la bande entamée), garde la commande
 function EtatAtelier:recommencer()
 	if self.etape == "accueil" then
 		return refus("Aucune commande en cours.")
@@ -868,24 +916,49 @@ function EtatAtelier:recommencer()
 	if self.etape == "mesures" then
 		return refus("Il n'y a rien à recommencer.")
 	end
-	consommer(self)
+	local jetees = entamer(self)
 	self.croquis, self.tissus, self.coupees = nil, {}, {}
 	self.epinglees, self.coutures, self.accessoires = {}, {}, {}
 	self.argent = math.max(self.argent, EtatAtelier.FILET) -- jamais bloqué sans argent ni tissu
 	self.etape = "carnet"
-	return { ok = true }
+	return { ok = true, jetees = jetees }
+end
+
+-- Jette la bande entamée d'un rouleau (elle quitte le stock) : à l'achat, ou à la table tant qu'aucune pièce de ce
+-- tissu n'est coupée pour la robe en cours (le rouleau repart neuf)
+function EtatAtelier:jeterEntame(idTissu)
+	if self.etape ~= "achat" and self.etape ~= "decoupe" then
+		return refus("Ce n'est pas le moment de jeter du tissu.")
+	end
+	if type(idTissu) ~= "string" or not Catalogue.tissu(idTissu) then
+		return refus("Tissu inconnu.")
+	end
+	local entame = self.entames[idTissu]
+	if not entame then
+		return refus("Ce rouleau n'est pas entamé.")
+	end
+	local coupon = self.coupons[idTissu]
+	if coupon and next(coupon.poses) then
+		return refus("Des pièces de ce tissu sont déjà coupées pour cette robe.")
+	end
+	self.stock[idTissu] = math.max(0, (self.stock[idTissu] or 0) - entame.bas)
+	self.entames[idTissu] = nil
+	if coupon then
+		self.coupons[idTissu] = Coupon.nouveau(math.min(self.stock[idTissu], Recette.LONGUEUR_MAX))
+	end
+	return { ok = true, dm = entame.bas }
 end
 
 local function rouleauxExportes(coupons)
 	local out = {}
 	for idTissu, coupon in pairs(coupons) do
-		out[idTissu] = { longueur = coupon.longueur, poses = copie(coupon.poses) }
+		out[idTissu] = { longueur = coupon.longueur, poses = copie(coupon.poses), trous = copie(coupon.trous) }
 	end
 	return out
 end
 
 -- L'état en données simples, sans métatable : ce que le serveur envoie au client après chaque action.
--- Les rouleaux deviennent { longueur, poses }. robes (facultatif) : nombre de robes copiées, les plus
+-- Les rouleaux deviennent { longueur, poses, trous }. robes (facultatif) : nombre de robes copiées, les plus
 -- récentes (toutes par défaut)
 function EtatAtelier:exporter(robes)
 	local d = {}
@@ -917,7 +990,7 @@ function EtatAtelier:charger(d)
 		change = true
 		self.coupons = {}
 		for idTissu, r in pairs(d.coupons) do
-			local coupon = Coupon.nouveau(r.longueur)
+			local coupon = Coupon.nouveau(r.longueur, r.trous)
 			for idPiece, pose in pairs(r.poses) do
 				coupon:poser(idPiece, pose)
 			end

@@ -75,7 +75,7 @@ for _, id in ipairs({ "corsage_droit_dos", "jupe_droite_devant", "jupe_droite_do
 	U.verifier(e:couper(id, DISPOSITION[id]).ok, id .. " coupée")
 end
 U.verifier(e.etape == "epinglage", "toutes les pièces coupées : direction l'épinglage")
-U.verifier(e.stock.soie_rouge == 6 - 5 and e.stock.coton_blanc == 12 - 11, "chaque rouleau perd sa longueur entamée (5 et 11 dm)")
+U.verifier(e.stock.soie_rouge == 6 and e.stock.coton_blanc == 12 and (e.entames.soie_rouge or {}).bas == 5 and (e.entames.coton_blanc or {}).bas == 11, "chaque rouleau garde son tissu, avec une bande entamée de 5 et de 11 dm (sous-projet 6)")
 
 -- Rouleau trop court : on rachète pendant la découpe
 local e2 = EtatAtelier.nouveau()
@@ -89,10 +89,10 @@ U.verifier(e2:acheter("coton_blanc", 2).ok and e2.coupons.coton_blanc.longueur =
 for _, id in ipairs({ "corsage_droit_dos", "jupe_droite_devant", "jupe_droite_dos" }) do
 	U.verifier(e2:couper(id, DISPOSITION[id]).ok, id .. " coupée")
 end
-U.verifier(e2.etape == "epinglage" and e2.stock.coton_blanc == 12 - 11, "robe coupée, 11 dm consommés")
+U.verifier(e2.etape == "epinglage" and e2.stock.coton_blanc == 12 and (e2.entames.coton_blanc or {}).bas == 11, "robe coupée, 11 dm entamés")
 U.verifier(not e2:couper("jupe_droite_dos", DISPOSITION.jupe_droite_dos).ok, "plus de découpe après la dernière pièce")
 
--- Recommencer : le tissu entamé est perdu, la commande reste
+-- Recommencer : la commande reste ; la pièce coupée reste sur le rouleau, en trou
 local e3 = EtatAtelier.nouveau()
 local commande = U.commander(e3, Random.new(6)).commande
 e3:validerCroquis(CROQUIS, tousEn("coton_blanc"))
@@ -100,7 +100,7 @@ e3:acheter("coton_blanc", 12)
 e3:commencerDecoupe()
 e3:couper("jupe_droite_devant", DISPOSITION.jupe_droite_devant)
 U.verifier(e3:recommencer().ok and e3.etape == "carnet" and e3.commande == commande, "recommencer : retour au carnet, même commande")
-U.verifier(e3.stock.coton_blanc == 12 - 11, "le tissu entamé est perdu")
+U.verifier(e3.stock.coton_blanc == 12 and (e3.entames.coton_blanc or {}).bas == 11 and #((e3.entames.coton_blanc or {}).trous or {}) == 1, "la pièce coupée devient un trou de la bande entamée")
 U.verifier(next(e3.coupees) == nil and e3.croquis == nil, "robe remise à zéro")
 U.verifier(not EtatAtelier.nouveau():recommencer().ok, "rien à recommencer sans commande")
 
@@ -112,6 +112,6 @@ e4:validerCroquis(CROQUIS, tousEn("soie_rouge"))
 U.verifier(e4:acheter("soie_rouge", 12).ok and e4.argent == 0, "tout l'argent dépensé en soie")
 e4:commencerDecoupe()
 U.verifier(e4:couper("jupe_droite_devant", { x = 2.5, y = 9, angle = 0 }).ok, "jupe coupée en bas du rouleau : les 12 dm sont entamés")
-U.verifier(e4:recommencer().ok and e4.stock.soie_rouge == 0, "recommencer : le tissu entamé est perdu")
+U.verifier(e4:recommencer().ok and e4.stock.soie_rouge == 12 and (e4.entames.soie_rouge or {}).bas == 12, "recommencer : la jupe coupée devient un trou, la bande entamée descend au bas du rouleau")
 U.verifier(e4.argent == EtatAtelier.FILET, "recommencer remet le filet de 20 pièces d'or")
 U.verifier(e4:validerCroquis(CROQUIS, tousEn("coton_blanc")).ok and e4:acheter("coton_blanc", 12).ok, "de quoi racheter du tissu pour une robe simple")
