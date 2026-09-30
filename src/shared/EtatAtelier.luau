@@ -321,7 +321,9 @@ function EtatAtelier:reprendreMesures()
 	if not fiche or not fiche.mesures then
 		return refus("Ses mesures n'ont jamais été prises.")
 	end
-	self.commande.mesures, self.commande.ajustement = copie(fiche.mesures), fiche.ajustement or 1
+	-- (l'ajustement est recalculé : il ne dépend que des mesures gardées et des vraies)
+	self.commande.mesures = copie(fiche.mesures)
+	self.commande.ajustement = Notation.ajustement(Clientes.get(self.commande.cliente).mesures, fiche.mesures)
 	self.etape = "carnet"
 	return { ok = true, ajustement = self.commande.ajustement }
 end

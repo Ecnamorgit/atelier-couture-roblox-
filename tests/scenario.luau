@@ -225,6 +225,14 @@ verifier(texte("Valeur_poitrine").Text == justePoitrine, "glisser la poignée au
 doigtRuban.Position = Vector3.new(0, 0, 0)
 M.services.UserInputService.InputChanged:Fire(doigtRuban)
 verifier(texte("Valeur_poitrine").Text == justePoitrine, "doigt levé : le ruban ne bouge plus")
+-- La poignée est assez grosse pour le doigt ; tirée trop loin, le ruban s'arrête au bord du cadre
+verifier(silhouetteM.Poignee_poitrine.AbsoluteSize.X >= 40 and silhouetteM.Poignee_poitrine.AbsoluteSize.Y >= 40, "poignée d'au moins 40 px (le doigt)")
+silhouetteM.Poignee_poitrine.InputBegan:Fire(doigtRuban)
+doigtRuban.Position = Vector3.new(2000, 0, 0)
+M.services.UserInputService.InputChanged:Fire(doigtRuban)
+M.services.UserInputService.InputEnded:Fire(doigtRuban)
+local rubanP = silhouetteM.Ruban_poitrine
+verifier(rubanP.Position.X.Offset + rubanP.Size.X.Offset <= silhouetteM.Size.X.Offset, "tiré trop loin : le ruban s'arrête au bord du cadre")
 local function mesurerCliente()
 	local vraies = Clientes.get(serveur:atelier(joueur).etat.commande.cliente).mesures
 	for _, cle in ipairs(MESURES) do
