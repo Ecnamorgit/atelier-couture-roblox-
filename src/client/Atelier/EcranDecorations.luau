@@ -108,7 +108,7 @@ return function(ctx)
 			ctx.message("Une garniture a besoin de deux points, sur au moins 0,5 dm.", C.erreur)
 		end
 	end)
-	UiKit.bouton({ Name = "Presenter", Text = if ctx.session.etat.commande.libre then "Présenter la robe" else "Présenter à la cliente", Position = UDim2.fromOffset(0, 350), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
+	local boutonPresenter = UiKit.bouton({ Name = "Presenter", Text = if ctx.session.etat.commande.libre then "Présenter la robe" else "Présenter à la cliente", Position = UDim2.fromOffset(0, 350), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
 		local r = session:decorer(deco:resultat())
 		if not r.ok then
 			ctx.refus(r)
@@ -179,6 +179,7 @@ return function(ctx)
 
 	-- Appui sur la scène (hors interface) : touche si on ne bouge pas, sinon la vue tourne
 	local appui = nil
+	local vueTournee = false -- (sous-projet 9) le joueur a tourné la vue au moins une fois
 	table.insert(connexions, UserInputService.InputBegan:Connect(function(input, traite)
 		if traite or not ctx.fenetre.Visible then
 			return
@@ -205,6 +206,7 @@ return function(ctx)
 		end
 		if appui.glisse then
 			scene:orbiter((input.Position.X - appui.dernierX) * DEGRES_PAR_PX)
+			vueTournee = true
 		end
 		appui.dernierX = input.Position.X
 	end))
@@ -233,6 +235,57 @@ return function(ctx)
 			rafraichir()
 		end
 	end)
+	-- (sous-projet 9) Les conseils de la première robe : choisir une décoration, la poser, tourner la vue, les outils,
+	-- présenter
+	if ctx.guide then
+		-- (ce que la robe gardera : un objet posé, ou un ruban d'au moins deux points assez écartés)
+		local poseesDepart = #deco:resultat()
+		local libre = session.etat.commande.libre
+		ctx.guide:demarrer(session, "decorations", {
+			{
+				texte = "Choisis une décoration dans la palette.",
+				cible = function()
+					return palette
+				end,
+				fait = function()
+					return deco.choix ~= nil
+				end,
+			},
+			{
+				texte = "Touche la robe pour la poser.",
+				-- (un ruban se pose point par point : dès le premier, « Finir la garniture » est désigné)
+				cible = function()
+					return if deco.garniture then finir else nil
+				end,
+				fait = function()
+					return #deco:resultat() > poseesDepart
+				end,
+			},
+			{
+				texte = "Glisse sur la scène pour tourner la vue.",
+				fait = function()
+					return vueTournee
+				end,
+				duree = 10,
+			},
+			{
+				-- (les outils agissent sur l'objet choisi ; les touches seulement avec un clavier)
+				texte = if UserInputService.KeyboardEnabled
+					then "Les outils (ou Q / E) tournent, agrandissent ou retirent l'objet."
+					else "Les outils tournent, agrandissent ou retirent l'objet choisi.",
+				cible = function()
+					return contenu:FindFirstChild("Tourner15")
+				end,
+				duree = 6,
+			},
+			{
+				texte = if libre then "La robe te plaît ? Présente-la." else "La robe te plaît ? Présente-la à la cliente.",
+				cible = function()
+					return boutonPresenter
+				end,
+			},
+		})
+	end
 	return function()
 		actif = false
 		desabonner()

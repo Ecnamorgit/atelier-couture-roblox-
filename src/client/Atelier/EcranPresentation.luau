@@ -105,6 +105,7 @@ return function(ctx)
 	-- numéro : le minuteur ou la réponse tardive d'une prise terminée ne touchent pas à la suivante.
 	local interface = ctx.fenetre.Parent
 	local prises, enCours = 0, nil -- enCours : numéro de la prise en cours
+	local boutonPhoto, boutonLivrer -- (sous-projet 9 : désignés par les conseils)
 	local function retablir(numero)
 		if enCours == numero then
 			enCours = nil
@@ -112,7 +113,7 @@ return function(ctx)
 			scene:cadrerPhoto(false)
 		end
 	end
-	UiKit.bouton({ Name = "PrendrePhoto", Text = "Prendre la photo", TextSize = 16, Position = UDim2.fromOffset(0, 252), Size = UDim2.new(1, -6, 0, 40), Parent = contenu }, function()
+	boutonPhoto = UiKit.bouton({ Name = "PrendrePhoto", Text = "Prendre la photo", TextSize = 16, Position = UDim2.fromOffset(0, 252), Size = UDim2.new(1, -6, 0, 40), Parent = contenu }, function()
 		if enCours then
 			return
 		end
@@ -192,7 +193,7 @@ return function(ctx)
 			choix.Visible = true
 		end)
 	else
-		UiKit.boutonConfirme({ Name = "Livrer", Text = "Livrer la robe", Position = UDim2.fromOffset(0, 312), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
+		boutonLivrer = UiKit.boutonConfirme({ Name = "Livrer", Text = "Livrer la robe", Position = UDim2.fromOffset(0, 312), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
 			local r = session:livrer()
 			if not r.ok then
 				ctx.refus(r)
@@ -221,6 +222,27 @@ return function(ctx)
 		end
 	end)
 	rafraichir()
+	-- (sous-projet 9) Les conseils de la première robe (une commande, pas une robe libre) : la photo, puis livrer
+	if ctx.guide and not libre then
+		ctx.guide:demarrer(session, "photo", {
+			{
+				texte = "Choisis un décor et une lumière, puis prends la photo.",
+				cible = function()
+					return boutonPhoto
+				end,
+				-- (la photo prise, et son aperçu refermé : il cache « Livrer » ; une capture qui échoue compte aussi)
+				fait = function()
+					return prises > 0 and enCours == nil and not apercu.Visible
+				end,
+			},
+			{
+				texte = "Livre la robe : touche deux fois « Livrer la robe ».",
+				cible = function()
+					return boutonLivrer
+				end,
+			},
+		})
+	end
 	return function()
 		connexion:Disconnect()
 	end
