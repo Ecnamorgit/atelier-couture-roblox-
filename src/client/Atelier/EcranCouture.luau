@@ -1,6 +1,7 @@
 -- Écran de couture : la pièce passe sous l'aiguille, une couture après l'autre. On maintient « Coudre »
--- (ou Espace) et on glisse à gauche ou à droite pour garder l'aiguille sur le pointillé.
--- Vitesse tortue ↔ lapin, découd-vite, assistance (note plafonnée). La logique est dans MachineCoudre.
+-- (ou Espace) pour faire avancer le tissu, et on le fait pivoter (A / D, ← / →, les boutons ◀ ▶, ou en glissant) pour
+-- garder l'aiguille sur le pointillé ; dans un angle, on s'arrête et on pivote (sous-projet 8). Vitesse tortue ↔ lapin
+-- (W / S), découd-vite, assistance qui tient la ligne (note plafonnée). La logique est dans MachineCoudre.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -14,11 +15,15 @@ local Sons = require(script.Parent:WaitForChild("Sons"))
 
 local PX = 80 -- pixels par dm sous l'aiguille : 0,05 dm de tolérance = 4 px
 local LARGEUR_PLATEAU = 480
-local COURSE = 100 -- px de glisser pour corriger à fond (à l'échelle 1)
+local COURSE = 100 -- px de glisser pour pivoter à fond (à l'échelle 1)
+local ZONE_MORTE = 10 -- px (à l'échelle 1) : un pouce qui s'écrase en appuyant ne fait pas pivoter le tissu
 local BOIS = Color3.fromRGB(205, 170, 125)
 local FIL = Color3.fromRGB(60, 40, 50)
 local VITESSES = { { "tortue", "Tortue" }, { "normale", "Normale" }, { "lapin", "Lapin" } }
 local ACTION_ESPACE = "AtelierCoudre" -- Espace coud (au lieu de sauter) tant que la machine est affichée
+local ACTION_PIVOT = "AtelierPivoter" -- A / D, ← / → : pivoter le tissu ; W / S : la vitesse
+local TOUCHES_PIVOT = { [Enum.KeyCode.A] = 1, [Enum.KeyCode.Left] = 1, [Enum.KeyCode.D] = -1, [Enum.KeyCode.Right] = -1 }
+local TOUCHES_VITESSE = { [Enum.KeyCode.W] = 1, [Enum.KeyCode.Up] = 1, [Enum.KeyCode.S] = -1, [Enum.KeyCode.Down] = -1 }
 local RYTHMES = { tortue = 0.8, normale = 1, lapin = 1.3 } -- vitesse du son de la machine
 
 return function(ctx)
@@ -28,6 +33,7 @@ return function(ctx)
 	local machine, boite
 	local vitesse, assistance = "normale", false
 	local tenu = nil -- appui en cours : { entree, objet, x0, x }
+	local pivots = {} -- touches et boutons de pivot tenus : [clé] = sens (1 : ◀, −1 : ▶)
 	local points = {} -- un point de couture par mesure
 
 	-- Plateau de la machine : le tissu bouge, l'aiguille reste au centre
@@ -57,7 +63,7 @@ return function(ctx)
 	end
 	local note = UiKit.texte({ Name = "Note", Font = Enum.Font.GothamBold, TextSize = 18, Position = UDim2.fromOffset(0, 150), Size = UDim2.new(1, 0, 0, 24), Parent = panneau })
 	local consigne = UiKit.texte({
-		Text = "Maintiens « Coudre » (ou Espace) et glisse à gauche ou à droite : l'aiguille doit rester sur le pointillé.",
+		Text = "Tiens « Coudre » (ou Espace) pour avancer ; ◀ ▶ (A / D) font pivoter le tissu : garde l'aiguille sur le pointillé. Dans un angle, arrête-toi et pivote.",
 		TextSize = 14,
 		TextColor3 = C.texteDoux,
 		Position = UDim2.fromOffset(0, 178),
@@ -97,7 +103,12 @@ return function(ctx)
 			rafraichir()
 		end
 	end)
-	local boutonCoudre = UiKit.bouton({ Name = "Coudre", Text = "Coudre (maintenir)", TextSize = 18, Position = UDim2.fromOffset(0, 362), Size = UDim2.new(1, -6, 0, 58), Parent = panneau })
+	local boutonCoudre = UiKit.bouton({ Name = "Coudre", Text = "Coudre (maintenir)", TextSize = 18, Position = UDim2.fromOffset(0, 362), Size = UDim2.new(1, -124, 0, 58), Parent = panneau })
+	-- ◀ ▶ : pivoter le tissu, tenus (au doigt, avec un autre doigt que celui qui tient « Coudre »)
+	local boutonsPivot = {
+		UiKit.boutonDoux({ Name = "PivoterGauche", Text = "◀", TextSize = 28, Position = UDim2.new(1, -118, 0, 362), Size = UDim2.fromOffset(54, 58), Parent = panneau }),
+		UiKit.boutonDoux({ Name = "PivoterDroite", Text = "▶", TextSize = 28, Position = UDim2.new(1, -60, 0, 362), Size = UDim2.fromOffset(54, 58), Parent = panneau }),
+	}
 	UiKit.boutonConfirme({ Name = "Recommencer", Text = "Recommencer la robe", TextSize = 14, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromOffset(200, 34), Parent = panneau }, function()
 		local r = session:recommencer()
 		if not r.ok then
@@ -112,7 +123,7 @@ return function(ctx)
 
 	-- Une pièce passe sous l'aiguille : image du vrai tissu, pointillé des coutures
 	local function commencerPiece(id)
-		machine = MachineCoudre.nouvelle(id, session.rng:NextInteger(1, 1000000))
+		machine = MachineCoudre.nouvelle(id, session.rng:NextInteger(1, 1000000), Catalogue.tissu(session.etat.tissus[id]).matiere)
 		machine:choisirVitesse(vitesse)
 		machine:activerAssistance(assistance)
 		boite = Polygone.boite(Catalogue.piece(id).contour)
@@ -171,10 +182,11 @@ return function(ctx)
 		end
 	end
 
-	-- Le tissu tourne pour que la couture en cours monte vers l'aiguille, et se place sous elle
+	-- Le tissu tourne pour que la couture en cours monte vers l'aiguille quand il est droit ; de travers, elle penche
+	-- (l'aiguille avance toujours vers le haut de l'écran) ; il se place sous l'aiguille
 	local function dessiner()
 		local e = machine:etat()
-		local phi = -math.pi / 2 - math.atan2(e.direction.y, e.direction.x)
+		local phi = -math.pi / 2 - math.atan2(e.direction.y, e.direction.x) - e.angle
 		local vx = (e.point.x - (boite.minX + boite.maxX) / 2) * PX
 		local vy = (e.point.y - (boite.minY + boite.maxY) / 2) * PX
 		local c, s = math.cos(phi), math.sin(phi)
@@ -210,7 +222,7 @@ return function(ctx)
 			b.BackgroundColor3 = nom == vitesse and C.accent or C.secondaire
 			b.TextColor3 = nom == vitesse and Color3.new(1, 1, 1) or C.texte
 		end
-		boutonAssistance.Text = assistance and "Assistance : oui (85 % au plus)" or "Assistance : non"
+		boutonAssistance.Text = assistance and "Assistance : tient la ligne (85 % au plus)" or "Assistance : non"
 		if machine then
 			dessiner()
 		end
@@ -231,11 +243,30 @@ return function(ctx)
 		end
 	end
 
-	-- Maintenir « Coudre » (souris ou doigt), ou Espace ; glisser corrige la direction
-	local function direction()
-		local course = COURSE * plateau.AbsoluteSize.X / LARGEUR_PLATEAU
-		-- Glisser vers la droite pousse le tissu à droite : l'écart diminue
-		return -math.clamp((tenu.x - tenu.x0) / math.max(course, 1), -1, 1)
+	-- Maintenir « Coudre » (souris ou doigt), ou Espace ; pivoter : A / D, ← / →, ◀ ▶ tenus, ou glisser en tenant « Coudre »
+	-- (vers la gauche comme ◀, vers la droite comme ▶)
+	local function rotation()
+		local r = 0
+		for _, sens in pairs(pivots) do
+			r += sens
+		end
+		if tenu and tenu.entree ~= "espace" then
+			local echelle = plateau.AbsoluteSize.X / LARGEUR_PLATEAU
+			local dx = tenu.x - tenu.x0
+			dx = math.sign(dx) * math.max(0, math.abs(dx) - ZONE_MORTE * echelle)
+			r -= math.clamp(dx / math.max(COURSE * echelle, 1), -1, 1)
+		end
+		return math.clamp(r, -1, 1)
+	end
+	for k, b in ipairs(boutonsPivot) do
+		local sens = if k == 1 then 1 else -1
+		table.insert(connexions, b.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.Touch then
+				pivots[input] = sens
+			elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+				pivots.souris = sens
+			end
+		end))
 	end
 	table.insert(connexions, boutonCoudre.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -247,6 +278,8 @@ return function(ctx)
 	local function lierEspace(actif)
 		if not actif then
 			ContextActionService:UnbindAction(ACTION_ESPACE)
+			ContextActionService:UnbindAction(ACTION_PIVOT)
+			table.clear(pivots)
 			return
 		end
 		ContextActionService:BindActionAtPriority(ACTION_ESPACE, function(_, etatEntree)
@@ -260,6 +293,24 @@ return function(ctx)
 			end
 			return Enum.ContextActionResult.Sink
 		end, false, Enum.ContextActionPriority.High.Value, Enum.KeyCode.Space)
+		-- A / D, ← / → pivotent tant qu'on les tient ; W / S changent de vitesse (absorbées : l'avatar ne bouge pas)
+		ContextActionService:BindActionAtPriority(ACTION_PIVOT, function(_, etatEntree, objet)
+			local sens = TOUCHES_PIVOT[objet.KeyCode]
+			if sens then
+				pivots[objet.KeyCode] = if etatEntree == Enum.UserInputState.Begin then sens else nil
+			elseif etatEntree == Enum.UserInputState.Begin and TOUCHES_VITESSE[objet.KeyCode] then
+				local rang = 1
+				for k, v in ipairs(VITESSES) do
+					rang = if v[1] == vitesse then k else rang
+				end
+				vitesse = VITESSES[math.clamp(rang + TOUCHES_VITESSE[objet.KeyCode], 1, #VITESSES)][1]
+				if machine then
+					machine:choisirVitesse(vitesse)
+				end
+				rafraichir()
+			end
+			return Enum.ContextActionResult.Sink
+		end, false, Enum.ContextActionPriority.High.Value, Enum.KeyCode.A, Enum.KeyCode.D, Enum.KeyCode.Left, Enum.KeyCode.Right, Enum.KeyCode.W, Enum.KeyCode.S, Enum.KeyCode.Up, Enum.KeyCode.Down)
 	end
 	local function surVisibilite()
 		if not ctx.fenetre.Visible then
@@ -297,6 +348,14 @@ return function(ctx)
 			tenu = nil
 		end
 	end))
+	-- (un bouton ◀ ▶ relâché, où que ce soit)
+	table.insert(connexions, UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			pivots.souris = nil
+		else
+			pivots[input] = nil
+		end
+	end))
 	-- Le son de la machine suit l'aiguille : il tourne tant qu'on coud, au rythme de la vitesse choisie
 	local rythme = nil
 	local function sonMachine(cousant)
@@ -307,12 +366,14 @@ return function(ctx)
 		end
 	end
 	table.insert(connexions, RunService.RenderStepped:Connect(function(dt)
-		local cousant = machine ~= nil and not machine:fini() and tenu ~= nil and ctx.fenetre.Visible
+		local actif = machine ~= nil and not machine:fini() and ctx.fenetre.Visible
+		local cousant = actif and tenu ~= nil
 		sonMachine(cousant)
-		if not cousant then
+		local r = if actif then rotation() else 0
+		if not cousant and r == 0 then
 			return
 		end
-		machine:avancer(dt, direction())
+		machine:avancer(dt, cousant, r) -- (sans coudre : le tissu pivote, l'aiguille plantée)
 		ajouterPoints()
 		if machine:fini() then
 			tenu = nil
@@ -331,6 +392,7 @@ return function(ctx)
 	return function()
 		desabonner()
 		lierEspace(false)
+		table.clear(pivots)
 		sonMachine(false)
 		for _, c in ipairs(connexions) do
 			c:Disconnect()

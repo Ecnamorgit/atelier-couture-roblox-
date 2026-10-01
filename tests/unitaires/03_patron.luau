@@ -20,9 +20,10 @@ U.verifier(#Patron.copies("manche_ballon") == 2 and Patron.copies("jupe_droite_d
 U.verifier(U.proche(Patron.aire("manche_ballon"), 2 * Polygone.aire(Catalogue.piece("manche_ballon").contour)),
 	"la surface d'une pièce pliée compte les deux copies")
 
--- Trajet de couture : côtés + taille d'un rectangle 4,8 × 4,2
+-- Trajet de couture : les côtés et le bas d'un rectangle 4,8 × 4,2, qui se rejoignent là où leurs pointillés se
+-- croisent (dans chacun des deux angles, chaque couture finit 0,15 dm avant le bord : la valeur de couture)
 local segments, longueur = Patron.trajetCouture("corsage_droit_devant")
-U.verifier(#segments == 3 and U.proche(longueur, 4.2 + 4.8 + 4.2), "trajet de couture du corsage droit")
+U.verifier(#segments == 3 and U.proche(longueur, 4.2 + 4.8 + 4.2 - 4 * Catalogue.VALEUR_COUTURE), "trajet de couture du corsage droit")
 for _, s in ipairs(segments) do
 	local milieu = { x = (s.a.x + s.b.x) / 2, y = (s.a.y + s.b.y) / 2 }
 	U.verifier(Polygone.contient(Catalogue.piece("corsage_droit_devant").contour, milieu.x, milieu.y),
