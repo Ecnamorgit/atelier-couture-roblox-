@@ -13,7 +13,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 9 en cours, plans 27 et 28 : les premiers pas, de l'accueil à l'épinglage)
+## État actuel (sous-projet 9, plans 27 à 29 : les premiers pas, à chaque poste)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -23,10 +23,11 @@ robes et commande en cours : une déconnexion ne perd pas le travail).
 
 **Les premiers pas** (sous-projet 9) : à la première robe (aucune robe livrée ni vendue), un bandeau sur la barre de
 titre de la fenêtre donne un conseil à la fois et entoure d'un anneau l'élément à toucher ; chaque conseil s'efface
-quand le geste est fait. Ensuite, le bouton « ? » de la barre de titre les rappelle. Pour l'instant : l'accueil (la
-clochette), les mesures (tourner une molette, ajuster les trois bandes, valider), le carnet (un modèle, un tissu, la
-fiche de la cliente, tracer le patron), l'achat (le métrage proposé), la découpe (la place proposée, le droit-fil,
-couper), l'épinglage et la couture (ses propres conseils).
+quand le geste est fait (jamais avant 2 s : le temps de le lire). Ensuite, le bouton « ? » de la barre de titre les
+rappelle. L'accueil (la clochette), les mesures (tourner une molette, ajuster les trois bandes, valider), le carnet (un
+modèle, un tissu, la fiche de la cliente, tracer le patron), l'achat (le métrage proposé), la découpe (la place
+proposée, le droit-fil, couper), l'épinglage, la couture (ses propres conseils), les décorations (choisir, poser,
+tourner la vue, les outils, présenter) et la photo (prendre la photo, livrer).
 
 Une commande, poste par poste :
 
