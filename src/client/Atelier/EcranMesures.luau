@@ -188,7 +188,7 @@ return function(ctx)
 				end,
 			},
 			{
-				texte = "C'est ajusté : valide les mesures.",
+				texte = "Quand le mannequin épouse la silhouette, valide les mesures.",
 				cible = function()
 					return boutonValider
 				end,

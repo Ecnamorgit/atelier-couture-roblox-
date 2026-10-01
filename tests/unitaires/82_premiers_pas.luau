@@ -19,12 +19,22 @@ local function entoure(ctx, element)
 end
 
 ---------------------------------------------------------------------------
--- L'accueil : la clochette
+-- L'accueil : la clochette (E seulement avec un clavier)
 ---------------------------------------------------------------------------
+local UIS = M.services.UserInputService
+UIS.KeyboardEnabled = false
+local auDoigt = Session.nouvelle(60)
+local ctx0 = contexte(auDoigt)
+local fermer0 = EcranAccueil(ctx0)
+U.verifier(ctx0.fenetre.Conseil.Text:find("clochette", 1, true) ~= nil and ctx0.fenetre.Conseil.Text:find("appuie sur E", 1, true) == nil, "sans clavier (téléphone) : pas de touche E dans le conseil (" .. ctx0.fenetre.Conseil.Text .. ")")
+ctx0.guide:arreter()
+fermer0()
+UIS.KeyboardEnabled = true
 local session = Session.nouvelle(61)
 local ctx = contexte(session)
 local fermer = EcranAccueil(ctx)
 local bandeau = ctx.fenetre.Conseil
+U.verifier(bandeau.Text:find("appuie sur E", 1, true) ~= nil, "avec un clavier : la touche E (" .. bandeau.Text .. ")")
 U.verifier(bandeau.Visible and bandeau.Text:find("clochette", 1, true) ~= nil and entoure(ctx, ctx.contenu.Clochette), "accueil, première robe : sonner la clochette, entourée (" .. bandeau.Text .. ")")
 M.avancer(0.5) -- (un bouton qui vient d'apparaître ignore les clics)
 ctx.contenu.Clochette.Activated:Fire()
@@ -63,7 +73,7 @@ U.verifier(bandeau.Text:find("silhouette", 1, true) ~= nil, "une seule bande jus
 ajuster("taille")
 ajuster("hanches")
 M.avancer(0.05)
-U.verifier(bandeau.Text == "C'est ajusté : valide les mesures." and entoure(ctx2, contenu.ValiderMesures), "les trois justes : valider, le bouton entouré (" .. bandeau.Text .. ")")
+U.verifier(bandeau.Text == "Quand le mannequin épouse la silhouette, valide les mesures." and entoure(ctx2, contenu.ValiderMesures), "les trois justes : valider, le bouton entouré (" .. bandeau.Text .. ")")
 contenu.ValiderMesures.Activated:Fire()
 ctx2.guide:arreter()
 fermer2()

@@ -377,7 +377,10 @@ return function(ctx)
 	if ctx.guide then
 		ctx.guide:demarrer(ctx.session, "accueil", {
 			{
-				texte = "Fais sonner la clochette (ou appuie sur E) : ta première cliente entre avec sa commande.",
+				-- (la touche E seulement avec un clavier, comme le bouton ; « une cliente » : « ? » le montre aussi plus tard)
+				texte = if UserInputService.KeyboardEnabled
+					then "Fais sonner la clochette (ou appuie sur E) : une cliente entre avec sa commande."
+					else "Fais sonner la clochette : une cliente entre avec sa commande.",
 				cible = function()
 					return clochette
 				end,
