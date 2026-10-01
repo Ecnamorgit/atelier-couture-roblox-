@@ -16,6 +16,7 @@ local Dialogue = require(script:WaitForChild("Dialogue"))
 local Confettis = require(script:WaitForChild("Confettis"))
 local Chat = require(script:WaitForChild("Chat"))
 local Mercerie = require(script:WaitForChild("Mercerie"))
+local Tutoriel = require(script:WaitForChild("Tutoriel"))
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
@@ -146,6 +147,8 @@ UiKit.boutonDoux({
 }, function()
 	fenetre.Visible = false
 end)
+-- (sous-projet 9) Les conseils pas à pas des postes, sur la barre de titre, et « ? » qui les rappelle
+local guide = Tutoriel.installer(fenetre, UiKit)
 local contenu = UiKit.creer("Frame", {
 	Name = "Contenu",
 	BackgroundTransparency = 1,
@@ -274,7 +277,7 @@ local function disposer(panneau)
 		fenetre.AnchorPoint = Vector2.new(1, 0.5)
 		fenetre.Position = UDim2.new(1, -16, 0.5, 0)
 		fenetre.Size = UDim2.fromOffset(UiKit.LARGEUR_PANNEAU, UiKit.HAUTEUR)
-		titre.Size = UDim2.new(1, -76, 0, 32)
+		titre.Size = UDim2.new(1, -116, 0, 32)
 		argent.Position = UDim2.fromOffset(20, 46)
 		argent.TextXAlignment = Enum.TextXAlignment.Left
 		boutonSon.Position = UDim2.new(1, -150, 0, 46) -- sur la ligne de l'argent, à droite
@@ -284,13 +287,14 @@ local function disposer(panneau)
 		fenetre.AnchorPoint = Vector2.new(0.5, 0.5)
 		fenetre.Position = UDim2.fromScale(0.5, 0.5)
 		fenetre.Size = UDim2.fromOffset(UiKit.LARGEUR, UiKit.HAUTEUR)
-		titre.Size = UDim2.new(1, -360, 0, 32)
+		titre.Size = UDim2.new(1, -410, 0, 32)
 		argent.Position = UDim2.new(1, -340, 0, 14)
 		argent.TextXAlignment = Enum.TextXAlignment.Right
 		boutonSon.Position = UDim2.new(1, -148, 0, 12) -- entre l'argent et la croix
 		contenu.Position = UDim2.fromOffset(20, 60)
 		contenu.Size = UDim2.new(1, -40, 1, -94)
 	end
+	guide:disposer(panneau)
 end
 
 -- Navigation : un écran par étape ; il se reconstruit seul quand l'état change
@@ -300,6 +304,7 @@ local function afficher()
 	argent.Text = ("%d pièces d'or"):format(etat.argent)
 	task.spawn(scene.synchroniser, scene, etat, session.derniere) -- la construction des pièces 3D peut prendre un moment
 	if etat.etape ~= etapeAffichee then
+		guide:arreter() -- (les conseils du poste quitté sont vus)
 		if fermerEcran then
 			fermerEcran()
 		end
@@ -312,7 +317,7 @@ local function afficher()
 		etapeAffichee = etat.etape
 		-- (la photo d'une robe libre mène à la vente, pas à une livraison)
 		titre.Text = if etat.etape == "photo" and etat.commande and etat.commande.libre then "7. Photo et vente" else TITRES[etat.etape] or etat.etape
-		fermerEcran = ECRANS[etat.etape]({ session = session, contenu = contenu, fenetre = fenetre, scene = scene, message = afficherMessage, refus = refus, UiKit = UiKit })
+		fermerEcran = ECRANS[etat.etape]({ session = session, contenu = contenu, fenetre = fenetre, scene = scene, message = afficherMessage, refus = refus, UiKit = UiKit, guide = guide })
 	end
 end
 session:surChangement(afficher)

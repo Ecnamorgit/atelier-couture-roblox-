@@ -1,0 +1,91 @@
+-- Sous-projet 9 : les conseils pas à pas d'un poste. Un bandeau sur la barre de titre, un anneau qui pulse autour de
+-- l'élément à toucher ; chaque conseil s'efface quand le geste est fait, ou au bout de sa durée s'il ne demande que de
+-- lire ; « ? » les reprend au premier ; les conseils vus ne reviennent pas d'eux-mêmes.
+local Tutoriel = U.module("Tutoriel")
+local UiKit = U.module("UiKit")
+
+local fenetre = UiKit.creer("Frame", { Name = "Fenetre", Size = UDim2.fromOffset(900, 560) })
+local guide = Tutoriel.installer(fenetre, UiKit)
+local bandeau, aide = fenetre.Conseil, fenetre.Aide
+U.verifier(not bandeau.Visible and not aide.Visible and bandeau.TextSize >= 14, "installé : rien d'affiché tant qu'aucun poste n'a de conseils")
+U.verifier(Tutoriel.premiereRobe({ livraisons = 0, ventes = 0 }) and not Tutoriel.premiereRobe({ livraisons = 1, ventes = 0 }) and not Tutoriel.premiereRobe({ livraisons = 0, ventes = 1 }), "première robe : aucune robe livrée ni vendue")
+
+-- Trois conseils : un geste, une lecture, un dernier
+local session = { etat = { livraisons = 0, ventes = 0 } }
+local cible = UiKit.bouton({ Name = "Cible", Text = "Cible", Size = UDim2.fromOffset(100, 40), Parent = fenetre })
+local geste = false
+local ETAPES = {
+	{ texte = "Touche la cible.", cible = function() return cible end, fait = function() return geste end },
+	{ texte = "Lis ceci.", duree = 2 },
+	{ texte = "Le dernier.", fait = function() return geste end },
+}
+guide:demarrer(session, "essai", ETAPES)
+U.verifier(bandeau.Visible and bandeau.Text == "Touche la cible." and aide.Visible and cible:FindFirstChild("Anneau") ~= nil, "première robe : le premier conseil, l'élément entouré, « ? »")
+M.avancer(0.3)
+local avant = cible.Anneau.Contour.Transparency
+M.avancer(0.4)
+U.verifier(cible.Anneau.Contour.Transparency ~= avant, "l'anneau pulse")
+U.verifier(bandeau.Text == "Touche la cible.", "le geste n'est pas fait : le conseil reste")
+geste = true
+M.avancer(0.05)
+U.verifier(bandeau.Text == "Touche la cible.", "le geste fait, mais le conseil n'est là que depuis 0,75 s : il reste le temps de le lire")
+M.avancer(1.3)
+U.verifier(bandeau.Text == "Lis ceci." and cible:FindFirstChild("Anneau") == nil, "le geste fait, le conseil lu : le suivant, l'anneau retiré")
+M.avancer(1.5)
+U.verifier(bandeau.Text == "Lis ceci.", "un conseil à lire reste le temps de sa durée")
+M.avancer(0.6)
+U.verifier(bandeau.Text == "Le dernier.", "lu : le dernier conseil (son geste est déjà fait, il reste le temps de le lire)")
+M.avancer(2.1)
+U.verifier(not bandeau.Visible and session.tutorielsVus.essai, ("le dernier lu : les conseils sont finis et vus (%s)"):format(bandeau.Text))
+U.verifier(aide.Visible, "« ? » reste, tant que le poste est ouvert")
+
+-- « ? » : les conseils reprennent au premier
+geste = false
+aide.Activated:Fire()
+U.verifier(bandeau.Visible and bandeau.Text == "Touche la cible." and cible:FindFirstChild("Anneau") ~= nil, "« ? » : le premier conseil de nouveau")
+-- L'écran refait l'élément désigné : l'anneau le suit
+local refaite = UiKit.bouton({ Name = "Cible", Text = "Cible", Size = UDim2.fromOffset(100, 40), Parent = fenetre })
+cible:Destroy()
+cible = refaite
+M.avancer(0.05) -- (le geste n'est pas fait : le conseil reste)
+U.verifier(refaite:FindFirstChild("Anneau") ~= nil, "l'élément refait : l'anneau l'entoure de nouveau")
+
+-- Le poste se ferme avant la fin : ses conseils sont vus, le bandeau et « ? » disparaissent
+local autre = { etat = { livraisons = 0, ventes = 0 } }
+guide:demarrer(autre, "essai", ETAPES)
+U.verifier(bandeau.Visible and bandeau.Text == "Touche la cible.", "un autre joueur, à sa première robe : les conseils")
+guide:arreter()
+U.verifier(not bandeau.Visible and not aide.Visible and autre.tutorielsVus.essai and refaite:FindFirstChild("Anneau") == nil, "poste fermé : conseils vus, bandeau, « ? » et anneau retirés")
+guide:demarrer(autre, "essai", ETAPES)
+U.verifier(not bandeau.Visible and aide.Visible, "conseils vus : ils ne reviennent pas d'eux-mêmes ; « ? » est là")
+aide.Activated:Fire()
+U.verifier(bandeau.Visible and bandeau.Text == "Touche la cible.", "« ? » les montre")
+guide:arreter()
+
+-- Après une robe livrée : pas de conseils, « ? » les montre
+local habitue = { etat = { livraisons = 1, ventes = 0 } }
+guide:demarrer(habitue, "essai", ETAPES)
+U.verifier(not bandeau.Visible and aide.Visible, "une robe livrée : pas de conseils d'eux-mêmes")
+aide.Activated:Fire()
+U.verifier(bandeau.Visible and bandeau.Text == "Touche la cible.", "« ? » les montre")
+guide:arreter()
+
+-- Un poste qui a ses propres conseils (la couture) : « ? » les reprend
+local repris = 0
+guide:demarrer(session, "couture", nil, function()
+	repris += 1
+end)
+U.verifier(aide.Visible and not bandeau.Visible, "la couture : « ? » sans bandeau")
+aide.Activated:Fire()
+U.verifier(repris == 1 and not bandeau.Visible, "« ? » reprend les conseils de la couture")
+guide:arreter()
+U.verifier(not aide.Visible and session.tutorielsVus.couture == nil, "la couture fermée : « ? » disparaît")
+
+-- Le bandeau et « ? » selon la fenêtre : centrée, ou en panneau à droite
+local function egal(u, xs, xo, ys, yo)
+	return u.X.Scale == xs and u.X.Offset == xo and u.Y.Scale == ys and u.Y.Offset == yo
+end
+guide:disposer(true)
+U.verifier(egal(bandeau.Size, 1, -116, 0, 36) and bandeau.TextSize >= 14 and egal(aide.Position, 1, -92, 0, 6), "en panneau : un bandeau plus court, « ? » près de la croix")
+guide:disposer(false)
+U.verifier(egal(bandeau.Size, 1, -410, 0, 48) and egal(aide.Position, 1, -384, 0, 12), "fenêtre centrée : le bandeau à gauche de « ? » et de l'argent")
