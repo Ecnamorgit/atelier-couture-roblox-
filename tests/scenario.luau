@@ -954,7 +954,7 @@ end
 -- (sous-projet 8 : glisser tout le temps du même côté fait tourner le tissu sans fin, l'aiguille tourne en rond)
 verifier(ratee ~= nil and ratee < 50, "la couture ratée est mal notée : " .. tostring(ratee))
 verifier(titre() == "6. Décorations", "robe cousue : les décorations")
-verifier(not fenetre.Conseil.Visible and not fenetre.Aide.Visible, "(sous-projet 9) la couture quittée : son « ? » s'en va avec elle")
+verifier(fenetre.Conseil.Visible and fenetre.Conseil.Text == "Choisis une décoration dans la palette.", "(sous-projet 9) première robe, aux décorations : leurs conseils, en panneau (" .. fenetre.Conseil.Text .. ")")
 verifier(fenetre.AnchorPoint.X == 1 and #robe:GetChildren() == 8, "panneau à droite, la robe cousue sur le mannequin")
 do -- Sous-projet 5 : la robe terminée, une pluie de confettis par-dessus la fenêtre et un petit son de fête
 	local confettis = gui.Atelier:FindFirstChild("Confettis")
@@ -1098,6 +1098,7 @@ verifier(camera.CFrame ~= origineBoutique * ScenePoste.CAMERA and #decorations:G
 ---------------------------------------------------------------------------
 local avantDeco = argent()
 cliquer("Presenter")
+verifier(fenetre.Conseil.Visible and fenetre.Conseil.Text:find("prends la photo", 1, true) ~= nil, "(sous-projet 9) première robe, à la photo : ses conseils (" .. fenetre.Conseil.Text .. ")")
 verifier(titre() == "7. Photo et livraison" and argent() == avantDeco and serveur:atelier(joueur).etat.mercerie.noeud_satin == 1 and serveur:atelier(joueur).etat.mercerie.ruban_rose == 150 - cmRuban, "présenter : décorations prises à la mercerie (un nœud, le ruban), pas d'argent")
 verifier(camera.CFrame == origineBoutique * ScenePoste.CAMERA, "la cliente voit la robe de face")
 verifier(texte("Au moins 1 en Romantique (actuel :") ~= nil, "le score actuel est affiché à côté d'une exigence de style")
@@ -1206,6 +1207,7 @@ livrer.Activated:Fire() -- second appui d'un double clic (moins de 0,4 s) : igno
 verifier(titre() == "7. Photo et livraison", "un double clic trop rapide ne livre pas")
 cliquer("Livrer")
 verifier(titre() == "La cliente refuse la robe" and texte("Avec : Croix d'argent") ~= nil, "sans la croix d'argent : robe refusée, exigence ratée affichée")
+verifier(not fenetre.Conseil.Visible and not fenetre.Aide.Visible, "(sous-projet 9) la photo quittée pour le refus (sans conseils) : ses conseils et « ? » s'en vont")
 verifier(not fenetre.Aide.Visible and fenetre.Titre.Size.X.Offset == -76, "(sous-projet 9) au refus, sans « ? » : le titre garde toute sa largeur (" .. fenetre.Titre.Size.X.Offset .. ")")
 do -- Son avis : une étoile
 	local etoiles = gui.Atelier.Dialogue.Etoiles

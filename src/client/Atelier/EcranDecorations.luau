@@ -108,7 +108,7 @@ return function(ctx)
 			ctx.message("Une garniture a besoin de deux points, sur au moins 0,5 dm.", C.erreur)
 		end
 	end)
-	UiKit.bouton({ Name = "Presenter", Text = if ctx.session.etat.commande.libre then "Présenter la robe" else "Présenter à la cliente", Position = UDim2.fromOffset(0, 350), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
+	local boutonPresenter = UiKit.bouton({ Name = "Presenter", Text = if ctx.session.etat.commande.libre then "Présenter la robe" else "Présenter à la cliente", Position = UDim2.fromOffset(0, 350), Size = UDim2.new(1, -6, 0, 44), Parent = contenu }, function()
 		local r = session:decorer(deco:resultat())
 		if not r.ok then
 			ctx.refus(r)
@@ -179,6 +179,7 @@ return function(ctx)
 
 	-- Appui sur la scène (hors interface) : touche si on ne bouge pas, sinon la vue tourne
 	local appui = nil
+	local vueTournee = false -- (sous-projet 9) le joueur a tourné la vue au moins une fois
 	table.insert(connexions, UserInputService.InputBegan:Connect(function(input, traite)
 		if traite or not ctx.fenetre.Visible then
 			return
@@ -205,6 +206,7 @@ return function(ctx)
 		end
 		if appui.glisse then
 			scene:orbiter((input.Position.X - appui.dernierX) * DEGRES_PAR_PX)
+			vueTournee = true
 		end
 		appui.dernierX = input.Position.X
 	end))
@@ -233,6 +235,48 @@ return function(ctx)
 			rafraichir()
 		end
 	end)
+	-- (sous-projet 9) Les conseils de la première robe : choisir une décoration, la poser, tourner la vue, les outils,
+	-- présenter
+	if ctx.guide then
+		local poseesDepart = #deco.liste
+		ctx.guide:demarrer(session, "decorations", {
+			{
+				texte = "Choisis une décoration dans la palette.",
+				cible = function()
+					return palette
+				end,
+				fait = function()
+					return deco.choix ~= nil
+				end,
+			},
+			{
+				texte = "Touche la robe pour la poser.",
+				fait = function()
+					return #deco.liste > poseesDepart or deco.garniture ~= nil
+				end,
+			},
+			{
+				texte = "Glisse sur la scène pour tourner la vue.",
+				fait = function()
+					return vueTournee
+				end,
+				duree = 10,
+			},
+			{
+				texte = "Les outils la tournent (Q / E), l'agrandissent ou la retirent.",
+				cible = function()
+					return contenu:FindFirstChild("Tourner15")
+				end,
+				duree = 6,
+			},
+			{
+				texte = "La robe te plaît ? Présente-la à la cliente.",
+				cible = function()
+					return boutonPresenter
+				end,
+			},
+		})
+	end
 	return function()
 		actif = false
 		desabonner()
