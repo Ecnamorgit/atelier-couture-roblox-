@@ -223,6 +223,25 @@ function MachineCoudre:releve()
 	return table.clone(self.ecarts), self.duree, self.assistanceUtilisee
 end
 
+-- (plan 26) La couture k, finie, est-elle parfaite ? Tous ses points à 0,05 dm du pointillé au plus (la note entière)
+MachineCoudre.PARFAIT = 0.05
+function MachineCoudre:coutureParfaite(k)
+	local debut, suite = self.debuts[k], self.debuts[k + 1]
+	if not debut or not (suite or self:fini()) then
+		return false
+	end
+	local fin = if suite then suite.mesures else #self.ecarts
+	if fin <= debut.mesures then
+		return false
+	end
+	for i = debut.mesures + 1, fin do
+		if math.abs(self.ecarts[i]) > MachineCoudre.PARFAIT + 1e-9 then
+			return false
+		end
+	end
+	return true
+end
+
 -- Note de couture de ce qui est déjà cousu (nil si rien)
 function MachineCoudre:noteProvisoire()
 	if #self.ecarts == 0 then
