@@ -9,6 +9,7 @@ local UserInputService = game:GetService("UserInputService")
 local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Clientes = require(Couture:WaitForChild("Clientes"))
+local Notation = require(Couture:WaitForChild("Notation"))
 local Molette = require(script.Parent:WaitForChild("Molette"))
 
 local MESURES = { { cle = "poitrine", nom = "Poitrine", y = 110 }, { cle = "taille", nom = "Taille", y = 190 }, { cle = "hanches", nom = "Hanches", y = 270 } }
@@ -144,12 +145,56 @@ return function(ctx)
 		end
 	end))
 
-	UiKit.bouton({ Name = "ValiderMesures", Text = "Valider les mesures", AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(240, 46), Parent = contenu }, function()
+	local boutonValider = UiKit.bouton({ Name = "ValiderMesures", Text = "Valider les mesures", AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(240, 46), Parent = contenu }, function()
 		local r = session:mesurer({ poitrine = molettes.poitrine.valeur, taille = molettes.taille.valeur, hanches = molettes.hanches.valeur })
 		if not r.ok then
 			ctx.refus(r)
 		end
 	end, 0.4)
+	-- (sous-projet 9) Les conseils de la première robe : tourner une molette, ajuster les trois bandes à la silhouette
+	-- (justes à la tolérance de l'ajustement), valider
+	if ctx.guide then
+		local depart = {}
+		for cle, m in pairs(molettes) do
+			depart[cle] = m.valeur
+		end
+		ctx.guide:demarrer(session, "mesures", {
+			{
+				texte = "Glisse sur une molette, de haut en bas (ou touche − et +) : le mannequin s'élargit ou s'affine.",
+				cible = function()
+					return elements.poitrine.bouton
+				end,
+				fait = function()
+					for cle, m in pairs(molettes) do
+						if m.valeur ~= depart[cle] then
+							return true
+						end
+					end
+					return false
+				end,
+			},
+			{
+				texte = "Fais coïncider chaque bande avec la silhouette en pointillé : la poitrine, la taille et les hanches.",
+				cible = function()
+					return mannequin
+				end,
+				fait = function()
+					for cle, m in pairs(molettes) do
+						if math.abs(m.valeur - cliente.mesures[cle]) > Notation.TOLERANCE_MESURE + 1e-9 then
+							return false
+						end
+					end
+					return true
+				end,
+			},
+			{
+				texte = "Quand le mannequin épouse la silhouette, valide les mesures.",
+				cible = function()
+					return boutonValider
+				end,
+			},
+		})
+	end
 	if fiche and fiche.mesures then
 		-- La fiche du carnet : ses mesures de la dernière fois
 		local d = fiche.mesures

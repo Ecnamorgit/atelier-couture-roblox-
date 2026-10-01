@@ -8,6 +8,7 @@ local UiKit = U.module("UiKit")
 local Patron = U.module("Patron")
 local Metrage = U.module("Metrage")
 local EcranCouture = U.module("EcranCouture")
+local Tutoriel = U.module("Tutoriel")
 
 local DT = 1 / 60
 -- (les étapes d'abord, sans le temps de lecture : chaque conseil se lit ensuite au moins AFFICHAGE_MIN)
@@ -123,7 +124,7 @@ end
 local function ouvrir(session)
 	local fenetre = UiKit.creer("Frame", { Name = "Fenetre", Size = UDim2.fromOffset(900, 560) })
 	local contenu = UiKit.creer("Frame", { Name = "Contenu", Size = UDim2.fromOffset(860, 466), Parent = fenetre })
-	local ctx = { UiKit = UiKit, session = session, contenu = contenu, fenetre = fenetre, message = function() end, refus = function() end }
+	local ctx = { UiKit = UiKit, session = session, contenu = contenu, fenetre = fenetre, message = function() end, refus = function() end, guide = Tutoriel.installer(fenetre, UiKit) }
 	return ctx, EcranCouture(ctx)
 end
 local function espace(appui)
@@ -139,7 +140,8 @@ M.avancer(0.7)
 espace(false)
 M.avancer(1.5)
 U.verifier(bulle.Visible and bulle.Text == GuideCouture.CONSEILS[2], "Espace tenu : le conseil suivant")
-local aide = ctx.contenu.Panneau.Aide
+local aide = ctx.fenetre.Aide -- (sous-projet 9 : « ? » est sur la barre de titre de la fenêtre)
+U.verifier(ctx.contenu.Panneau:FindFirstChild("Aide") == nil and aide.Visible, "« ? » sur la barre de titre, pas dans le panneau")
 U.verifier(aide.Text == "?" and aide.TextSize >= 14, "le bouton « ? »")
 aide.Activated:Fire()
 U.verifier(bulle.Visible and bulle.Text == GuideCouture.CONSEILS[1], "« ? » : les conseils reprennent au premier")
@@ -159,6 +161,6 @@ local ctx3, fermer3 = ouvrir(habituee)
 local bulle3 = ctx3.contenu.Plateau.Conseil
 U.verifier(not bulle3.Visible, "une robe déjà livrée : pas de conseils")
 M.avancer(0.5) -- (un bouton qui vient d'apparaître ignore les clics)
-ctx3.contenu.Panneau.Aide.Activated:Fire()
+ctx3.fenetre.Aide.Activated:Fire()
 U.verifier(bulle3.Visible and bulle3.Text == GuideCouture.CONSEILS[1], "« ? » montre les conseils")
 fermer3()

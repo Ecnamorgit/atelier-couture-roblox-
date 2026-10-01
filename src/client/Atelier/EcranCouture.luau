@@ -78,13 +78,9 @@ return function(ctx)
 	for i, id in ipairs(ids) do
 		lignes[id] = UiKit.texte({ Name = "Ligne" .. i, TextSize = 14, Position = UDim2.fromOffset(0, (i - 1) * 24), Size = UDim2.new(1, 0, 0, 22), Parent = listePieces })
 	end
-	local note = UiKit.texte({ Name = "Note", Font = Enum.Font.GothamBold, TextSize = 18, Position = UDim2.fromOffset(0, 124), Size = UDim2.new(1, -46, 0, 22), Parent = panneau })
+	local note = UiKit.texte({ Name = "Note", Font = Enum.Font.GothamBold, TextSize = 18, Position = UDim2.fromOffset(0, 124), Size = UDim2.new(1, 0, 0, 22), Parent = panneau })
 	-- (plan 26) la jauge de précision, et le tissu (s'il glisse)
 	local montrerConseil
-	UiKit.boutonDoux({ Name = "Aide", Text = "?", TextSize = 18, Position = UDim2.new(1, -40, 0, 120), Size = UDim2.fromOffset(34, 28), Parent = panneau }, function()
-		guide = GuideCouture.nouveau() -- les conseils reprennent au premier
-		montrerConseil()
-	end)
 	local jauge = UiKit.arrondir(UiKit.creer("Frame", { Name = "Precision", BackgroundColor3 = C.secondaire, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 150), Size = UDim2.new(1, -6, 0, 6), Parent = panneau }), 3)
 	local remplissage = UiKit.arrondir(UiKit.creer("Frame", { Name = "Remplissage", BackgroundColor3 = C.ok, BorderSizePixel = 0, Size = UDim2.fromScale(0, 1), Parent = jauge }), 3)
 	local ligneTissu = UiKit.texte({ Name = "Tissu", Text = "", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(0, 160), Size = UDim2.new(1, 0, 0, 18), Parent = panneau })
@@ -426,6 +422,13 @@ return function(ctx)
 		guide = GuideCouture.nouveau() -- la première robe : les conseils pas à pas
 	end
 	montrerConseil()
+	-- (sous-projet 9) « ? », sur la barre de titre de la fenêtre, reprend ces conseils au premier
+	if ctx.guide then
+		ctx.guide:demarrer(session, "couture", nil, function()
+			guide = GuideCouture.nouveau()
+			montrerConseil()
+		end)
+	end
 	-- Le son de la machine suit l'aiguille : il tourne tant qu'on coud, au rythme de la vitesse choisie
 	local rythme = nil
 	local function sonMachine(cousant)

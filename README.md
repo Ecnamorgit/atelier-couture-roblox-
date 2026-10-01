@@ -13,13 +13,20 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 8, plans 25 et 26 : la couture guidée)
+## État actuel (sous-projet 9 en cours, plan 27 : les premiers pas — le bandeau, l'accueil, les mesures)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
 voient. Le serveur tient l'atelier de chaque joueur et valide chaque action (il fait foi) ; le client n'affiche
 qu'une copie de l'état. Dans un jeu publié, la partie est sauvegardée (argent, stock de tissu, dix dernières
-robes et commande en cours : une déconnexion ne perd pas le travail) :
+robes et commande en cours : une déconnexion ne perd pas le travail).
+
+**Les premiers pas** (sous-projet 9) : à la première robe (aucune robe livrée ni vendue), un bandeau sur la barre de
+titre de la fenêtre donne un conseil à la fois et entoure d'un anneau l'élément à toucher ; chaque conseil s'efface
+quand le geste est fait. Ensuite, le bouton « ? » de la barre de titre les rappelle. Pour l'instant : l'accueil (la
+clochette), les mesures (tourner une molette, ajuster les trois bandes, valider) et la couture (ses propres conseils).
+
+Une commande, poste par poste :
 
 1. **Commande** : la clochette (ou E) fait entrer une cliente en personne (un avatar construit en code, son nom
    au-dessus de la tête), avec 1 à 3 exigences tirées de ses styles préférés, de sa teinte et de son occasion. Dix clientes, qui

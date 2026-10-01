@@ -118,6 +118,8 @@ end
 verifier(fenetre.Visible, "la fenêtre s'ouvre au démarrage")
 verifier(titre() == "Aiguille & Dentelle", "écran d'accueil")
 verifier(argent() == 150, "150 pièces d'or au départ")
+-- (sous-projet 9) La première robe : un conseil sur la barre de titre, la clochette entourée ; « ? »
+verifier(fenetre.Conseil.Visible and fenetre.Conseil.Text:find("clochette", 1, true) ~= nil and fenetre.Anneau:GetAttribute("Cible") == "Clochette" and fenetre.Aide.Visible, "première robe : le conseil de l'accueil (" .. fenetre.Conseil.Text .. ")")
 local parties = M.magasins.AtelierCouture_v2
 local cleJoueur = "joueur_" .. joueur.UserId
 verifier(parties.donnees[cleJoueur].version == 99 and serveur:atelier(joueur) ~= nil and not serveur:atelier(joueur).sauvable, "partie illisible : le joueur joue sans sauvegarde")
@@ -208,6 +210,7 @@ local Clientes = requireModule(dossier.Clientes)
 local MESURES = { "poitrine", "taille", "hanches" }
 verifier(titre() == "Les mesures" and texte("Colette Marchand") ~= nil, "première visite de Colette : ses mesures")
 verifier(fenetre.Contenu:FindFirstChild("ReprendreMesures") == nil, "première visite : rien à reprendre")
+verifier(fenetre.Conseil.Visible and fenetre.Conseil.Text:find("molette", 1, true) ~= nil, "(sous-projet 9) première robe : le conseil des mesures (" .. fenetre.Conseil.Text .. ")")
 verifierTailles("mesures")
 local clienteMesuree = M.services.Workspace.AtelierLocal:FindFirstChild("Cliente")
 verifier(clienteMesuree ~= nil and clienteMesuree.Head.Nom.Texte.Text == "Colette Marchand", "Colette en personne, son nom au-dessus de la tête")
@@ -312,6 +315,7 @@ verifier(serveur:atelier(joueur).etat.commande.ajustement == 1 and serveur:ateli
 -- Carnet de croquis
 ---------------------------------------------------------------------------
 verifier(titre() == "1. Carnet de croquis", "mesures prises : le carnet")
+verifier(not fenetre.Conseil.Visible and not fenetre.Aide.Visible, "(sous-projet 9) les mesures quittées : leurs conseils s'en vont avec elles")
 do -- Sous-projet 6 : une exigence d'accessoire dit ce qu'on en a dans la mercerie (le kit : dix perles)
 	local ligne = texte("Avec : Perle")
 	verifier(ligne ~= nil and string.find(ligne.Text, "Avec : Perle\n      (en stock : 10)", 1, true) ~= nil and ligne.Size.Y.Offset == 40, "au carnet, l'exigence d'une perle dit « (en stock : 10) », sur une seconde ligne")
@@ -1198,6 +1202,7 @@ livrer.Activated:Fire() -- second appui d'un double clic (moins de 0,4 s) : igno
 verifier(titre() == "7. Photo et livraison", "un double clic trop rapide ne livre pas")
 cliquer("Livrer")
 verifier(titre() == "La cliente refuse la robe" and texte("Avec : Croix d'argent") ~= nil, "sans la croix d'argent : robe refusée, exigence ratée affichée")
+verifier(not fenetre.Aide.Visible and fenetre.Titre.Size.X.Offset == -76, "(sous-projet 9) au refus, sans « ? » : le titre garde toute sa largeur (" .. fenetre.Titre.Size.X.Offset .. ")")
 do -- Son avis : une étoile
 	local etoiles = gui.Atelier.Dialogue.Etoiles
 	local OR = requireModule(scriptClient.Dialogue).OR
