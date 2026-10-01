@@ -44,7 +44,7 @@ scene = {
 	ATTENTE_CAPTURE = 3,
 	montrerDecorations = function() end,
 	toucher = function()
-		return { genre = "robe", indicePiece = 1, copie = scene.copie, u = 0.5, v = 0.5 }
+		return { genre = "robe", indicePiece = 1, copie = scene.copie, u = scene.u or 0.5, v = scene.v or 0.5 }
 	end,
 	orbiter = function()
 		orbites += 1
@@ -99,7 +99,8 @@ U.verifier(bandeau.Text == "La robe te plaît ? Présente-la à la cliente." and
 ctx.guide:arreter()
 fermer()
 U.verifier(session.tutorielsVus.decorations, "les décorations quittées : leurs conseils sont vus")
--- Une garniture (le ruban) : son premier point suffit
+-- (relecture) Une garniture (le ruban) : un point ne suffit pas (la robe ne garderait rien) ; l'anneau désigne « Finir
+-- la garniture » ; deux points assez écartés, et le conseil passe
 do
 	local sr = robeCousue(83)
 	local ctxr = contexte(sr)
@@ -107,10 +108,17 @@ do
 	M.avancer(0.5)
 	ctxr.contenu.Palette.Deco_ruban_rose.Activated:Fire()
 	M.avancer(1.6)
+	scene.u, scene.v = 0.2, 0.5
 	UIS.InputBegan:Fire(appui, false)
 	UIS.InputEnded:Fire(appui)
-	M.avancer(2)
-	U.verifier(ctxr.fenetre.Conseil.Text == "Glisse sur la scène pour tourner la vue.", "une garniture commencée (un point de ruban) : le conseil suivant (" .. ctxr.fenetre.Conseil.Text .. ")")
+	M.avancer(2.1)
+	U.verifier(ctxr.fenetre.Conseil.Text == "Touche la robe pour la poser." and ctxr.guide.cible == ctxr.contenu.FinirGarniture, "un seul point de ruban : le conseil reste, « Finir la garniture » entouré (" .. ctxr.fenetre.Conseil.Text .. ")")
+	scene.u = 0.8
+	UIS.InputBegan:Fire(appui, false)
+	UIS.InputEnded:Fire(appui)
+	M.avancer(0.1)
+	U.verifier(ctxr.fenetre.Conseil.Text == "Glisse sur la scène pour tourner la vue.", "deux points de ruban : la robe le gardera, le conseil suivant (" .. ctxr.fenetre.Conseil.Text .. ")")
+	scene.u, scene.v = nil, nil
 	ctxr.guide:arreter()
 	fermerr()
 end
@@ -127,6 +135,9 @@ M.avancer(2.1)
 U.verifier(bandeau2.Text:find("prends la photo", 1, true) ~= nil, "pas de photo : le conseil reste")
 ctx2.contenu.PrendrePhoto.Activated:Fire()
 M.avancer(0.2)
+U.verifier(ctx2.contenu.Apercu.Visible and bandeau2.Text:find("prends la photo", 1, true) ~= nil, "(relecture) la photo prise, l'aperçu cache « Livrer » : le conseil attend (" .. bandeau2.Text .. ")")
+ctx2.contenu.Apercu.FermerApercu.Activated:Fire()
+M.avancer(0.1)
 U.verifier(bandeau2.Text == "Livre la robe : touche deux fois « Livrer la robe »." and entoure(ctx2, ctx2.contenu.Livrer), "la photo prise : livrer, le bouton entouré (" .. bandeau2.Text .. ")")
 ctx2.guide:arreter()
 fermer2()
@@ -142,3 +153,32 @@ ctx3.fenetre.Aide.Activated:Fire()
 U.verifier(ctx3.fenetre.Conseil.Visible and ctx3.fenetre.Conseil.Text == "Choisis une décoration dans la palette.", "« ? » montre les conseils des décorations")
 ctx3.guide:arreter()
 fermer3()
+
+-- (relecture) Une robe libre, sans clavier, qui ne tourne jamais la vue : « ? » montre les conseils ; les outils sans
+-- touches ; au bout de 10 s, le conseil de la vue passe ; « Présente-la », sans cliente
+do
+	local sl = robeCousue(85)
+	sl.etat.livraisons = 1
+	sl.etat.commande.libre = true
+	UIS.KeyboardEnabled = false
+	local cl = contexte(sl)
+	local fl = EcranDecorations(cl)
+	local b = cl.fenetre.Conseil
+	M.avancer(0.5)
+	cl.fenetre.Aide.Activated:Fire()
+	cl.contenu.Palette.Deco_perle.Activated:Fire()
+	M.avancer(2.1)
+	UIS.InputBegan:Fire(appui, false)
+	UIS.InputEnded:Fire(appui)
+	M.avancer(2.1)
+	U.verifier(b.Text == "Glisse sur la scène pour tourner la vue.", "robe libre : la perle posée, tourner la vue (" .. b.Text .. ")")
+	M.avancer(8)
+	U.verifier(b.Text == "Glisse sur la scène pour tourner la vue.", "8 s sans tourner la vue : le conseil reste")
+	M.avancer(2.1)
+	U.verifier(b.Text:find("outils", 1, true) ~= nil and b.Text:find("Q / E", 1, true) == nil, "10 s sans tourner la vue : les outils, sans les touches Q / E au doigt (" .. b.Text .. ")")
+	M.avancer(6.1)
+	U.verifier(b.Text == "La robe te plaît ? Présente-la.", "une robe libre : présenter, sans cliente (" .. b.Text .. ")")
+	UIS.KeyboardEnabled = true
+	cl.guide:arreter()
+	fl()
+end

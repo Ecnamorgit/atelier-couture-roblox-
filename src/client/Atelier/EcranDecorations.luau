@@ -238,7 +238,9 @@ return function(ctx)
 	-- (sous-projet 9) Les conseils de la première robe : choisir une décoration, la poser, tourner la vue, les outils,
 	-- présenter
 	if ctx.guide then
-		local poseesDepart = #deco.liste
+		-- (ce que la robe gardera : un objet posé, ou un ruban d'au moins deux points assez écartés)
+		local poseesDepart = #deco:resultat()
+		local libre = session.etat.commande.libre
 		ctx.guide:demarrer(session, "decorations", {
 			{
 				texte = "Choisis une décoration dans la palette.",
@@ -251,8 +253,12 @@ return function(ctx)
 			},
 			{
 				texte = "Touche la robe pour la poser.",
+				-- (un ruban se pose point par point : dès le premier, « Finir la garniture » est désigné)
+				cible = function()
+					return if deco.garniture then finir else nil
+				end,
 				fait = function()
-					return #deco.liste > poseesDepart or deco.garniture ~= nil
+					return #deco:resultat() > poseesDepart
 				end,
 			},
 			{
@@ -263,14 +269,17 @@ return function(ctx)
 				duree = 10,
 			},
 			{
-				texte = "Les outils la tournent (Q / E), l'agrandissent ou la retirent.",
+				-- (les outils agissent sur l'objet choisi ; les touches seulement avec un clavier)
+				texte = if UserInputService.KeyboardEnabled
+					then "Les outils (ou Q / E) tournent, agrandissent ou retirent l'objet."
+					else "Les outils tournent, agrandissent ou retirent l'objet choisi.",
 				cible = function()
 					return contenu:FindFirstChild("Tourner15")
 				end,
 				duree = 6,
 			},
 			{
-				texte = "La robe te plaît ? Présente-la à la cliente.",
+				texte = if libre then "La robe te plaît ? Présente-la." else "La robe te plaît ? Présente-la à la cliente.",
 				cible = function()
 					return boutonPresenter
 				end,

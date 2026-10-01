@@ -230,8 +230,9 @@ return function(ctx)
 				cible = function()
 					return boutonPhoto
 				end,
+				-- (la photo prise, et son aperçu refermé : il cache « Livrer » ; une capture qui échoue compte aussi)
 				fait = function()
-					return prises > 0
+					return prises > 0 and enCours == nil and not apercu.Visible
 				end,
 			},
 			{
