@@ -145,9 +145,11 @@ function MachineCoudre:avancer(dt, cousant, rotation)
 		local temps = d / v
 		local vitesseAngle = rotation * MachineCoudre.ROTATION_MAX
 		if self.assistance then
-			-- elle vise le pointillé : l'angle qui ramène l'aiguille dessus en 1 dm environ
+			-- elle vise le pointillé : l'angle qui ramène l'aiguille dessus en 1 dm environ ; plus lente quand le tissu
+			-- avance moins vite (à la tortue, elle ne corrige pas davantage par dm cousu)
 			local voulu = math.clamp(-self.e, -0.5, 0.5)
-			vitesseAngle += math.clamp((voulu - self.angle) * 4, -1, 1) * MachineCoudre.ROTATION_ASSISTANCE
+			local allure = math.min(1, v / MachineCoudre.VITESSES.normale)
+			vitesseAngle += math.clamp((voulu - self.angle) * 4, -1, 1) * MachineCoudre.ROTATION_ASSISTANCE * allure
 		end
 		pivoter(self, math.clamp(vitesseAngle, -MachineCoudre.ROTATION_MAX, MachineCoudre.ROTATION_MAX), temps)
 		self.angle += self:tirage(self.parcouru) * d

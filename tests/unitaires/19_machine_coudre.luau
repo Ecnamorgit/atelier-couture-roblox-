@@ -129,6 +129,18 @@ end
 U.verifier(pireSoie >= 0.9, ("la soigneuse coud la soie à 90 %% au moins (pire %.2f)"):format(pireSoie))
 U.verifier(notes.assistee.moyenne >= 0.6 and notes.assistee.pire >= 0.5 and notes.assistee.moyenne <= Catalogue.PLAFOND_ASSISTANCE + 1e-9 and notes.assistee.moyenne < notes.soigneuse.moyenne, "l'assistance aide sans tout faire : 60 à 85 % en moyenne sans s'arrêter (" .. resume .. ")")
 
+-- (relecture) À la tortue, l'assistance ne corrige pas davantage par dm cousu : elle ne devient pas automatique
+local totalTortue, nTortue = 0, 0
+for k, id in ipairs(PIECES) do
+	for graine = 1, 3 do
+		local machine = MachineCoudre.nouvelle(id, 10 * k + graine, "coton")
+		machine:choisirVitesse("tortue")
+		machine:activerAssistance(true)
+		totalTortue, nTortue = totalTortue + couturiere(machine, "assistee"), nTortue + 1
+	end
+end
+U.verifier(totalTortue / nTortue <= notes.assistee.moyenne + 0.03, ("assistée à la tortue : pas mieux qu'à vitesse normale (%.2f contre %.2f)"):format(totalTortue / nTortue, notes.assistee.moyenne))
+
 -- L'assistance ne s'arrête pas dans les angles : qui coud sans s'arrêter y rate encore des points
 local assistee = MachineCoudre.nouvelle(ID, 21, "coton")
 assistee:activerAssistance(true)
