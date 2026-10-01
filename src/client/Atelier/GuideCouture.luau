@@ -7,7 +7,7 @@ GuideCouture.__index = GuideCouture
 GuideCouture.CONSEILS = {
 	"Tiens « Coudre » (ou Espace) : le tissu avance sous l'aiguille.",
 	"Le tissu tourne un peu en avançant : fais-le pivoter avec ◀ ▶ (ou A / D) pour garder l'aiguille sur le pointillé.",
-	"Un angle arrive : lâche « Coudre », fais pivoter le tissu jusqu'à ce que le pointillé remonte droit, puis repars.",
+	"Un angle arrive : couds jusqu'au rond, puis lâche « Coudre » et fais pivoter le tissu jusqu'à ce que le pointillé remonte droit.",
 	"Ralentis dans les courbes (W / S, ou Tortue), accélère dans les lignes droites : ta précision s'affiche en direct.",
 }
 GuideCouture.BRAVO = "Bravo, tu sais coudre ! « ? » rappelle ces conseils."

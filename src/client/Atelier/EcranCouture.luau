@@ -237,10 +237,11 @@ return function(ctx)
 			marqueAngle.Position = UDim2.fromOffset(mx, my)
 		end
 		local texte = nil
+		-- (relecture) la machine ne tourne le pointillé qu'à l'angle : on coud jusqu'au rond, puis on s'arrête et on pivote
 		if e.virage and e.virage.distance < SIGNAL_ANGLE then
-			texte = "Un angle : arrête-toi et pivote"
+			texte = "Un angle arrive : couds jusqu'au rond, puis pivote"
 		elseif math.abs(e.angle) > PENCHE then
-			texte = "Pivote : le pointillé doit remonter droit"
+			texte = "Arrête-toi et pivote : remets le pointillé droit"
 		end
 		signal.Visible = texte ~= nil and not machine:fini()
 		signal.Text = texte or ""

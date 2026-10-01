@@ -99,7 +99,7 @@ touche(Enum.KeyCode.Space, false)
 touche(Enum.KeyCode.A, true)
 M.avancer(0.5)
 touche(Enum.KeyCode.A, false)
-U.verifier(plateau:GetAttribute("Angle") > 25 and plateau.Signal.Visible and plateau.Signal.Text == "Pivote : le pointillé doit remonter droit", ("tissu de travers (%.0f°) : « Pivote »"):format(plateau:GetAttribute("Angle") or 0))
+U.verifier(plateau:GetAttribute("Angle") > 25 and plateau.Signal.Visible and plateau.Signal.Text == "Arrête-toi et pivote : remets le pointillé droit", ("tissu de travers (%.0f°) : « Pivote »"):format(plateau:GetAttribute("Angle") or 0))
 touche(Enum.KeyCode.Space, true)
 M.avancer(0.6)
 touche(Enum.KeyCode.Space, false)
@@ -144,7 +144,7 @@ while not plateau2.Parfait.Visible and images < 1200 do
 	piloter()
 	M.avancer(1 / 60)
 	images += 1
-	if plateau2.Signal.Visible and plateau2.Signal.Text == "Un angle : arrête-toi et pivote" then
+	if plateau2.Signal.Visible and plateau2.Signal.Text == "Un angle arrive : couds jusqu'au rond, puis pivote" then
 		signale = true
 		marque = marque or (plateau2.Tissu.Angle.Visible and plateau2.Tissu.Angle.Position)
 	end
@@ -160,3 +160,52 @@ U.verifier(signale and marque and math.abs(marque.X.Offset - ax) < 1 and math.ab
 M.avancer(1.6)
 U.verifier(not plateau2.Parfait.Visible, "« Parfait ! » s'efface")
 fermer2()
+
+-- (relecture) Une couturière qui obéit au signal : elle coud en corrigeant un peu (A / D) ; quand le signal lui dit de
+-- s'arrêter, elle lâche Espace et pivote jusqu'à ce que le pointillé remonte droit, puis repart. Elle coud bien la pièce :
+-- le signal ne la fait pas pivoter avant l'angle (la machine ne tourne le pointillé qu'à l'angle)
+local ctx3 = contexte(sessionACoudre(33, "coton_blanc"))
+local fermer3 = EcranCouture(ctx3)
+local plateau3, panneau3 = ctx3.contenu.Plateau, ctx3.contenu.Panneau
+local tenue3, espace3 = nil, false
+local function presser(cle)
+	if cle ~= tenue3 then
+		if tenue3 then
+			touche(tenue3, false)
+		end
+		if cle then
+			touche(cle, true)
+		end
+		tenue3 = cle
+	end
+end
+local function coudre(oui)
+	if oui ~= espace3 then
+		touche(Enum.KeyCode.Space, oui)
+		espace3 = oui
+	end
+end
+local arretee, images3, arrets = false, 0, 0
+while not panneau3.Note.Text:find("^Pièce finie") and images3 < 3000 do
+	local angle, ecart = math.rad(plateau3:GetAttribute("Angle")), plateau3:GetAttribute("Ecart")
+	local signal = if plateau3.Signal.Visible then plateau3.Signal.Text:lower() else ""
+	if not arretee and signal:find("arrête%-toi") then
+		arretee, arrets = true, arrets + 1
+	end
+	if arretee then
+		coudre(false)
+		presser(if angle > math.rad(1) then Enum.KeyCode.D elseif angle < -math.rad(1) then Enum.KeyCode.A else nil)
+		arretee = math.abs(angle) > math.rad(1)
+	else
+		local voulu = math.clamp(-2 * ecart, -0.4, 0.4) - angle
+		presser(if voulu > 0.01 then Enum.KeyCode.A elseif voulu < -0.01 then Enum.KeyCode.D else nil)
+		coudre(true)
+	end
+	M.avancer(1 / 60)
+	images3 += 1
+end
+coudre(false)
+presser(nil)
+local noteObeissante = tonumber(panneau3.Note.Text:match("(%d+) %%"))
+U.verifier(panneau3.Note.Text:find("^Pièce finie") ~= nil and noteObeissante ~= nil and noteObeissante >= 90 and arrets >= 2, ("qui obéit au signal finit la pièce, et la coud bien : %s (%d arrêts, %d images)"):format(panneau3.Note.Text, arrets, images3))
+fermer3()
