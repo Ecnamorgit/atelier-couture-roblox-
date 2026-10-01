@@ -10,6 +10,7 @@ local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Polygone = require(Couture:WaitForChild("Polygone"))
 local MachineCoudre = require(script.Parent:WaitForChild("MachineCoudre"))
+local GuideCouture = require(script.Parent:WaitForChild("GuideCouture"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 local Sons = require(script.Parent:WaitForChild("Sons"))
 
@@ -25,6 +26,11 @@ local ACTION_PIVOT = "AtelierPivoter" -- A / D, ← / → : pivoter le tissu ; W
 local TOUCHES_PIVOT = { [Enum.KeyCode.A] = 1, [Enum.KeyCode.Left] = 1, [Enum.KeyCode.D] = -1, [Enum.KeyCode.Right] = -1 }
 local TOUCHES_VITESSE = { [Enum.KeyCode.W] = 1, [Enum.KeyCode.Up] = 1, [Enum.KeyCode.S] = -1, [Enum.KeyCode.Down] = -1 }
 local RYTHMES = { tortue = 0.8, normale = 1, lapin = 1.3 } -- vitesse du son de la machine
+-- (plan 26) L'écart en couleur : vert sur la ligne (la note entière), orange un peu à côté, rouge au-delà
+local PRES, LOIN = 0.05, 0.15 -- dm
+local SIGNAL_ANGLE = 0.5 -- dm : l'angle qui arrive est annoncé
+local PENCHE = math.rad(25) -- au-delà, le pointillé penche trop : « Pivote »
+local DUREE_PARFAIT = 1.5 -- s
 
 return function(ctx)
 	local UiKit, session, contenu = ctx.UiKit, ctx.session, ctx.contenu
@@ -50,23 +56,43 @@ return function(ctx)
 	local calquePoints = UiKit.creer("Frame", { Name = "Points", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = tissu })
 	UiKit.creer("Frame", { Name = "Barre", AnchorPoint = Vector2.new(0.5, 1), BackgroundColor3 = Color3.fromRGB(150, 150, 160), BorderSizePixel = 0, Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(4, 60), Parent = plateau })
 	local aiguille = UiKit.arrondir(UiKit.creer("Frame", { Name = "Aiguille", AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(12, 12), Parent = plateau }), 6)
-	UiKit.creer("UIStroke", { Color = C.erreur, Thickness = 2, Parent = aiguille })
+	local contourAiguille = UiKit.creer("UIStroke", { Name = "Contour", Color = C.ok, Thickness = 2, Parent = aiguille })
+	-- (plan 26) L'angle qui vient, marqué sur le pointillé ; le signal et « Parfait ! » en haut du plateau
+	local marqueAngle = UiKit.arrondir(UiKit.creer("Frame", { Name = "Angle", AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, Size = UDim2.fromOffset(14, 14), Visible = false, Parent = tissu }), 7)
+	UiKit.creer("UIStroke", { Color = C.accent, Thickness = 2, Parent = marqueAngle })
+	local signal = UiKit.arrondir(UiKit.texte({ Name = "Signal", Text = "", Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, BackgroundColor3 = C.accent, BackgroundTransparency = 0.1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 10), Size = UDim2.new(1, -40, 0, 30), Visible = false, Parent = plateau }), 8)
+	-- (plan 26) Les conseils pas à pas, en bas du plateau : à la première robe, puis sur demande (« ? »)
+	local bulle = UiKit.arrondir(UiKit.texte({ Name = "Conseil", Text = "", TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, BackgroundColor3 = C.panneau, BackgroundTransparency = 0.05, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.new(1, -40, 0, 64), Visible = false, Parent = plateau }), 10)
+	UiKit.creer("UIStroke", { Color = C.accent, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = bulle })
+	UiKit.creer("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12), Parent = bulle })
+	local guide = nil
+	local parfait = UiKit.arrondir(UiKit.texte({ Name = "Parfait", Text = "Parfait !", Font = Enum.Font.GothamBold, TextSize = 22, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, BackgroundColor3 = C.ok, BackgroundTransparency = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 48), Size = UDim2.fromOffset(160, 36), Visible = false, Parent = plateau }), 18)
+	local finParfait = 0
 
 	-- Panneau de commandes
 	local panneau = UiKit.creer("Frame", { Name = "Panneau", BackgroundTransparency = 1, Position = UDim2.fromOffset(LARGEUR_PLATEAU + 16, 0), Size = UDim2.new(1, -(LARGEUR_PLATEAU + 16), 1, 0), Parent = contenu })
 	-- (une liste qui défile : une robe à couches a jusqu'à dix pièces)
 	local ids = session.etat:piecesDuCroquis()
-	local listePieces = UiKit.creer("ScrollingFrame", { Name = "Pieces", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollingDirection = Enum.ScrollingDirection.Y, CanvasSize = UDim2.fromOffset(0, #ids * 24), Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 144), Parent = panneau })
+	local listePieces = UiKit.creer("ScrollingFrame", { Name = "Pieces", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollingDirection = Enum.ScrollingDirection.Y, CanvasSize = UDim2.fromOffset(0, #ids * 24), Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 120), Parent = panneau })
 	local lignes = {}
 	for i, id in ipairs(ids) do
 		lignes[id] = UiKit.texte({ Name = "Ligne" .. i, TextSize = 14, Position = UDim2.fromOffset(0, (i - 1) * 24), Size = UDim2.new(1, 0, 0, 22), Parent = listePieces })
 	end
-	local note = UiKit.texte({ Name = "Note", Font = Enum.Font.GothamBold, TextSize = 18, Position = UDim2.fromOffset(0, 150), Size = UDim2.new(1, 0, 0, 24), Parent = panneau })
+	local note = UiKit.texte({ Name = "Note", Font = Enum.Font.GothamBold, TextSize = 18, Position = UDim2.fromOffset(0, 124), Size = UDim2.new(1, -46, 0, 22), Parent = panneau })
+	-- (plan 26) la jauge de précision, et le tissu (s'il glisse)
+	local montrerConseil
+	UiKit.boutonDoux({ Name = "Aide", Text = "?", TextSize = 18, Position = UDim2.new(1, -40, 0, 120), Size = UDim2.fromOffset(34, 28), Parent = panneau }, function()
+		guide = GuideCouture.nouveau() -- les conseils reprennent au premier
+		montrerConseil()
+	end)
+	local jauge = UiKit.arrondir(UiKit.creer("Frame", { Name = "Precision", BackgroundColor3 = C.secondaire, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 150), Size = UDim2.new(1, -6, 0, 6), Parent = panneau }), 3)
+	local remplissage = UiKit.arrondir(UiKit.creer("Frame", { Name = "Remplissage", BackgroundColor3 = C.ok, BorderSizePixel = 0, Size = UDim2.fromScale(0, 1), Parent = jauge }), 3)
+	local ligneTissu = UiKit.texte({ Name = "Tissu", Text = "", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(0, 160), Size = UDim2.new(1, 0, 0, 18), Parent = panneau })
 	local consigne = UiKit.texte({
 		Text = "Tiens « Coudre » (ou Espace) pour avancer ; ◀ ▶ (A / D) font pivoter le tissu : garde l'aiguille sur le pointillé. Dans un angle, arrête-toi et pivote.",
 		TextSize = 14,
 		TextColor3 = C.texteDoux,
-		Position = UDim2.fromOffset(0, 178),
+		Position = UDim2.fromOffset(0, 180),
 		Size = UDim2.new(1, 0, 0, 52),
 		Parent = panneau,
 	})
@@ -139,6 +165,9 @@ return function(ctx)
 			ZIndex = 0,
 			Parent = tissu,
 		})
+		-- (plan 26) le tissu, et ce qu'il fait sous l'aiguille
+		local t = Catalogue.tissu(etat.tissus[id])
+		ligneTissu.Text = t.nom .. " : " .. (if machine.glisse >= 1.4 then "un tissu qui glisse, tiens-le bien" elseif machine.glisse <= 0.8 then "un tissu stable" else "un tissu qui tire un peu")
 		local contenuImage = Vignettes.piece(id, etat.tissus[id], etat.coupees[id], 256)
 		if contenuImage then
 			image.ImageContent = contenuImage
@@ -174,11 +203,16 @@ return function(ctx)
 		end
 	end
 
+	-- (plan 26) la couleur d'un écart : vert sur la ligne, orange un peu à côté, rouge hors de la ligne
+	local function couleurEcart(e)
+		local a = math.abs(e)
+		return if a <= PRES + 1e-9 then C.ok elseif a <= LOIN then C.alerte else C.erreur
+	end
 	local function ajouterPoints()
 		local e = machine:etat()
 		local x, y = versTissu(e.point)
 		for i = #points + 1, #machine.ecarts do
-			points[i] = UiKit.creer("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = C.accent, BorderSizePixel = 0, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(4, 4), Parent = calquePoints })
+			points[i] = UiKit.creer("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = couleurEcart(machine.ecarts[i]), BorderSizePixel = 0, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(4, 4), Parent = calquePoints })
 		end
 	end
 
@@ -192,6 +226,25 @@ return function(ctx)
 		local c, s = math.cos(phi), math.sin(phi)
 		tissu.Rotation = math.deg(phi)
 		tissu.Position = UDim2.new(0.5, -(vx * c - vy * s), 0.5, -(vx * s + vy * c))
+		-- (plan 26) en direct : la couleur de l'aiguille, l'angle qui vient, le signal
+		plateau:SetAttribute("Angle", math.deg(e.angle))
+		plateau:SetAttribute("Ecart", e.ecart)
+		contourAiguille.Color = couleurEcart(e.ecart)
+		local seg = machine.segments[e.segment]
+		marqueAngle.Visible = e.virage ~= nil
+		if e.virage then
+			local mx, my = versTissu(seg.b)
+			marqueAngle.Position = UDim2.fromOffset(mx, my)
+		end
+		local texte = nil
+		-- (relecture) la machine ne tourne le pointillé qu'à l'angle : on coud jusqu'au rond, puis on s'arrête et on pivote
+		if e.virage and e.virage.distance < SIGNAL_ANGLE then
+			texte = "Un angle arrive : couds jusqu'au rond, puis pivote"
+		elseif math.abs(e.angle) > PENCHE then
+			texte = "Arrête-toi et pivote : remets le pointillé droit"
+		end
+		signal.Visible = texte ~= nil and not machine:fini()
+		signal.Text = texte or ""
 	end
 
 	rafraichir = function()
@@ -210,6 +263,8 @@ return function(ctx)
 		end
 		local provisoire = machine and machine:noteProvisoire()
 		local finie = machine ~= nil and machine:fini()
+		remplissage.Size = UDim2.fromScale(provisoire or 0, 1)
+		remplissage.BackgroundColor3 = if (provisoire or 1) >= 0.9 then C.ok elseif provisoire >= 0.6 then C.alerte else C.erreur
 		if finie then
 			note.Text = ("Pièce finie : %d %%"):format(math.floor(provisoire * 100 + 0.5))
 		else
@@ -356,6 +411,21 @@ return function(ctx)
 			pivots[input] = nil
 		end
 	end))
+	-- (plan 26) Le conseil en cours ; les conseils finis, la bulle disparaît (et ne revient qu'avec « ? » pendant cette
+	-- partie : rien n'est sauvegardé)
+	montrerConseil = function()
+		local texte = guide and guide:texte()
+		bulle.Visible = texte ~= nil
+		bulle.Text = texte or ""
+		if guide and not texte then
+			guide = nil
+			session.conseilsCoutureVus = true
+		end
+	end
+	if session.etat.livraisons + session.etat.ventes == 0 and not session.conseilsCoutureVus then
+		guide = GuideCouture.nouveau() -- la première robe : les conseils pas à pas
+	end
+	montrerConseil()
 	-- Le son de la machine suit l'aiguille : il tourne tant qu'on coud, au rythme de la vitesse choisie
 	local rythme = nil
 	local function sonMachine(cousant)
@@ -366,14 +436,23 @@ return function(ctx)
 		end
 	end
 	table.insert(connexions, RunService.RenderStepped:Connect(function(dt)
+		parfait.Visible = os.clock() < finParfait
 		local actif = machine ~= nil and not machine:fini() and ctx.fenetre.Visible
 		local cousant = actif and tenu ~= nil
 		sonMachine(cousant)
 		local r = if actif then rotation() else 0
+		if guide and machine then
+			guide:suivre(dt, machine, cousant, r)
+			montrerConseil()
+		end
 		if not cousant and r == 0 then
 			return
 		end
+		local avant = machine.k
 		machine:avancer(dt, cousant, r) -- (sans coudre : le tissu pivote, l'aiguille plantée)
+		if machine.k > avant and machine:coutureParfaite(avant) then
+			finParfait = os.clock() + DUREE_PARFAIT -- une couture sans faute
+		end
 		ajouterPoints()
 		if machine:fini() then
 			tenu = nil

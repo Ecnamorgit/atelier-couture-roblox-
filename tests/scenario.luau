@@ -821,7 +821,14 @@ local function cousues()
 end
 verifier(panneauC.Note.Text == "Couture : —", "rien de cousu au départ")
 verifier(#panneauC.Pieces:GetChildren() == 6, "6 pièces à coudre")
-coudre(2)
+do -- (sous-projet 8) La première robe : les conseils pas à pas, en bas du plateau ; le premier s'efface en cousant
+	local conseil = fenetre.Contenu.Plateau.Conseil
+	local premier = conseil.Text
+	verifier(conseil.Visible and premier:find("« Coudre »") ~= nil, "première robe : un conseil pour commencer (" .. premier .. ")")
+	coudre(2)
+	M.avancer(0.2) -- (un conseil reste au moins 2 s, le temps de le lire)
+	verifier(conseil.Visible and conseil.Text ~= premier, "cousu : le conseil suivant (" .. conseil.Text .. ")")
+end
 verifier(panneauC.Note.Text:match("^Couture : %d+ %%$") ~= nil, "la note s'affiche en cousant : " .. panneauC.Note.Text)
 verifier(#points:GetChildren() > 0, "les points de couture apparaissent sur le tissu")
 cliquer("Decoudre")

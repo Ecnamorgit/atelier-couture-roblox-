@@ -13,7 +13,7 @@ Le jeu est en cours de refonte, sous-projet par sous-projet
 *Dressmaker*, `docs/superpowers/specs/2026-09-30-atelier-fidele-design.md` pour l'atelier plus fidèle ; plans :
 `docs/superpowers/plans/`).
 
-## État actuel (sous-projet 8 en cours, plan 25 : la machine qui pivote)
+## État actuel (sous-projet 8, plans 25 et 26 : la couture guidée)
 
 Jouable dans Studio. Une rue de 8 boutiques : à son arrivée, chaque joueur reçoit la sienne, à son nom, et
 y travaille ; sa dernière robe livrée est exposée dans sa vitrine, sur la rue, où les autres joueurs la
@@ -78,7 +78,10 @@ robes et commande en cours : une déconnexion ne perd pas le travail) :
    ← / →, les boutons ◀ ▶, ou en glissant) pour garder l'aiguille sur le pointillé ; le tissu tire un peu (davantage
    s'il glisse : soie, satin, organza, tulle) ; dans un angle, on s'arrête et on pivote. Vitesse tortue, normale ou
    lapin (W / S), découd-vite ; l'assistance tient la ligne mais ne s'arrête pas dans les angles (note plafonnée à
-   85 %).
+   85 %). La couture se voit en direct : l'aiguille et les points verts sur la ligne, orange puis rouges quand on
+   s'en écarte ; une jauge de précision ; l'angle qui vient est marqué sur le pointillé et annoncé ; « Pivote »
+   quand le tissu penche trop ; « Parfait ! » salue une couture sans faute ; le tissu dit s'il glisse. À la
+   première robe, des conseils pas à pas (chacun s'efface quand on l'a fait) ; le bouton « ? » les rappelle.
    Une pièce finie n'est rendue qu'avec « Pièce suivante » : la dernière couture se défait encore. La dernière
    pièce cousue, la robe est terminée : une pluie de confettis et un petit son de fête.
 7. **Décorations** : 30 objets (boutons, nœuds, papillon, fleurs, broches, perles, étoile, croix, couronne,
