@@ -14,7 +14,7 @@ local function contexte(session)
 end
 -- L'élément entouré par l'anneau (un cadre de la fenêtre, recalé sur lui)
 local function entoure(ctx, element)
-	local a = ctx.fenetre:FindFirstChild("Anneau")
+	local a = ctx.guide.anneau
 	return a ~= nil and ctx.guide.cible == element and a:GetAttribute("Cible") == element.Name
 end
 

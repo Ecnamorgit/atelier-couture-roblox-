@@ -111,6 +111,44 @@ return function(ctx)
 	end
 	local desabonner = session:surChangement(rafraichir)
 	rafraichir()
+	-- (sous-projet 9) Les conseils de la première robe : épingler une pièce, puis toutes (les couches en dernier)
+	if ctx.guide then
+		local function epinglees()
+			local n = 0
+			for _ in pairs(session.etat.epinglees) do
+				n += 1
+			end
+			return n
+		end
+		local epingleesDepart = epinglees()
+		ctx.guide:demarrer(session, "epinglage", {
+			{
+				texte = "Touche une pièce pour l'épingler sur le mannequin.",
+				cible = function()
+					for _, id in ipairs(pieces) do
+						if not session.etat.epinglees[id] then
+							return liste:FindFirstChild("Epingler_" .. id)
+						end
+					end
+					return nil
+				end,
+				fait = function()
+					return epinglees() > epingleesDepart
+				end,
+			},
+			{
+				texte = "Épingle-les toutes : la dernière t'emmène à la couture.",
+				cible = function()
+					for _, id in ipairs(pieces) do
+						if not session.etat.epinglees[id] then
+							return liste:FindFirstChild("Epingler_" .. id)
+						end
+					end
+					return nil
+				end,
+			},
+		})
+	end
 	return function()
 		desabonner()
 	end

@@ -35,10 +35,7 @@ function Tutoriel.installer(fenetre, UiKit)
 	}), 10)
 	UiKit.creer("UIStroke", { Color = C.accent, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = self.bandeau })
 	UiKit.creer("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = self.bandeau })
-	-- (un cadre, pas un bouton : l'appui passe à l'élément dessous)
-	self.anneau = UiKit.creer("Frame", { Name = "Anneau", BackgroundTransparency = 1, Visible = false, ZIndex = 19, Parent = fenetre })
-	self.coin = UiKit.creer("UICorner", { Name = "Coin", CornerRadius = UDim.new(0, 12), Parent = self.anneau })
-	self.contour = UiKit.creer("UIStroke", { Name = "Contour", Color = C.accent, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = self.anneau })
+	self:creerAnneau(fenetre)
 	self.aide = UiKit.boutonDoux({ Name = "Aide", Text = "?", TextSize = 18, Size = UDim2.fromOffset(36, 36), Visible = false, Parent = fenetre }, function()
 		self:relancer()
 	end)
@@ -62,6 +59,16 @@ function Tutoriel:disposer(panneau)
 	end
 end
 
+-- L'anneau : un cadre (pas un bouton : l'appui passe à l'élément dessous), rangé dans le contenu de l'écran sous ses
+-- calques (le choix d'un tissu, l'aperçu du rouleau, la mercerie… ont un ZIndex de 10 et plus)
+Tutoriel.ZINDEX_ANNEAU = 9
+function Tutoriel:creerAnneau(parent)
+	local UiKit = self.UiKit
+	self.anneau = UiKit.creer("Frame", { Name = "Anneau", BackgroundTransparency = 1, Visible = false, ZIndex = Tutoriel.ZINDEX_ANNEAU, Parent = parent })
+	self.coin = UiKit.creer("UICorner", { Name = "Coin", CornerRadius = UDim.new(0, 12), Parent = self.anneau })
+	self.contour = UiKit.creer("UIStroke", { Name = "Contour", Color = UiKit.COULEURS.accent, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = self.anneau })
+end
+
 -- L'élément est-il affiché (lui et chacun de ses parents jusqu'à la fenêtre) ?
 local function affiche(element, fenetre)
 	local i = element
@@ -78,7 +85,15 @@ end
 -- rognent au-dessus de lui), dans le repère de la fenêtre (mise à l'échelle sur les petits écrans) ; sans élément, ou
 -- rien de visible : pas d'anneau
 function Tutoriel:placerAnneau()
-	local a, cible, fenetre = self.anneau, self.cible, self.fenetre
+	local fenetre = self.fenetre
+	-- (dans le contenu de l'écran s'il y en a un ; un écran qui vide son contenu le détruit : on en refait un)
+	local parent = fenetre:FindFirstChild("Contenu") or fenetre
+	if not self.anneau.Parent then
+		self:creerAnneau(parent)
+	elseif self.anneau.Parent ~= parent then
+		self.anneau.Parent = parent
+	end
+	local a, cible = self.anneau, self.cible
 	a:SetAttribute("Cible", cible and cible.Name or nil)
 	if not cible or not affiche(cible, fenetre) then
 		a.Visible = false
@@ -100,7 +115,7 @@ function Tutoriel:placerAnneau()
 	end
 	local echelle = fenetre.AbsoluteSize.X / math.max(fenetre.Size.X.Offset, 1)
 	echelle = if echelle > 0 then echelle else 1
-	local f, m = fenetre.AbsolutePosition, Tutoriel.MARGE
+	local f, m = parent.AbsolutePosition, Tutoriel.MARGE
 	a.Position = UDim2.fromOffset((x0 - f.X) / echelle - m, (y0 - f.Y) / echelle - m)
 	a.Size = UDim2.fromOffset((x1 - x0) / echelle + 2 * m, (y1 - y0) / echelle + 2 * m)
 	-- (l'arrondi de l'élément, élargi de la marge : un rond autour d'une molette)

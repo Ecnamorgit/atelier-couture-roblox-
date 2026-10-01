@@ -9,11 +9,11 @@ local guide = Tutoriel.installer(fenetre, UiKit)
 local bandeau, aide = fenetre.Conseil, fenetre.Aide
 -- (relecture) L'anneau est un cadre de la fenêtre, recalé sur l'élément désigné à chaque image
 local function entoure(element)
-	local a = fenetre:FindFirstChild("Anneau")
+	local a = guide.anneau
 	return a ~= nil and a.Visible and guide.cible == element and a:GetAttribute("Cible") == element.Name
 end
 local function sansAnneau()
-	local a = fenetre:FindFirstChild("Anneau")
+	local a = guide.anneau
 	return a == nil or (not a.Visible and guide.cible == nil)
 end
 U.verifier(not bandeau.Visible and not aide.Visible and bandeau.TextSize >= 14, "installé : rien d'affiché tant qu'aucun poste n'a de conseils")
@@ -31,9 +31,9 @@ local ETAPES = {
 guide:demarrer(session, "essai", ETAPES)
 U.verifier(bandeau.Visible and bandeau.Text == "Touche la cible." and aide.Visible and entoure(cible), "première robe : le premier conseil, l'élément entouré, « ? »")
 M.avancer(0.3)
-local avant = fenetre.Anneau.Contour.Transparency
+local avant = guide.anneau.Contour.Transparency
 M.avancer(0.4)
-U.verifier(fenetre.Anneau.Contour.Transparency ~= avant, "l'anneau pulse")
+U.verifier(guide.anneau.Contour.Transparency ~= avant, "l'anneau pulse")
 U.verifier(bandeau.Text == "Touche la cible.", "le geste n'est pas fait : le conseil reste")
 geste = true
 M.avancer(0.05)
@@ -107,7 +107,7 @@ local liste = UiKit.creer("ScrollingFrame", { Name = "Liste", Position = UDim2.f
 local entree = UiKit.bouton({ Name = "Entree", Text = "Entrée", Size = UDim2.fromOffset(120, 40), Parent = liste })
 local designe = entree
 guide:demarrer(essai, "liste", { { texte = "Touche l'entrée.", cible = function() return designe end } })
-local anneau = fenetre.Anneau
+local anneau = guide.anneau
 local function rect()
 	return anneau.Position.X.Offset, anneau.Position.Y.Offset, anneau.Size.X.Offset, anneau.Size.Y.Offset
 end
@@ -156,4 +156,19 @@ M.avancer(0.05)
 U.verifier(bandeau.Text == "À lire, 4 s.", "fenêtre fermée 5 s : le conseil à lire attend (" .. bandeau.Text .. ")")
 M.avancer(4.1)
 U.verifier(bandeau.Text == "Fin.", "fenêtre rouverte : il s'écoule (" .. bandeau.Text .. ")")
+guide:arreter()
+
+-- (relecture du plan 28) Dans le contenu d'un écran, l'anneau se range sous les calques (le choix d'un tissu, l'aperçu
+-- du rouleau, la mercerie : ZIndex 10 et plus) ; un écran qui vide son contenu ne le perd pas
+local dansContenu = { etat = { livraisons = 0, ventes = 0 } }
+local contenuEssai = UiKit.creer("Frame", { Name = "Contenu", Position = UDim2.fromOffset(20, 60), Size = UDim2.fromOffset(860, 466), Parent = fenetre })
+local boutonEssai = UiKit.bouton({ Name = "Bouton", Text = "B", Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(100, 40), Parent = contenuEssai })
+fenetre.Visible = true
+guide:demarrer(dansContenu, "contenu", { { texte = "Touche le bouton.", cible = function() return boutonEssai end } })
+local dedans = guide.anneau
+U.verifier(dedans.Parent == contenuEssai and dedans.ZIndex < 10 and dedans.Position.X.Offset == 10 - m and dedans.Position.Y.Offset == 10 - m and entoure(boutonEssai), "dans le contenu : l'anneau sous les calques, dans le repère du contenu")
+contenuEssai:ClearAllChildren()
+boutonEssai = UiKit.bouton({ Name = "Bouton", Text = "B", Position = UDim2.fromOffset(10, 10), Size = UDim2.fromOffset(100, 40), Parent = contenuEssai })
+M.avancer(0.05)
+U.verifier(guide.anneau.Parent == contenuEssai and guide.anneau.Visible and entoure(boutonEssai), "le contenu vidé par l'écran : un nouvel anneau")
 guide:arreter()
