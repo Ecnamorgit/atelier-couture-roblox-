@@ -77,3 +77,20 @@ Textes indicatifs (les plans les fixent) ; l'élément entouré entre parenthès
 - La sauvegarde des conseils vus (une partie neuve sans robe livrée les remontre).
 - Un tutoriel de la rue (boutiques, vitrines, chat), de la mercerie, du courrier ou du carnet d'adresses.
 - La traduction anglaise (à proposer ensuite).
+
+## 7. Amendements (décidés pendant les plans 27 à 29)
+
+- **L'anneau** n'est pas un enfant de l'élément désigné (§2) : un cadre rangé dans le contenu de l'écran, sous ses
+  calques (le choix d'un tissu, l'aperçu du rouleau, la mercerie, l'aperçu de la photo : ZIndex 10 et plus), recalé à
+  chaque image sur la partie visible de l'élément (rognée par les listes qui défilent) et refait si l'écran vide son
+  contenu. Enfant de l'élément, il était rogné dans les listes, invisible autour d'une liste entière, et passait
+  par-dessus les calques (relectures des plans 27 et 28).
+- **Le temps de lire** : un conseil reste au moins 2 s, même si son geste est déjà fait ; le geste est lu à chaque image
+  et retenu (fait puis défait pendant la lecture, il compte) ; fenêtre fermée, les conseils attendent.
+- **« ? »** : le titre du poste ne lui laisse la place que quand il est affiché (au refus, sans conseils, le titre garde
+  toute sa largeur).
+- **Des conseils toujours vrais** : la touche E (accueil), Q / E (décorations) seulement avec un clavier ; au carnet, le
+  conseil des tissus attend un tissu pour chaque partie (sinon « Tracer le patron » est refusé) ; à la découpe,
+  « quand la place est libre » ; aux décorations, un ruban compte une fois qu'il a deux points (« Finir la garniture »
+  désigné) ; à la photo, « Livrer » une fois l'aperçu refermé ; une robe libre se présente sans cliente.
+- **La couture** garde sa bulle de conseils sur le plateau ; son « ? » est celui de la barre de titre.
