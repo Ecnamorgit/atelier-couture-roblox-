@@ -149,6 +149,13 @@ UiKit.boutonDoux({
 end)
 -- (sous-projet 9) Les conseils pas à pas des postes, sur la barre de titre, et « ? » qui les rappelle
 local guide = Tutoriel.installer(fenetre, UiKit)
+-- Le titre laisse la place de « ? » quand il est affiché (fenêtre centrée : à gauche de l'argent ; panneau : de la croix)
+local enPanneauTitre = false
+local function reglerTitre()
+	local aide = guide.aide.Visible
+	titre.Size = if enPanneauTitre then UDim2.new(1, if aide then -116 else -76, 0, 32) else UDim2.new(1, if aide then -410 else -360, 0, 32)
+end
+guide.aide:GetPropertyChangedSignal("Visible"):Connect(reglerTitre)
 local contenu = UiKit.creer("Frame", {
 	Name = "Contenu",
 	BackgroundTransparency = 1,
@@ -277,7 +284,7 @@ local function disposer(panneau)
 		fenetre.AnchorPoint = Vector2.new(1, 0.5)
 		fenetre.Position = UDim2.new(1, -16, 0.5, 0)
 		fenetre.Size = UDim2.fromOffset(UiKit.LARGEUR_PANNEAU, UiKit.HAUTEUR)
-		titre.Size = UDim2.new(1, -116, 0, 32)
+		enPanneauTitre = true
 		argent.Position = UDim2.fromOffset(20, 46)
 		argent.TextXAlignment = Enum.TextXAlignment.Left
 		boutonSon.Position = UDim2.new(1, -150, 0, 46) -- sur la ligne de l'argent, à droite
@@ -287,7 +294,7 @@ local function disposer(panneau)
 		fenetre.AnchorPoint = Vector2.new(0.5, 0.5)
 		fenetre.Position = UDim2.fromScale(0.5, 0.5)
 		fenetre.Size = UDim2.fromOffset(UiKit.LARGEUR, UiKit.HAUTEUR)
-		titre.Size = UDim2.new(1, -410, 0, 32)
+		enPanneauTitre = false
 		argent.Position = UDim2.new(1, -340, 0, 14)
 		argent.TextXAlignment = Enum.TextXAlignment.Right
 		boutonSon.Position = UDim2.new(1, -148, 0, 12) -- entre l'argent et la croix
@@ -295,6 +302,7 @@ local function disposer(panneau)
 		contenu.Size = UDim2.new(1, -40, 1, -94)
 	end
 	guide:disposer(panneau)
+	reglerTitre()
 end
 
 -- Navigation : un écran par étape ; il se reconstruit seul quand l'état change

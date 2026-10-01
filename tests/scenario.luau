@@ -1202,6 +1202,7 @@ livrer.Activated:Fire() -- second appui d'un double clic (moins de 0,4 s) : igno
 verifier(titre() == "7. Photo et livraison", "un double clic trop rapide ne livre pas")
 cliquer("Livrer")
 verifier(titre() == "La cliente refuse la robe" and texte("Avec : Croix d'argent") ~= nil, "sans la croix d'argent : robe refusée, exigence ratée affichée")
+verifier(not fenetre.Aide.Visible and fenetre.Titre.Size.X.Offset == -76, "(sous-projet 9) au refus, sans « ? » : le titre garde toute sa largeur (" .. fenetre.Titre.Size.X.Offset .. ")")
 do -- Son avis : une étoile
 	local etoiles = gui.Atelier.Dialogue.Etoiles
 	local OR = requireModule(scriptClient.Dialogue).OR
