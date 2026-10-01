@@ -10,6 +10,7 @@ local Couture = ReplicatedStorage:WaitForChild("Couture")
 local Catalogue = require(Couture:WaitForChild("Catalogue"))
 local Polygone = require(Couture:WaitForChild("Polygone"))
 local MachineCoudre = require(script.Parent:WaitForChild("MachineCoudre"))
+local GuideCouture = require(script.Parent:WaitForChild("GuideCouture"))
 local Vignettes = require(script.Parent:WaitForChild("Vignettes"))
 local Sons = require(script.Parent:WaitForChild("Sons"))
 
@@ -60,6 +61,11 @@ return function(ctx)
 	local marqueAngle = UiKit.arrondir(UiKit.creer("Frame", { Name = "Angle", AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, Size = UDim2.fromOffset(14, 14), Visible = false, Parent = tissu }), 7)
 	UiKit.creer("UIStroke", { Color = C.accent, Thickness = 2, Parent = marqueAngle })
 	local signal = UiKit.arrondir(UiKit.texte({ Name = "Signal", Text = "", Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, BackgroundColor3 = C.accent, BackgroundTransparency = 0.1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 10), Size = UDim2.new(1, -40, 0, 30), Visible = false, Parent = plateau }), 8)
+	-- (plan 26) Les conseils pas à pas, en bas du plateau : à la première robe, puis sur demande (« ? »)
+	local bulle = UiKit.arrondir(UiKit.texte({ Name = "Conseil", Text = "", TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, BackgroundColor3 = C.panneau, BackgroundTransparency = 0.05, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -12), Size = UDim2.new(1, -40, 0, 64), Visible = false, Parent = plateau }), 10)
+	UiKit.creer("UIStroke", { Color = C.accent, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = bulle })
+	UiKit.creer("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12), Parent = bulle })
+	local guide = nil
 	local parfait = UiKit.arrondir(UiKit.texte({ Name = "Parfait", Text = "Parfait !", Font = Enum.Font.GothamBold, TextSize = 22, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, BackgroundColor3 = C.ok, BackgroundTransparency = 0, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 48), Size = UDim2.fromOffset(160, 36), Visible = false, Parent = plateau }), 18)
 	local finParfait = 0
 
@@ -74,6 +80,11 @@ return function(ctx)
 	end
 	local note = UiKit.texte({ Name = "Note", Font = Enum.Font.GothamBold, TextSize = 18, Position = UDim2.fromOffset(0, 124), Size = UDim2.new(1, -46, 0, 22), Parent = panneau })
 	-- (plan 26) la jauge de précision, et le tissu (s'il glisse)
+	local montrerConseil
+	UiKit.boutonDoux({ Name = "Aide", Text = "?", TextSize = 18, Position = UDim2.new(1, -40, 0, 120), Size = UDim2.fromOffset(34, 28), Parent = panneau }, function()
+		guide = GuideCouture.nouveau() -- les conseils reprennent au premier
+		montrerConseil()
+	end)
 	local jauge = UiKit.arrondir(UiKit.creer("Frame", { Name = "Precision", BackgroundColor3 = C.secondaire, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 150), Size = UDim2.new(1, -6, 0, 6), Parent = panneau }), 3)
 	local remplissage = UiKit.arrondir(UiKit.creer("Frame", { Name = "Remplissage", BackgroundColor3 = C.ok, BorderSizePixel = 0, Size = UDim2.fromScale(0, 1), Parent = jauge }), 3)
 	local ligneTissu = UiKit.texte({ Name = "Tissu", Text = "", TextSize = 14, TextColor3 = C.texteDoux, Position = UDim2.fromOffset(0, 160), Size = UDim2.new(1, 0, 0, 18), Parent = panneau })
@@ -399,6 +410,21 @@ return function(ctx)
 			pivots[input] = nil
 		end
 	end))
+	-- (plan 26) Le conseil en cours ; les conseils finis, la bulle disparaît (et ne revient qu'avec « ? » pendant cette
+	-- partie : rien n'est sauvegardé)
+	montrerConseil = function()
+		local texte = guide and guide:texte()
+		bulle.Visible = texte ~= nil
+		bulle.Text = texte or ""
+		if guide and not texte then
+			guide = nil
+			session.conseilsCoutureVus = true
+		end
+	end
+	if session.etat.livraisons + session.etat.ventes == 0 and not session.conseilsCoutureVus then
+		guide = GuideCouture.nouveau() -- la première robe : les conseils pas à pas
+	end
+	montrerConseil()
 	-- Le son de la machine suit l'aiguille : il tourne tant qu'on coud, au rythme de la vitesse choisie
 	local rythme = nil
 	local function sonMachine(cousant)
@@ -414,6 +440,10 @@ return function(ctx)
 		local cousant = actif and tenu ~= nil
 		sonMachine(cousant)
 		local r = if actif then rotation() else 0
+		if guide and machine then
+			guide:suivre(dt, machine, cousant, r)
+			montrerConseil()
+		end
 		if not cousant and r == 0 then
 			return
 		end
