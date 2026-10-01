@@ -10,6 +10,9 @@ local Metrage = U.module("Metrage")
 local EcranCouture = U.module("EcranCouture")
 
 local DT = 1 / 60
+-- (les étapes d'abord, sans le temps de lecture : chaque conseil se lit ensuite au moins AFFICHAGE_MIN)
+local AFFICHAGE_MIN = GuideCouture.AFFICHAGE_MIN
+GuideCouture.AFFICHAGE_MIN = 0
 local function images(guide, machine, n, cousant, rotation)
 	for _ = 1, n do
 		machine:avancer(DT, cousant, rotation)
@@ -83,6 +86,16 @@ nouvelle.angle = 0
 g4:suivre(DT, nouvelle, true, 0)
 U.verifier(g4.etape == 3, "nouvelle pièce : un angle de l'ancienne ne compte pas")
 
+-- (relecture) Le temps de lire : un conseil reste au moins AFFICHAGE_MIN, même si son geste est déjà fait
+GuideCouture.AFFICHAGE_MIN = AFFICHAGE_MIN
+local deja = MachineCoudre.nouvelle(ID, 6)
+deja.parcouru = 1
+local g5 = GuideCouture.nouveau()
+images(g5, deja, 60, false, 0)
+U.verifier(g5.etape == 1, "geste déjà fait : le conseil reste une seconde (le temps de le lire)")
+images(g5, deja, 62, false, 0)
+U.verifier(g5.etape == 2, "puis il s'efface")
+
 ---------------------------------------------------------------------------
 -- À l'écran : la bulle des conseils, à la première robe ; « ? » les rappelle
 ---------------------------------------------------------------------------
@@ -124,11 +137,14 @@ U.verifier(bulle.Visible and bulle.Text == GuideCouture.CONSEILS[1], "première 
 espace(true)
 M.avancer(0.7)
 espace(false)
+M.avancer(1.5)
 U.verifier(bulle.Visible and bulle.Text == GuideCouture.CONSEILS[2], "Espace tenu : le conseil suivant")
 local aide = ctx.contenu.Panneau.Aide
 U.verifier(aide.Text == "?" and aide.TextSize >= 14, "le bouton « ? »")
 aide.Activated:Fire()
 U.verifier(bulle.Visible and bulle.Text == GuideCouture.CONSEILS[1], "« ? » : les conseils reprennent au premier")
+M.avancer(0.5)
+U.verifier(bulle.Text == GuideCouture.CONSEILS[1], "« ? » en cours de pièce (déjà 0,5 dm cousu) : le premier conseil reste lisible")
 fermer()
 
 -- Les conseils finis, ils ne reviennent pas d'eux-mêmes pendant la partie

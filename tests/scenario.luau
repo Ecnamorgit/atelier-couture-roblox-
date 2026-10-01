@@ -826,6 +826,7 @@ do -- (sous-projet 8) La première robe : les conseils pas à pas, en bas du pla
 	local premier = conseil.Text
 	verifier(conseil.Visible and premier:find("« Coudre »") ~= nil, "première robe : un conseil pour commencer (" .. premier .. ")")
 	coudre(2)
+	M.avancer(0.2) -- (un conseil reste au moins 2 s, le temps de le lire)
 	verifier(conseil.Visible and conseil.Text ~= premier, "cousu : le conseil suivant (" .. conseil.Text .. ")")
 end
 verifier(panneauC.Note.Text:match("^Couture : %d+ %%$") ~= nil, "la note s'affiche en cousant : " .. panneauC.Note.Text)

@@ -16,9 +16,10 @@ GuideCouture.PIVOT = 0.3 -- s à pivoter en cousant pour le deuxième
 GuideCouture.DROIT = math.rad(10) -- passé un angle, le tissu est redressé à moins de 10°
 GuideCouture.PRATIQUE = 5 -- s de couture pour le dernier
 GuideCouture.DUREE_BRAVO = 4 -- s
+GuideCouture.AFFICHAGE_MIN = 2 -- s : un conseil reste au moins ce temps, même si son geste est déjà fait (le lire)
 
 function GuideCouture.nouveau()
-	return setmetatable({ etape = 1, pivot = 0, pratique = 0, bravo = 0 }, GuideCouture)
+	return setmetatable({ etape = 1, pivot = 0, pratique = 0, bravo = 0, affiche = 0 }, GuideCouture)
 end
 
 -- Reste-t-il un angle à passer sur cette pièce, à partir de la couture k ?
@@ -36,35 +37,44 @@ function GuideCouture:suivre(dt, machine, cousant, rotation)
 	if machine ~= self.machine then -- une autre pièce : l'angle à passer se compte sur elle
 		self.machine, self.couture = machine, machine.k
 	end
+	self.affiche += dt
+	-- (le conseil suivant, une fois celui-ci affiché le temps de le lire)
+	local function passer(etape)
+		if self.affiche < GuideCouture.AFFICHAGE_MIN then
+			return false
+		end
+		self.etape, self.affiche = etape, 0
+		return true
+	end
 	if self.etape == 1 then
 		if machine.parcouru >= GuideCouture.AVANCE then
-			self.etape = 2
+			passer(2)
 		end
 	elseif self.etape == 2 then
 		if cousant and rotation ~= 0 then
 			self.pivot += dt
 		end
-		if self.pivot >= GuideCouture.PIVOT then
-			self.etape, self.couture = 3, machine.k
+		if self.pivot >= GuideCouture.PIVOT and passer(3) then
+			self.couture = machine.k
 		end
 	elseif self.etape == 3 then
 		-- un angle passé (le pointillé a tourné), puis le tissu redressé en cousant de nouveau ; sans angle à venir sur
 		-- cette pièce, le conseil attendra une autre pièce : on passe au suivant
 		local passe = machine.k > self.couture and machine:virage(machine.k - 1) ~= nil
 		if (passe and cousant and math.abs(machine.angle) < GuideCouture.DROIT) or (not passe and not angleAVenir(machine, machine.k)) then
-			self.etape = 4
+			passer(4)
 		end
 	elseif self.etape == 4 then
 		if cousant then
 			self.pratique += dt
 		end
 		if self.pratique >= GuideCouture.PRATIQUE or machine:fini() then
-			self.etape = 5
+			passer(5)
 		end
 	elseif self.etape == 5 then
 		self.bravo += dt
 		if self.bravo >= GuideCouture.DUREE_BRAVO then
-			self.etape = 6
+			passer(6)
 		end
 	end
 end
