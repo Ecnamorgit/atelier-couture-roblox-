@@ -4,6 +4,7 @@ local MachineCoudre = U.module("MachineCoudre")
 local EtatAtelier = U.module("EtatAtelier")
 local Catalogue = U.module("Catalogue")
 local Patron = U.module("Patron")
+local Polygone = U.module("Polygone")
 
 local ID = "corsage_droit_devant" -- coutures : le côté droit, le bas, le côté gauche (deux angles droits)
 local segments, longueur = Patron.trajetCouture(ID)
@@ -64,6 +65,28 @@ for _ = 1, 30 do
 	a:avancer(1 / 60, true, 0)
 end
 U.verifier(math.abs(a.e - avantPivot) > 0.2, "qui coud sans pivoter s'écarte vite")
+-- (relecture) Deux coutures qui se suivent se rejoignent là où leurs pointillés se croisent : la machine tourne là où
+-- le joueur voit l'angle, et l'aiguille ne saute pas
+local function croisement(s1, s2)
+	local d1x, d1y = s1.b.x - s1.a.x, s1.b.y - s1.a.y
+	local d2x, d2y = s2.b.x - s2.a.x, s2.b.y - s2.a.y
+	local t = ((s2.a.x - s1.a.x) * d2y - (s2.a.y - s1.a.y) * d2x) / (d1x * d2y - d1y * d2x)
+	return { x = s1.a.x + d1x * t, y = s1.a.y + d1y * t }
+end
+local function distance(p, q)
+	return math.sqrt((p.x - q.x) ^ 2 + (p.y - q.y) ^ 2)
+end
+local defCorsage = Catalogue.piece(ID)
+local croise = croisement(Polygone.areteDecalee(defCorsage.contour, defCorsage.coutures[1], Catalogue.VALEUR_COUTURE), Polygone.areteDecalee(defCorsage.contour, defCorsage.coutures[2], Catalogue.VALEUR_COUTURE))
+U.verifier(distance(segments[1].b, croise) < 1e-6 and distance(segments[2].a, croise) < 1e-6, "la première couture finit, et la suivante commence, là où leurs pointillés se croisent")
+local saut = MachineCoudre.nouvelle(ID, 3)
+saut.glisse = 0
+local avantAngle
+while saut.k == 1 do
+	avantAngle = saut:etat().point
+	saut:avancer(1 / 60, true, 0)
+end
+U.verifier(distance(avantAngle, saut:etat().point) < 1 / 60 + 1e-6, ("passé l'angle, l'aiguille ne saute pas (%.3f dm)"):format(distance(avantAngle, saut:etat().point)))
 local separee = MachineCoudre.nouvelle("jupe_trapeze_devant", 4) -- coutures : le haut, le côté droit, puis le côté gauche
 U.verifier(separee:virage(1) ~= nil and separee:virage(2) == nil, "jupe trapèze : un angle entre le haut et le côté ; le côté gauche est une couture séparée")
 separee.k, separee.s, separee.e, separee.angle = 2, separee.longueurs[2] - 0.01, 0.3, 0.4

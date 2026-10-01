@@ -57,13 +57,45 @@ function Patron.piecesDuCroquis(croquis)
 	return pieces
 end
 
--- Trajet de couture : liste de segments { a, b } décalés de la valeur de couture, et sa longueur totale
+-- Où se croisent les droites de deux coutures décalées, si elles se croisent près de la fin de l'une et du début de
+-- l'autre (sinon nil : presque parallèles, ou un angle si aigu que le croisement serait loin)
+local PROLONGEMENT_MAX = 0.5 -- dm
+local function croisement(s1, s2)
+	local d1x, d1y = s1.b.x - s1.a.x, s1.b.y - s1.a.y
+	local d2x, d2y = s2.b.x - s2.a.x, s2.b.y - s2.a.y
+	local l1, l2 = math.sqrt(d1x * d1x + d1y * d1y), math.sqrt(d2x * d2x + d2y * d2y)
+	local den = d1x * d2y - d1y * d2x
+	if l1 < 1e-9 or l2 < 1e-9 or math.abs(den) < 1e-6 * l1 * l2 then
+		return nil
+	end
+	local t = ((s2.a.x - s1.a.x) * d2y - (s2.a.y - s1.a.y) * d2x) / den
+	local u = ((s2.a.x - s1.a.x) * d1y - (s2.a.y - s1.a.y) * d1x) / den
+	if t <= 0 or u >= 1 or math.abs(t - 1) * l1 > PROLONGEMENT_MAX or math.abs(u) * l2 > PROLONGEMENT_MAX then
+		return nil
+	end
+	return { x = s1.a.x + d1x * t, y = s1.a.y + d1y * t }
+end
+
+-- Trajet de couture d'une pièce : liste de segments { a, b }, chaque couture décalée vers l'intérieur de la valeur de
+-- couture, et sa longueur totale. Sous-projet 8 : deux
+-- coutures qui se suivent sur le contour se rejoignent là où leurs pointillés se croisent (la machine y tourne, là où
+-- le joueur voit l'angle)
 function Patron.trajetCouture(id)
 	local def = Patron.def(id)
 	local segments, longueur = {}, 0
 	for _, i in ipairs(def.coutures) do
-		local s = Polygone.areteDecalee(def.contour, i, Catalogue.VALEUR_COUTURE)
-		table.insert(segments, s)
+		table.insert(segments, Polygone.areteDecalee(def.contour, i, Catalogue.VALEUR_COUTURE))
+	end
+	for k = 1, #segments - 1 do
+		if def.coutures[k + 1] == def.coutures[k] % #def.contour + 1 then
+			local p = croisement(segments[k], segments[k + 1])
+			if p then
+				segments[k].b = p
+				segments[k + 1].a = { x = p.x, y = p.y }
+			end
+		end
+	end
+	for _, s in ipairs(segments) do
 		longueur += Polygone.longueur(s)
 	end
 	return segments, longueur
