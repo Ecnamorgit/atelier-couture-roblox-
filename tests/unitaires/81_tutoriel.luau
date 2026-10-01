@@ -133,3 +133,27 @@ M.avancer(0.05)
 U.verifier(not anneau.Visible, "la liste cachée : pas d'anneau")
 guide:arreter()
 U.verifier(sansAnneau(), "le poste fermé : plus d'anneau")
+
+-- (relecture) Fenêtre fermée : les conseils attendent (un conseil à lire ne s'écoule pas) ; un geste fait puis défait
+-- avant les 2 s de lecture compte quand même
+local attente = { etat = { livraisons = 0, ventes = 0 } }
+local fait = false
+guide:demarrer(attente, "attente", {
+	{ texte = "Un geste.", fait = function() return fait end },
+	{ texte = "À lire, 4 s.", duree = 4 },
+	{ texte = "Fin." },
+})
+M.avancer(0.5)
+fait = true
+M.avancer(0.2)
+fait = false
+M.avancer(1.5)
+U.verifier(bandeau.Text == "À lire, 4 s.", "un geste fait puis défait pendant la lecture : il compte (" .. bandeau.Text .. ")")
+fenetre.Visible = false
+M.avancer(5)
+fenetre.Visible = true
+M.avancer(0.05)
+U.verifier(bandeau.Text == "À lire, 4 s.", "fenêtre fermée 5 s : le conseil à lire attend (" .. bandeau.Text .. ")")
+M.avancer(4.1)
+U.verifier(bandeau.Text == "Fin.", "fenêtre rouverte : il s'écoule (" .. bandeau.Text .. ")")
+guide:arreter()

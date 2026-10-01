@@ -130,7 +130,7 @@ function Tutoriel:aller(k)
 		end
 		return
 	end
-	self.k, self.temps = k, 0
+	self.k, self.temps, self.fait = k, 0, false
 	local etape = self.etapes[k]
 	self.bandeau.Text = etape.texte
 	self.bandeau.Visible = true
@@ -173,15 +173,19 @@ end
 -- Une image : l'anneau suit l'élément désigné (relu : l'écran a pu le refaire) et pulse ; le conseil s'efface quand
 -- son geste est fait, ou au bout de sa durée (jamais avant AFFICHAGE_MIN : le temps de le lire)
 function Tutoriel:image(dt)
-	if not self.k then
-		return
+	if not self.k or not self.fenetre.Visible then
+		return -- (fenêtre fermée : les conseils attendent)
 	end
 	self.temps += dt
 	local etape = self.etapes[self.k]
 	self.cible = etape.cible and etape.cible()
 	self:placerAnneau()
 	self.contour.Transparency = 0.35 - 0.35 * math.cos(2 * math.pi * self.temps / Tutoriel.PULSATION)
-	if self.temps >= Tutoriel.AFFICHAGE_MIN and ((etape.fait and etape.fait(dt)) or (etape.duree and self.temps >= etape.duree)) then
+	-- (le geste est lu à chaque image et retenu : fait puis défait pendant la lecture, il compte)
+	if etape.fait and not self.fait and etape.fait(dt) then
+		self.fait = true
+	end
+	if self.temps >= Tutoriel.AFFICHAGE_MIN and (self.fait or (etape.duree and self.temps >= etape.duree)) then
 		self:aller(self.k + 1)
 	end
 end
