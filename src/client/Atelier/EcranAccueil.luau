@@ -122,7 +122,7 @@ return function(ctx)
 	local function sonner()
 		accueillie(ctx.session:nouvelleCommande())
 	end
-	UiKit.bouton({
+	local clochette = UiKit.bouton({
 		Name = "Clochette",
 		Text = if UserInputService.KeyboardEnabled then "Sonner la clochette (E)" else "Sonner la clochette",
 		Position = UDim2.fromOffset(0, ligne),
@@ -373,6 +373,17 @@ return function(ctx)
 			sonner()
 		end
 	end)
+	-- (sous-projet 9) Le premier conseil de la première robe : la clochette
+	if ctx.guide then
+		ctx.guide:demarrer(ctx.session, "accueil", {
+			{
+				texte = "Fais sonner la clochette (ou appuie sur E) : ta première cliente entre avec sa commande.",
+				cible = function()
+					return clochette
+				end,
+			},
+		})
+	end
 	return function()
 		connexion:Disconnect()
 	end
