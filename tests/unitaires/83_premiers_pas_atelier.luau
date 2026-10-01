@@ -70,10 +70,15 @@ for _, c in ipairs(page.Pieces:GetChildren()) do
 	end
 end
 ligne.Activated:Fire()
-M.avancer(0.5)
+M.avancer(0.1)
+U.verifier(ctx.contenu:FindFirstChild("ChoixTissu") ~= nil and ctx.guide.cible == page.Dessin and ctx.guide.anneau.ZIndex < ctx.contenu.ChoixTissu.ZIndex, "(relecture) le choix d'un tissu ouvert : l'anneau reste dessous")
+M.avancer(0.4)
 ctx.contenu.ChoixTissu.Grille.Tissu_coton_blanc.Activated:Fire()
 M.avancer(2.1)
-U.verifier(bandeau.Text:find("fiche", 1, true) ~= nil and entoure(ctx, ctx.contenu.Droite), "un tissu choisi : la fiche de la cliente, entourée (" .. bandeau.Text .. ")")
+U.verifier(bandeau.Text:find("chaque partie", 1, true) ~= nil, "(relecture) une seule partie a son tissu : le conseil reste (sinon « Trace le patron » mènerait à un refus) (" .. bandeau.Text .. ")")
+page.ToutEnUnTissu.Activated:Fire()
+M.avancer(0.1)
+U.verifier(bandeau.Text:find("fiche", 1, true) ~= nil and entoure(ctx, ctx.contenu.Droite), "chaque partie a son tissu : la fiche de la cliente, entourée (" .. bandeau.Text .. ")")
 M.avancer(5)
 U.verifier(bandeau.Text:find("fiche", 1, true) ~= nil, "un conseil à lire reste le temps de sa durée")
 M.avancer(2.2)
@@ -81,6 +86,25 @@ U.verifier(bandeau.Text == "Ta robe te plaît ? Trace le patron." and entoure(ct
 ctx.guide:arreter()
 fermer()
 U.verifier(session.tutorielsVus.carnet, "le carnet quitté : ses conseils sont vus")
+-- (relecture) Le joueur garde les modèles de départ et choisit un tissu : le premier conseil s'efface quand même
+do
+	local sm = sessionJusqua(77, "carnet")
+	local cm = contexte(sm)
+	local fm = EcranCarnet(cm)
+	M.avancer(0.5)
+	for _, c in ipairs(cm.contenu.Page.Pieces:GetChildren()) do
+		if c.Name:sub(1, 6) == "Tissu_" then
+			c.Activated:Fire()
+			break
+		end
+	end
+	M.avancer(0.5)
+	cm.contenu.ChoixTissu.Grille.Tissu_coton_blanc.Activated:Fire()
+	M.avancer(1.1)
+	U.verifier(cm.fenetre.Conseil.Text:find("chaque partie", 1, true) ~= nil, "modèles de départ gardés, un tissu choisi : le conseil des tissus (" .. cm.fenetre.Conseil.Text .. ")")
+	cm.guide:arreter()
+	fm()
+end
 
 ---------------------------------------------------------------------------
 -- L'achat : acheter chaque tissu, puis aller à la découpe

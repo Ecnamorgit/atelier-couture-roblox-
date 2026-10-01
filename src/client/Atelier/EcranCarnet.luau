@@ -439,33 +439,43 @@ return function(ctx)
 	-- (sous-projet 9) Les conseils de la première robe : un modèle par partie, un tissu, la fiche de la cliente, le patron
 	if ctx.guide then
 		local croquisDepart, tissusDepart = table.clone(croquis), table.clone(tissus)
+		local function tissuChoisi()
+			for id, t in pairs(tissus) do
+				if tissusDepart[id] ~= t then
+					return true
+				end
+			end
+			return false
+		end
 		ctx.guide:demarrer(session, "carnet", {
 			{
 				texte = "Choisis un modèle pour chaque partie avec ◀ ▶ : le corsage, les manches, le col et la jupe.",
 				cible = function()
 					return page:FindFirstChild("Suivant_corsage")
 				end,
+				-- (garder les modèles de départ et passer aux tissus compte aussi)
 				fait = function()
 					for famille, id in pairs(croquis) do
 						if croquisDepart[famille] ~= id then
 							return true
 						end
 					end
-					return false
+					return tissuChoisi()
 				end,
 			},
 			{
-				texte = "Touche une partie du dessin (ou sa ligne dans la liste) pour lui choisir un tissu.",
+				texte = "Choisis un tissu pour chaque partie : touche-la sur le dessin, ou « Même tissu pour toute la robe ».",
 				cible = function()
 					return dessin
 				end,
+				-- (chaque pièce du croquis a son tissu : sinon, « Tracer le patron » serait refusé)
 				fait = function()
-					for id, t in pairs(tissus) do
-						if tissusDepart[id] ~= t then
-							return true
+					for _, id in ipairs(Patron.piecesDuCroquis(croquis)) do
+						if not tissus[id] then
+							return false
 						end
 					end
-					return false
+					return true
 				end,
 			},
 			{
