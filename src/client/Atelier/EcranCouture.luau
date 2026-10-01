@@ -16,6 +16,7 @@ local Sons = require(script.Parent:WaitForChild("Sons"))
 local PX = 80 -- pixels par dm sous l'aiguille : 0,05 dm de tolérance = 4 px
 local LARGEUR_PLATEAU = 480
 local COURSE = 100 -- px de glisser pour pivoter à fond (à l'échelle 1)
+local ZONE_MORTE = 10 -- px (à l'échelle 1) : un pouce qui s'écrase en appuyant ne fait pas pivoter le tissu
 local BOIS = Color3.fromRGB(205, 170, 125)
 local FIL = Color3.fromRGB(60, 40, 50)
 local VITESSES = { { "tortue", "Tortue" }, { "normale", "Normale" }, { "lapin", "Lapin" } }
@@ -250,8 +251,10 @@ return function(ctx)
 			r += sens
 		end
 		if tenu and tenu.entree ~= "espace" then
-			local course = COURSE * plateau.AbsoluteSize.X / LARGEUR_PLATEAU
-			r -= math.clamp((tenu.x - tenu.x0) / math.max(course, 1), -1, 1)
+			local echelle = plateau.AbsoluteSize.X / LARGEUR_PLATEAU
+			local dx = tenu.x - tenu.x0
+			dx = math.sign(dx) * math.max(0, math.abs(dx) - ZONE_MORTE * echelle)
+			r -= math.clamp(dx / math.max(COURSE * echelle, 1), -1, 1)
 		end
 		return math.clamp(r, -1, 1)
 	end
