@@ -85,14 +85,15 @@ local function couturiere(machine, facon)
 		if facon == "soigneuse" then
 			if math.abs(machine.angle) > math.rad(20) then
 				arret = true
-			elseif math.abs(machine.angle) < math.rad(3) then
-				arret = false
+			elseif math.abs(machine.angle - voulu) < math.rad(3) then
+				arret = false -- (repart une fois tournée vers l'angle voulu, qui dépend de l'écart)
 			end
 			cousant = not arret
 		end
 		machine:avancer(1 / 60, cousant, rotation)
 		images += 1
 	end
+	U.verifier(machine:fini(), ("la couturière %s finit la pièce %s"):format(facon, machine.idPiece))
 	return machine:noteProvisoire() or 0
 end
 -- (le col Claudine, une seule couture courte et droite, se coud presque sans pivoter : il ne compte pas pour les mains
@@ -118,6 +119,14 @@ local resume = ("soigneuse %.2f (pire %.2f), pressée %.2f, mains libres %.2f, a
 U.verifier(notes.soigneuse.pire >= 0.9, "la soigneuse coud à 90 % au moins (" .. resume .. ")")
 U.verifier(notes.pressee.moyenne <= notes.soigneuse.moyenne - 0.15, "la pressée coud nettement moins bien (" .. resume .. ")")
 U.verifier(notes["mains libres"].moyenne <= 0.35, "les mains libres ratent les pièces à angles et à courbes (" .. resume .. ")")
+-- (relecture) la soie, qui glisse, se coud aussi à la main : la soigneuse y coud à 90 % au moins
+local pireSoie = 1
+for k, id in ipairs(PIECES) do
+	for graine = 1, 3 do
+		pireSoie = math.min(pireSoie, couturiere(MachineCoudre.nouvelle(id, 10 * k + graine, "soie"), "soigneuse"))
+	end
+end
+U.verifier(pireSoie >= 0.9, ("la soigneuse coud la soie à 90 %% au moins (pire %.2f)"):format(pireSoie))
 U.verifier(notes.assistee.moyenne >= 0.6 and notes.assistee.pire >= 0.5 and notes.assistee.moyenne <= Catalogue.PLAFOND_ASSISTANCE + 1e-9 and notes.assistee.moyenne < notes.soigneuse.moyenne, "l'assistance aide sans tout faire : 60 à 85 % en moyenne sans s'arrêter (" .. resume .. ")")
 
 -- L'assistance ne s'arrête pas dans les angles : qui coud sans s'arrêter y rate encore des points
