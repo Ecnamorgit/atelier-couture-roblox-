@@ -114,11 +114,19 @@ local ctx2 = contexte(s2)
 local fermer2 = EcranAchat(ctx2)
 local bandeau2, acheter = ctx2.fenetre.Conseil, ctx2.contenu.Lignes.Ligne_coton_blanc.Acheter
 U.verifier(bandeau2.Visible and bandeau2.Text:find("Achète", 1, true) ~= nil and entoure(ctx2, acheter), "achat : acheter le tissu, « Acheter » entouré (" .. bandeau2.Text .. ")")
+-- (relecture) le métrage conseillé n'est pas recalculé à chaque image (il ne change pas à l'achat)
+local disposition, appels = Metrage.disposition, 0
+Metrage.disposition = function(...)
+	appels += 1
+	return disposition(...)
+end
 M.avancer(2.1)
-U.verifier(bandeau2.Text:find("Achète", 1, true) ~= nil, "rien acheté : le conseil reste")
+Metrage.disposition = disposition
+U.verifier(appels < 10, ("le métrage conseillé calculé une fois, pas à chaque image (%d calculs en 2 s)"):format(appels))
+U.verifier(bandeau2.Text == "Achète chaque tissu : le métrage conseillé suffit si tu ranges bien tes pièces.", "rien acheté : le conseil reste (" .. bandeau2.Text .. ")")
 acheter.Activated:Fire()
 M.avancer(0.1)
-U.verifier(bandeau2.Text == "Tout est acheté : va à la découpe." and entoure(ctx2, ctx2.contenu.AllerDecoupe), "le métrage acheté : aller à la découpe, le bouton entouré (" .. bandeau2.Text .. ")")
+U.verifier(bandeau2.Text == "Tu as assez de tissu : va à la découpe." and entoure(ctx2, ctx2.contenu.AllerDecoupe), "le métrage acheté : aller à la découpe, le bouton entouré (" .. bandeau2.Text .. ")")
 ctx2.guide:arreter()
 fermer2()
 -- Une robe en deux tissus : le conseil désigne le tissu qui manque encore, et reste tant qu'il en manque un
@@ -140,7 +148,7 @@ do
 	U.verifier(bandeau6.Text:find("Achète", 1, true) ~= nil and entoure(ctx6, lignes6.Ligne_lin_naturel.Acheter) and not entoure(ctx6, lignes6.Ligne_coton_blanc.Acheter), "deux tissus, un acheté : le conseil reste, l'autre « Acheter » entouré")
 	lignes6.Ligne_lin_naturel.Acheter.Activated:Fire()
 	M.avancer(0.1)
-	U.verifier(bandeau6.Text == "Tout est acheté : va à la découpe.", "les deux achetés : aller à la découpe")
+	U.verifier(bandeau6.Text == "Tu as assez de tissu : va à la découpe.", "les deux achetés : aller à la découpe")
 	ctx6.guide:arreter()
 	fermer6()
 end
@@ -160,7 +168,7 @@ M.avancer(1.6)
 U.verifier(bandeau3.Text:find("droit-fil", 1, true) ~= nil and entoure(ctx3, panneau.DroitFil), "la pièce tournée : le droit-fil, entouré (" .. bandeau3.Text .. ")")
 panneau["Tourner-15"].Activated:Fire()
 M.avancer(6.1)
-U.verifier(bandeau3.Text:find("coupe la pièce", 1, true) ~= nil and entoure(ctx3, panneau.Couper), "lu : couper, le bouton entouré (" .. bandeau3.Text .. ")")
+U.verifier(bandeau3.Text:find("coupe la pièce", 1, true) ~= nil and bandeau3.Text:find("Proposer une place", 1, true) ~= nil and entoure(ctx3, panneau.Couper), "lu : couper, le bouton entouré (" .. bandeau3.Text .. ")")
 panneau.Couper.Activated:Fire()
 M.avancer(2.1)
 U.verifier(bandeau3.Text:find("Coupe les autres", 1, true) ~= nil and next(s3.etat.coupees) ~= nil, "une pièce coupée : la suite (" .. bandeau3.Text .. ")")
@@ -180,7 +188,7 @@ U.verifier(bandeau4.Visible and bandeau4.Text:find("épingler", 1, true) ~= nil 
 M.avancer(0.5)
 liste.Epingler_corsage_droit_devant.Activated:Fire()
 M.avancer(2)
-U.verifier(bandeau4.Text:find("toutes", 1, true) ~= nil and entoure(ctx4, liste.Epingler_corsage_droit_dos) and not entoure(ctx4, liste.Epingler_corsage_droit_devant), "une pièce épinglée : toutes les autres, la suivante entourée (" .. bandeau4.Text .. ")")
+U.verifier(bandeau4.Text == "Épingle-les toutes : la dernière t'emmène à la couture." and entoure(ctx4, liste.Epingler_corsage_droit_dos) and not entoure(ctx4, liste.Epingler_corsage_droit_devant), "une pièce épinglée : toutes les autres, la suivante entourée (" .. bandeau4.Text .. ")")
 ctx4.guide:arreter()
 fermer4()
 

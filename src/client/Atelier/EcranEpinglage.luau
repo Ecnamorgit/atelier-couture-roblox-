@@ -137,7 +137,7 @@ return function(ctx)
 				end,
 			},
 			{
-				texte = "Épingle-les toutes ; les couches se posent en dernier, par-dessus.",
+				texte = "Épingle-les toutes : la dernière t'emmène à la couture.",
 				cible = function()
 					for _, id in ipairs(pieces) do
 						if not session.etat.epinglees[id] then

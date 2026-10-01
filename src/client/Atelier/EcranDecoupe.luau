@@ -376,7 +376,8 @@ return function(ctx)
 				duree = 6,
 			},
 			{
-				texte = "La place est libre (en vert) : coupe la pièce.",
+				-- (vrai dans tous les cas : la pièce tournée ou déplacée peut ne plus avoir de place libre)
+				texte = "Quand la place est libre (en vert), coupe la pièce ; sinon, « Proposer une place » ou « Plus de tissu ».",
 				cible = function()
 					return couper
 				end,

@@ -232,20 +232,25 @@ return function(ctx)
 	end)
 	-- (sous-projet 9) Les conseils de la première robe : acheter chaque tissu (le métrage proposé), aller à la découpe
 	if ctx.guide then
+		-- (le métrage conseillé de chaque tissu, calculé une fois : le croquis ne change pas à l'achat)
+		local tissusRobe, besoins = session.etat:tissusUtilises(), {}
+		for _, idTissu in ipairs(tissusRobe) do
+			besoins[idTissu] = conseil(idTissu)
+		end
 		ctx.guide:demarrer(session, "achat", {
 			{
-				texte = "Achète chaque tissu : le métrage proposé suffit si tu ranges bien tes pièces.",
+				texte = "Achète chaque tissu : le métrage conseillé suffit si tu ranges bien tes pièces.",
 				cible = function()
-					for _, idTissu in ipairs(session.etat:tissusUtilises()) do
-						if lignes[idTissu] and session.etat:stockNeuf(idTissu) < conseil(idTissu) then
+					for _, idTissu in ipairs(tissusRobe) do
+						if lignes[idTissu] and session.etat:stockNeuf(idTissu) < besoins[idTissu] then
 							return lignes[idTissu].acheter
 						end
 					end
 					return nil
 				end,
 				fait = function()
-					for _, idTissu in ipairs(session.etat:tissusUtilises()) do
-						if session.etat:stockNeuf(idTissu) < conseil(idTissu) then
+					for _, idTissu in ipairs(tissusRobe) do
+						if session.etat:stockNeuf(idTissu) < besoins[idTissu] then
 							return false
 						end
 					end
@@ -253,7 +258,7 @@ return function(ctx)
 				end,
 			},
 			{
-				texte = "Tout est acheté : va à la découpe.",
+				texte = "Tu as assez de tissu : va à la découpe.",
 				cible = function()
 					return boutonDecoupe
 				end,
