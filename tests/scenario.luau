@@ -852,8 +852,42 @@ M.avancer(2)
 M.actions.AtelierCoudre.f("AtelierCoudre", Enum.UserInputState.End, espace)
 verifier(panneauC.Note.Text:match("^Couture : %d+ %%$") ~= nil, "Espace coud : " .. panneauC.Note.Text)
 cliquer("Decoudre")
+do -- (sous-projet 8) A tenue : le tissu pivote, l'aiguille plantée (rien n'est cousu) ; D le ramène ; W / S, la vitesse
+	local tissuC = fenetre.Contenu.Plateau.Tissu
+	local avant = tissuC.Rotation
+	local touches = M.actions.AtelierPivoter and M.actions.AtelierPivoter.touches or {}
+	local liees = true
+	for _, cle in ipairs({ Enum.KeyCode.A, Enum.KeyCode.D, Enum.KeyCode.Left, Enum.KeyCode.Right, Enum.KeyCode.W, Enum.KeyCode.S }) do
+		liees = liees and table.find(touches, cle) ~= nil
+	end
+	verifier(liees, "A / D, ← / → et W / S servent à la machine tant qu'elle est affichée")
+	local function tenir(cle, duree)
+		local touche = { KeyCode = cle, UserInputType = Enum.UserInputType.Keyboard, Position = Vector3.new(0, 0, 0) }
+		M.actions.AtelierPivoter.f("AtelierPivoter", Enum.UserInputState.Begin, touche)
+		M.avancer(duree)
+		M.actions.AtelierPivoter.f("AtelierPivoter", Enum.UserInputState.End, touche)
+	end
+	tenir(Enum.KeyCode.A, 0.5)
+	verifier(tissuC.Rotation < avant - 20 and panneauC.Note.Text == "Couture : —", ("A tenue : le tissu pivote (%.0f° → %.0f°), rien n'est cousu"):format(avant, tissuC.Rotation))
+	tenir(Enum.KeyCode.D, 0.5)
+	verifier(math.abs(tissuC.Rotation - avant) < 2, "D le ramène")
+	tenir(Enum.KeyCode.W, 0.1)
+	verifier(boutonNomme("Vitesse_lapin").BackgroundColor3 == Color3.fromRGB(214, 76, 128), "W : plus vite (lapin)")
+	tenir(Enum.KeyCode.S, 0.1)
+	verifier(boutonNomme("Vitesse_normale").BackgroundColor3 == Color3.fromRGB(214, 76, 128), "S : moins vite (normale)")
+	-- ◀ tenu (souris) : comme A
+	local appui = { UserInputType = Enum.UserInputType.MouseButton1, Position = Vector3.new(900, 400, 0) }
+	boutonNomme("PivoterGauche").InputBegan:Fire(appui)
+	M.avancer(0.5)
+	UIS.InputEnded:Fire(appui)
+	verifier(tissuC.Rotation < avant - 20, "◀ tenu : le tissu pivote")
+	boutonNomme("PivoterDroite").InputBegan:Fire(appui)
+	M.avancer(0.5)
+	UIS.InputEnded:Fire(appui)
+	verifier(math.abs(tissuC.Rotation - avant) < 2, "▶ le ramène")
+end
 -- Pièce finie : rien n'est rendu tant qu'on n'a pas dit « Pièce suivante » ; on peut encore découdre
-coudre(60, 400) -- en tirant tout le temps du même côté : couture ratée
+coudre(60, 400) -- en glissant tout le temps du même côté : le tissu tourne sans fin, couture ratée
 verifier(cousues() == 0 and panneauC.Note.Text:match("^Pièce finie : %d+ %%$") ~= nil, "pièce finie mais pas rendue : " .. panneauC.Note.Text)
 verifier(boutonNomme("PieceSuivante").Text == "Pièce suivante", "bouton « Pièce suivante » affiché")
 cliquer("Decoudre")
@@ -876,7 +910,11 @@ verifier(cousues() == 1, "première pièce cousue")
 local ratee = tonumber(panneauC.Pieces.Ligne1.Text:match("(%d+) %%$"))
 cliquer("Vitesse_lapin")
 verifier(boutonNomme("Vitesse_lapin").BackgroundColor3 == Color3.fromRGB(214, 76, 128), "vitesse lapin choisie")
--- Deuxième pièce au doigt : un second doigt qui glisse ne dirige pas l'aiguille
+-- (sous-projet 8) l'assistance tient la ligne : la deuxième pièce se coud sans pivoter soi-même, à vitesse normale
+cliquer("Vitesse_normale")
+cliquer("Assistance")
+verifier(panneauC.Assistance.Text == "Assistance : tient la ligne (85 % au plus)", "assistance activée")
+-- Deuxième pièce au doigt : un second doigt qui glisse ne fait pas pivoter le tissu
 local doigtCoudre = { UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(700, 400, 0) }
 boutonNomme("Coudre").InputBegan:Fire(doigtCoudre)
 UIS.InputChanged:Fire({ UserInputType = Enum.UserInputType.Touch, Position = Vector3.new(1100, 400, 0) })
@@ -885,9 +923,7 @@ UIS.InputEnded:Fire(doigtCoudre)
 cliquer("PieceSuivante")
 verifier(cousues() == 2, "deuxième pièce cousue au doigt")
 local auDoigt = tonumber(panneauC.Pieces.Ligne2.Text:match("(%d+) %%$"))
-verifier(auDoigt ~= nil and auDoigt > 30, "un second doigt ne dirige pas l'aiguille : " .. tostring(auDoigt))
-cliquer("Assistance")
-verifier(panneauC.Assistance.Text == "Assistance : oui (85 % au plus)", "assistance activée")
+verifier(auDoigt ~= nil and auDoigt > 30, "un second doigt ne fait pas pivoter le tissu (assistée, 49 %% ; tournée à fond, moins de 20) : " .. tostring(auDoigt))
 -- L'amitié d'Inès remise à 0 le temps de voir une décoration fermée (serveur et copie du client)
 serveur:atelier(joueur).etat.clientes.ines.amitie = 0
 requireModule(scriptClient.Session).courante.etat.clientes.ines.amitie = 0
@@ -901,7 +937,8 @@ end
 ---------------------------------------------------------------------------
 -- Décorations
 ---------------------------------------------------------------------------
-verifier(ratee ~= nil and ratee < 20, "la couture ratée est mal notée : " .. tostring(ratee))
+-- (sous-projet 8 : glisser tout le temps du même côté fait tourner le tissu sans fin, l'aiguille tourne en rond)
+verifier(ratee ~= nil and ratee < 50, "la couture ratée est mal notée : " .. tostring(ratee))
 verifier(titre() == "6. Décorations", "robe cousue : les décorations")
 verifier(fenetre.AnchorPoint.X == 1 and #robe:GetChildren() == 8, "panneau à droite, la robe cousue sur le mannequin")
 do -- Sous-projet 5 : la robe terminée, une pluie de confettis par-dessus la fenêtre et un petit son de fête
