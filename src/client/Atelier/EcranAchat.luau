@@ -212,7 +212,7 @@ return function(ctx)
 			ctx.refus(r)
 		end
 	end)
-	UiKit.bouton({ Name = "AllerDecoupe", Text = "Aller à la découpe", AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(240, 46), Parent = contenu }, function()
+	local boutonDecoupe = UiKit.bouton({ Name = "AllerDecoupe", Text = "Aller à la découpe", AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(240, 46), Parent = contenu }, function()
 		local r = session:commencerDecoupe()
 		if not r.ok then
 			ctx.refus(r)
@@ -230,6 +230,36 @@ return function(ctx)
 			majLigne(idTissu)
 		end
 	end)
+	-- (sous-projet 9) Les conseils de la première robe : acheter chaque tissu (le métrage proposé), aller à la découpe
+	if ctx.guide then
+		ctx.guide:demarrer(session, "achat", {
+			{
+				texte = "Achète chaque tissu : le métrage proposé suffit si tu ranges bien tes pièces.",
+				cible = function()
+					for _, idTissu in ipairs(session.etat:tissusUtilises()) do
+						if lignes[idTissu] and session.etat:stockNeuf(idTissu) < conseil(idTissu) then
+							return lignes[idTissu].acheter
+						end
+					end
+					return nil
+				end,
+				fait = function()
+					for _, idTissu in ipairs(session.etat:tissusUtilises()) do
+						if session.etat:stockNeuf(idTissu) < conseil(idTissu) then
+							return false
+						end
+					end
+					return true
+				end,
+			},
+			{
+				texte = "Tout est acheté : va à la découpe.",
+				cible = function()
+					return boutonDecoupe
+				end,
+			},
+		})
+	end
 	return function()
 		desabonner()
 		fermerApercu()

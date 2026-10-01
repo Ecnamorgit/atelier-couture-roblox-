@@ -411,7 +411,7 @@ return function(ctx)
 	end
 
 	-- « Tracer le patron » : un modèle fermé ne se trace pas (on dit ce qu'il faut pour l'ouvrir)
-	UiKit.bouton({ Name = "Valider", Text = "Tracer le patron", Position = UDim2.fromOffset(296, 428), Size = UDim2.fromOffset(230, 34), Parent = page }, function()
+	local boutonValider = UiKit.bouton({ Name = "Valider", Text = "Tracer le patron", Position = UDim2.fromOffset(296, 428), Size = UDim2.fromOffset(230, 34), Parent = page }, function()
 		for _, famille in ipairs(ORDRE_LIGNES) do
 			if not Deblocages.ouvert(etat, "variantes", croquis[famille]) then
 				ctx.message(Deblocages.message("variantes", croquis[famille]), C.texteDoux)
@@ -436,6 +436,53 @@ return function(ctx)
 			rafraichir()
 		end
 	end)
+	-- (sous-projet 9) Les conseils de la première robe : un modèle par partie, un tissu, la fiche de la cliente, le patron
+	if ctx.guide then
+		local croquisDepart, tissusDepart = table.clone(croquis), table.clone(tissus)
+		ctx.guide:demarrer(session, "carnet", {
+			{
+				texte = "Choisis un modèle pour chaque partie avec ◀ ▶ : le corsage, les manches, le col et la jupe.",
+				cible = function()
+					return page:FindFirstChild("Suivant_corsage")
+				end,
+				fait = function()
+					for famille, id in pairs(croquis) do
+						if croquisDepart[famille] ~= id then
+							return true
+						end
+					end
+					return false
+				end,
+			},
+			{
+				texte = "Touche une partie du dessin (ou sa ligne dans la liste) pour lui choisir un tissu.",
+				cible = function()
+					return dessin
+				end,
+				fait = function()
+					for id, t in pairs(tissus) do
+						if tissusDepart[id] ~= t then
+							return true
+						end
+					end
+					return false
+				end,
+			},
+			{
+				texte = "À droite, la fiche dit ce que veut la cliente : tes modèles et tes tissus remplissent ses jauges.",
+				cible = function()
+					return droite
+				end,
+				duree = 7,
+			},
+			{
+				texte = "Ta robe te plaît ? Trace le patron.",
+				cible = function()
+					return boutonValider
+				end,
+			},
+		})
+	end
 	return function()
 		desabonner()
 		fermerChoix()

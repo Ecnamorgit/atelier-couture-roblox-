@@ -345,6 +345,51 @@ return function(ctx)
 	end)
 	rafraichir()
 	montrerPiece()
+	-- (sous-projet 9) Les conseils de la première robe : la place que propose la table, le droit-fil, couper, la suite
+	if ctx.guide then
+		local depart = table_.placement and table.clone(table_.placement)
+		local function coupees()
+			local n = 0
+			for _ in pairs(session.etat.coupees) do
+				n += 1
+			end
+			return n
+		end
+		local coupeesDepart = coupees()
+		ctx.guide:demarrer(session, "decoupe", {
+			{
+				texte = "La table pose chaque pièce à une bonne place : tu peux la faire glisser sur le tissu, ou la tourner (R, la molette).",
+				cible = function()
+					return piece
+				end,
+				fait = function()
+					local p = table_.placement
+					return p ~= nil and depart ~= nil and (p.x ~= depart.x or p.y ~= depart.y or p.angle ~= depart.angle)
+				end,
+				duree = 8,
+			},
+			{
+				texte = "Le droit-fil : la flèche de la pièce doit suivre le fil du tissu ; à 100 %, la robe ne perd rien.",
+				cible = function()
+					return droitFil
+				end,
+				duree = 6,
+			},
+			{
+				texte = "La place est libre (en vert) : coupe la pièce.",
+				cible = function()
+					return couper
+				end,
+				fait = function()
+					return coupees() > coupeesDepart
+				end,
+			},
+			{
+				texte = "Coupe les autres pièces de la même façon ; A / D déroulent le rouleau, les onglets changent de tissu.",
+				duree = 7,
+			},
+		})
+	end
 	return function()
 		desabonner()
 		lierDerouler(false)

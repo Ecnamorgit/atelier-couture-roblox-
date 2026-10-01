@@ -315,7 +315,7 @@ verifier(serveur:atelier(joueur).etat.commande.ajustement == 1 and serveur:ateli
 -- Carnet de croquis
 ---------------------------------------------------------------------------
 verifier(titre() == "1. Carnet de croquis", "mesures prises : le carnet")
-verifier(not fenetre.Conseil.Visible and not fenetre.Aide.Visible, "(sous-projet 9) les mesures quittées : leurs conseils s'en vont avec elles")
+verifier(fenetre.Conseil.Visible and fenetre.Conseil.Text:find("modèle", 1, true) ~= nil and fenetre.Aide.Visible, "(sous-projet 9) première robe, au carnet : ses conseils (" .. fenetre.Conseil.Text .. ")")
 do -- Sous-projet 6 : une exigence d'accessoire dit ce qu'on en a dans la mercerie (le kit : dix perles)
 	local ligne = texte("Avec : Perle")
 	verifier(ligne ~= nil and string.find(ligne.Text, "Avec : Perle\n      (en stock : 10)", 1, true) ~= nil and ligne.Size.Y.Offset == 40, "au carnet, l'exigence d'une perle dit « (en stock : 10) », sur une seconde ligne")
@@ -582,6 +582,7 @@ cliquer("Valider")
 -- Achat
 ---------------------------------------------------------------------------
 verifier(titre() == "2. Achat du tissu", "le croquis validé mène à l'achat")
+verifier(fenetre.Conseil.Visible and fenetre.Conseil.Text:find("Achète", 1, true) ~= nil, "(sous-projet 9) première robe, à l'achat : ses conseils (" .. fenetre.Conseil.Text .. ")")
 verifierTailles("achat")
 boutonNomme("RetourCarnet").Activated:Fire() -- second clic d'un double clic, sur le bouton qui vient d'apparaître
 verifier(titre() == "2. Achat du tissu", "un double clic ne déclenche pas le bouton de l'écran suivant")
@@ -643,6 +644,7 @@ cliquer("AllerDecoupe")
 -- Table de découpe
 ---------------------------------------------------------------------------
 verifier(titre() == "3. Table de découpe", "l'achat mène à la découpe")
+verifier(fenetre.Conseil.Visible and fenetre.Conseil.Text:find("bonne place", 1, true) ~= nil, "(sous-projet 9) première robe, à la découpe : ses conseils (" .. fenetre.Conseil.Text .. ")")
 verifierTailles("découpe")
 verifier(fenetre.Contenu.Rouleau.Tissu.PieceCourante.BackgroundTransparency < 1, "sans silhouette, la pièce reste visible (papier uni)")
 M.budget.images = 64
@@ -755,6 +757,7 @@ verifier(coupes == 6, "6 pièces coupées (manche et col pliés comptent pour un
 local Workspace = M.services.Workspace
 local camera = Workspace.CurrentCamera
 verifier(titre() == "4. Épinglage", "après la dernière coupe : l'épinglage")
+verifier(fenetre.Conseil.Visible and fenetre.Conseil.Text:find("épingler", 1, true) ~= nil, "(sous-projet 9) première robe, à l'épinglage : ses conseils, en panneau (" .. fenetre.Conseil.Text .. ")")
 verifier(sonALaPlace(), "fenêtre en panneau : « Son » reste dans la barre, sans rien chevaucher")
 verifier(fenetre.AnchorPoint.X == 1, "la fenêtre se range à droite : le mannequin est visible")
 verifier(M.coreGui[Enum.CoreGuiType.PlayerList] == false, "la liste des joueurs de Roblox ne cache pas le haut du panneau")
@@ -951,6 +954,7 @@ end
 -- (sous-projet 8 : glisser tout le temps du même côté fait tourner le tissu sans fin, l'aiguille tourne en rond)
 verifier(ratee ~= nil and ratee < 50, "la couture ratée est mal notée : " .. tostring(ratee))
 verifier(titre() == "6. Décorations", "robe cousue : les décorations")
+verifier(not fenetre.Conseil.Visible and not fenetre.Aide.Visible, "(sous-projet 9) la couture quittée : son « ? » s'en va avec elle")
 verifier(fenetre.AnchorPoint.X == 1 and #robe:GetChildren() == 8, "panneau à droite, la robe cousue sur le mannequin")
 do -- Sous-projet 5 : la robe terminée, une pluie de confettis par-dessus la fenêtre et un petit son de fête
 	local confettis = gui.Atelier:FindFirstChild("Confettis")
