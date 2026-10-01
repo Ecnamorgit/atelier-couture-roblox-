@@ -1,5 +1,6 @@
 -- Tutoriel (sous-projet 9) : les conseils pas à pas d'un poste, à la première robe. Un bandeau sur la barre de titre dit
--- le conseil en cours, un anneau qui pulse entoure l'élément à toucher ; chaque conseil s'efface quand le geste est fait
+-- le conseil en cours, un anneau qui pulse entoure l'élément à toucher (un cadre de la fenêtre, recalé sur l'élément à
+-- chaque image : ni une liste qui défile ni un écran qui vide l'élément ne le perdent) ; chaque conseil s'efface quand le geste est fait
 -- (une condition lue à chaque image) ou, s'il ne demande que de lire, au bout de sa durée. « ? » les reprend au premier.
 -- Rien n'est sauvegardé : les conseils vus ne reviennent pas d'eux-mêmes pendant la partie.
 local RunService = game:GetService("RunService")
@@ -19,7 +20,7 @@ end
 -- Pose le bandeau et « ? » sur la fenêtre (une fois, par le script du client)
 function Tutoriel.installer(fenetre, UiKit)
 	local C = UiKit.COULEURS
-	local self = setmetatable({ UiKit = UiKit, k = nil, temps = 0 }, Tutoriel)
+	local self = setmetatable({ UiKit = UiKit, fenetre = fenetre, k = nil, temps = 0 }, Tutoriel)
 	self.bandeau = UiKit.arrondir(UiKit.texte({
 		Name = "Conseil",
 		Text = "",
@@ -34,6 +35,10 @@ function Tutoriel.installer(fenetre, UiKit)
 	}), 10)
 	UiKit.creer("UIStroke", { Color = C.accent, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = self.bandeau })
 	UiKit.creer("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = self.bandeau })
+	-- (un cadre, pas un bouton : l'appui passe à l'élément dessous)
+	self.anneau = UiKit.creer("Frame", { Name = "Anneau", BackgroundTransparency = 1, Visible = false, ZIndex = 19, Parent = fenetre })
+	self.coin = UiKit.creer("UICorner", { Name = "Coin", CornerRadius = UDim.new(0, 12), Parent = self.anneau })
+	self.contour = UiKit.creer("UIStroke", { Name = "Contour", Color = C.accent, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = self.anneau })
 	self.aide = UiKit.boutonDoux({ Name = "Aide", Text = "?", TextSize = 18, Size = UDim2.fromOffset(36, 36), Visible = false, Parent = fenetre }, function()
 		self:relancer()
 	end)
@@ -57,26 +62,61 @@ function Tutoriel:disposer(panneau)
 	end
 end
 
-function Tutoriel:retirerAnneau()
-	if self.anneau then
-		self.anneau:Destroy()
+-- L'élément est-il affiché (lui et chacun de ses parents jusqu'à la fenêtre) ?
+local function affiche(element, fenetre)
+	local i = element
+	while i and i ~= fenetre do
+		if not i:IsA("GuiObject") or not i.Visible then
+			return false
+		end
+		i = i.Parent
 	end
-	self.anneau, self.contour, self.cible = nil, nil, nil
+	return i == fenetre
 end
 
-function Tutoriel:poserAnneau(cible)
-	local UiKit = self.UiKit
-	self.cible = cible
-	self.anneau = UiKit.arrondir(UiKit.creer("Frame", {
-		Name = "Anneau",
-		BackgroundTransparency = 1,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.new(1, 2 * Tutoriel.MARGE, 1, 2 * Tutoriel.MARGE),
-		ZIndex = (cible.ZIndex or 1) + 1,
-		Parent = cible,
-	}), 12)
-	self.contour = UiKit.creer("UIStroke", { Name = "Contour", Color = UiKit.COULEURS.accent, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = self.anneau })
+-- Recale l'anneau sur la partie visible de l'élément désigné (rognée par les listes qui défilent et les cadres qui
+-- rognent au-dessus de lui), dans le repère de la fenêtre (mise à l'échelle sur les petits écrans) ; sans élément, ou
+-- rien de visible : pas d'anneau
+function Tutoriel:placerAnneau()
+	local a, cible, fenetre = self.anneau, self.cible, self.fenetre
+	a:SetAttribute("Cible", cible and cible.Name or nil)
+	if not cible or not affiche(cible, fenetre) then
+		a.Visible = false
+		return
+	end
+	local p, t = cible.AbsolutePosition, cible.AbsoluteSize
+	local x0, y0, x1, y1 = p.X, p.Y, p.X + t.X, p.Y + t.Y
+	local i = cible.Parent
+	while i and i ~= fenetre do
+		if i:IsA("ScrollingFrame") or i.ClipsDescendants then
+			local q, u = i.AbsolutePosition, i.AbsoluteSize
+			x0, y0, x1, y1 = math.max(x0, q.X), math.max(y0, q.Y), math.min(x1, q.X + u.X), math.min(y1, q.Y + u.Y)
+		end
+		i = i.Parent
+	end
+	if x1 - x0 < 1 or y1 - y0 < 1 then
+		a.Visible = false
+		return
+	end
+	local echelle = fenetre.AbsoluteSize.X / math.max(fenetre.Size.X.Offset, 1)
+	echelle = if echelle > 0 then echelle else 1
+	local f, m = fenetre.AbsolutePosition, Tutoriel.MARGE
+	a.Position = UDim2.fromOffset((x0 - f.X) / echelle - m, (y0 - f.Y) / echelle - m)
+	a.Size = UDim2.fromOffset((x1 - x0) / echelle + 2 * m, (y1 - y0) / echelle + 2 * m)
+	-- (l'arrondi de l'élément, élargi de la marge : un rond autour d'une molette)
+	local rayon = UDim.new(0, 8 + m)
+	for _, enfant in ipairs(cible:GetChildren()) do
+		if enfant:IsA("UICorner") then
+			rayon = UDim.new(enfant.CornerRadius.Scale, enfant.CornerRadius.Offset + m)
+		end
+	end
+	self.coin.CornerRadius = rayon
+	a.Visible = true
+end
+
+function Tutoriel:retirerAnneau()
+	self.cible = nil
+	self:placerAnneau()
 end
 
 -- Affiche le conseil k (au-delà du dernier : les conseils sont finis, donc vus)
@@ -94,10 +134,8 @@ function Tutoriel:aller(k)
 	local etape = self.etapes[k]
 	self.bandeau.Text = etape.texte
 	self.bandeau.Visible = true
-	local cible = etape.cible and etape.cible()
-	if cible then
-		self:poserAnneau(cible)
-	end
+	self.cible = etape.cible and etape.cible()
+	self:placerAnneau()
 end
 
 -- Un poste s'ouvre. etapes : { { texte, cible = function() return GuiObject end ?, fait = function(dt) return bool end ?,
@@ -132,7 +170,7 @@ function Tutoriel:arreter()
 	self.aide.Visible = false
 end
 
--- Une image : l'anneau suit l'élément désigné (posé de nouveau si l'écran l'a refait) et pulse ; le conseil s'efface quand
+-- Une image : l'anneau suit l'élément désigné (relu : l'écran a pu le refaire) et pulse ; le conseil s'efface quand
 -- son geste est fait, ou au bout de sa durée (jamais avant AFFICHAGE_MIN : le temps de le lire)
 function Tutoriel:image(dt)
 	if not self.k then
@@ -140,16 +178,9 @@ function Tutoriel:image(dt)
 	end
 	self.temps += dt
 	local etape = self.etapes[self.k]
-	local cible = etape.cible and etape.cible()
-	if cible ~= self.cible then
-		self:retirerAnneau()
-		if cible then
-			self:poserAnneau(cible)
-		end
-	end
-	if self.contour then
-		self.contour.Transparency = 0.35 - 0.35 * math.cos(2 * math.pi * self.temps / Tutoriel.PULSATION)
-	end
+	self.cible = etape.cible and etape.cible()
+	self:placerAnneau()
+	self.contour.Transparency = 0.35 - 0.35 * math.cos(2 * math.pi * self.temps / Tutoriel.PULSATION)
 	if self.temps >= Tutoriel.AFFICHAGE_MIN and ((etape.fait and etape.fait(dt)) or (etape.duree and self.temps >= etape.duree)) then
 		self:aller(self.k + 1)
 	end

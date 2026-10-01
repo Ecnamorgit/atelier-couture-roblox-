@@ -12,6 +12,11 @@ local function contexte(session)
 	local contenu = UiKit.creer("Frame", { Name = "Contenu", Size = UDim2.fromOffset(860, 466), Parent = fenetre })
 	return { UiKit = UiKit, session = session, contenu = contenu, fenetre = fenetre, message = function() end, refus = function() end, guide = Tutoriel.installer(fenetre, UiKit) }
 end
+-- L'élément entouré par l'anneau (un cadre de la fenêtre, recalé sur lui)
+local function entoure(ctx, element)
+	local a = ctx.fenetre:FindFirstChild("Anneau")
+	return a ~= nil and ctx.guide.cible == element and a:GetAttribute("Cible") == element.Name
+end
 
 ---------------------------------------------------------------------------
 -- L'accueil : la clochette
@@ -20,7 +25,7 @@ local session = Session.nouvelle(61)
 local ctx = contexte(session)
 local fermer = EcranAccueil(ctx)
 local bandeau = ctx.fenetre.Conseil
-U.verifier(bandeau.Visible and bandeau.Text:find("clochette", 1, true) ~= nil and ctx.contenu.Clochette:FindFirstChild("Anneau") ~= nil, "accueil, première robe : sonner la clochette, entourée (" .. bandeau.Text .. ")")
+U.verifier(bandeau.Visible and bandeau.Text:find("clochette", 1, true) ~= nil and entoure(ctx, ctx.contenu.Clochette), "accueil, première robe : sonner la clochette, entourée (" .. bandeau.Text .. ")")
 M.avancer(0.5) -- (un bouton qui vient d'apparaître ignore les clics)
 ctx.contenu.Clochette.Activated:Fire()
 ctx.guide:arreter()
@@ -34,12 +39,12 @@ local ctx2 = contexte(session)
 local fermer2 = EcranMesures(ctx2)
 local contenu = ctx2.contenu
 bandeau = ctx2.fenetre.Conseil
-U.verifier(bandeau.Visible and bandeau.Text:find("molette", 1, true) ~= nil and contenu.Molette_poitrine:FindFirstChild("Anneau") ~= nil, "mesures : tourner une molette, entourée (" .. bandeau.Text .. ")")
+U.verifier(bandeau.Visible and bandeau.Text:find("molette", 1, true) ~= nil and entoure(ctx2, contenu.Molette_poitrine), "mesures : tourner une molette, entourée (" .. bandeau.Text .. ")")
 M.avancer(0.5)
 U.verifier(bandeau.Text:find("molette", 1, true) ~= nil, "rien tourné : le conseil reste")
 contenu.Plus_poitrine.Activated:Fire()
 M.avancer(1.6) -- (un conseil reste au moins 2 s, le temps de le lire)
-U.verifier(bandeau.Text:find("silhouette", 1, true) ~= nil and contenu.Mannequin:FindFirstChild("Anneau") ~= nil and contenu.Molette_poitrine:FindFirstChild("Anneau") == nil, "une molette tournée : ajuster les bandes, le mannequin entouré (" .. bandeau.Text .. ")")
+U.verifier(bandeau.Text:find("silhouette", 1, true) ~= nil and entoure(ctx2, contenu.Mannequin), "une molette tournée : ajuster les bandes, le mannequin entouré (" .. bandeau.Text .. ")")
 -- La poitrine juste, la taille et les hanches pas encore : le conseil reste
 local cliente = Clientes.get(session.etat.commande.cliente)
 local function ajuster(cle)
@@ -58,7 +63,7 @@ U.verifier(bandeau.Text:find("silhouette", 1, true) ~= nil, "une seule bande jus
 ajuster("taille")
 ajuster("hanches")
 M.avancer(0.05)
-U.verifier(bandeau.Text == "C'est ajusté : valide les mesures." and contenu.ValiderMesures:FindFirstChild("Anneau") ~= nil, "les trois justes : valider, le bouton entouré (" .. bandeau.Text .. ")")
+U.verifier(bandeau.Text == "C'est ajusté : valide les mesures." and entoure(ctx2, contenu.ValiderMesures), "les trois justes : valider, le bouton entouré (" .. bandeau.Text .. ")")
 contenu.ValiderMesures.Activated:Fire()
 ctx2.guide:arreter()
 fermer2()

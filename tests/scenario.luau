@@ -119,7 +119,7 @@ verifier(fenetre.Visible, "la fenêtre s'ouvre au démarrage")
 verifier(titre() == "Aiguille & Dentelle", "écran d'accueil")
 verifier(argent() == 150, "150 pièces d'or au départ")
 -- (sous-projet 9) La première robe : un conseil sur la barre de titre, la clochette entourée ; « ? »
-verifier(fenetre.Conseil.Visible and fenetre.Conseil.Text:find("clochette", 1, true) ~= nil and boutonNomme("Clochette"):FindFirstChild("Anneau") ~= nil and fenetre.Aide.Visible, "première robe : le conseil de l'accueil (" .. fenetre.Conseil.Text .. ")")
+verifier(fenetre.Conseil.Visible and fenetre.Conseil.Text:find("clochette", 1, true) ~= nil and fenetre.Anneau:GetAttribute("Cible") == "Clochette" and fenetre.Aide.Visible, "première robe : le conseil de l'accueil (" .. fenetre.Conseil.Text .. ")")
 local parties = M.magasins.AtelierCouture_v2
 local cleJoueur = "joueur_" .. joueur.UserId
 verifier(parties.donnees[cleJoueur].version == 99 and serveur:atelier(joueur) ~= nil and not serveur:atelier(joueur).sauvable, "partie illisible : le joueur joue sans sauvegarde")
